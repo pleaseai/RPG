@@ -89,8 +89,8 @@ export class LLMClient {
     })
 
     const response = await client.messages.create({
-      model: this.options.model!,
-      max_tokens: this.options.maxTokens!,
+      model: this.options.model ?? 'claude-sonnet-4-20250514',
+      max_tokens: this.options.maxTokens ?? 4096,
       temperature: this.options.temperature,
       system: systemPrompt,
       messages: [{ role: 'user', content: prompt }],
@@ -121,7 +121,7 @@ export class LLMClient {
     messages.push({ role: 'user', content: prompt })
 
     const response = await client.chat.completions.create({
-      model: this.options.model!,
+      model: this.options.model ?? 'gpt-4o',
       max_tokens: this.options.maxTokens,
       temperature: this.options.temperature,
       messages,

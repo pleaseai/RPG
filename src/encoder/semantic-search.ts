@@ -1,5 +1,5 @@
-import type { Embedding } from './embedding'
 import { VectorStore } from '../utils/vector'
+import type { Embedding } from './embedding'
 
 /**
  * Semantic search options

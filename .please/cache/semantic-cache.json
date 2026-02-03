@@ -1075,22 +1075,6 @@
       "createdAt": 1770140937086,
       "hash": "b955b4cf7774dc7d"
     },
-    "src/graph/rpg.ts:method:getParent": {
-      "feature": {
-        "description": "method to get parent in RepositoryPlanningGraph",
-        "keywords": [
-          "get",
-          "parent",
-          "method",
-          "repositoryplanninggraph",
-          "src",
-          "graph",
-          "rpg"
-        ]
-      },
-      "createdAt": 1770140937086,
-      "hash": "9b73459808ee6e2c"
-    },
     "src/graph/rpg.ts:method:getDependencies": {
       "feature": {
         "description": "method to get dependencies in RepositoryPlanningGraph",
@@ -1587,20 +1571,6 @@
       "createdAt": 1770140937112,
       "hash": "ce0de4e7861d69e8"
     },
-    "src/tools/explore.ts:class:ExploreRPG": {
-      "feature": {
-        "description": "class representing explore rpg",
-        "keywords": [
-          "explore",
-          "rpg",
-          "class",
-          "src",
-          "tools"
-        ]
-      },
-      "createdAt": 1770140937112,
-      "hash": "e9ea590f2bbc5a3e"
-    },
     "src/tools/explore.ts:method:constructor": {
       "feature": {
         "description": "method to constructor in ExploreRPG",
@@ -1615,21 +1585,6 @@
       },
       "createdAt": 1770140937112,
       "hash": "5bfcd77abc639aab"
-    },
-    "src/tools/explore.ts:method:traverse": {
-      "feature": {
-        "description": "method to traverse in ExploreRPG",
-        "keywords": [
-          "traverse",
-          "method",
-          "explorerpg",
-          "src",
-          "tools",
-          "explore"
-        ]
-      },
-      "createdAt": 1770140937112,
-      "hash": "e13dec213aaaf7db"
     },
     "src/tools/explore.ts:function:getEdgeTypes": {
       "feature": {
@@ -2076,20 +2031,6 @@
       "createdAt": 1770140937143,
       "hash": "a91f17068ce3b21d"
     },
-    "src/utils/llm.ts:class:LLMClient": {
-      "feature": {
-        "description": "class representing llmclient",
-        "keywords": [
-          "llmclient",
-          "class",
-          "src",
-          "utils",
-          "llm"
-        ]
-      },
-      "createdAt": 1770140937143,
-      "hash": "b20c8bec987c5648"
-    },
     "src/utils/llm.ts:method:constructor": {
       "feature": {
         "description": "method to constructor in LLMClient",
@@ -2135,38 +2076,6 @@
       },
       "createdAt": 1770140937143,
       "hash": "a3cb0e633455386b"
-    },
-    "src/utils/llm.ts:method:completeAnthropic": {
-      "feature": {
-        "description": "method to complete anthropic in LLMClient",
-        "keywords": [
-          "complete",
-          "anthropic",
-          "method",
-          "llmclient",
-          "src",
-          "utils",
-          "llm"
-        ]
-      },
-      "createdAt": 1770140937143,
-      "hash": "434b4469af026ea1"
-    },
-    "src/utils/llm.ts:method:completeOpenAI": {
-      "feature": {
-        "description": "method to complete open ai in LLMClient",
-        "keywords": [
-          "complete",
-          "open",
-          "method",
-          "llmclient",
-          "src",
-          "utils",
-          "llm"
-        ]
-      },
-      "createdAt": 1770140937143,
-      "hash": "fecf4f8f8cfc1533"
     },
     "src/utils/vector.ts:file:vector": {
       "feature": {
@@ -15491,21 +15400,6 @@
       "createdAt": 1770142190693,
       "hash": "812abe6284286d91"
     },
-    "src/graph/rpg.ts:class:RepositoryPlanningGraph": {
-      "feature": {
-        "description": "class representing repository planning graph",
-        "keywords": [
-          "repository",
-          "planning",
-          "graph",
-          "class",
-          "src",
-          "rpg"
-        ]
-      },
-      "createdAt": 1770142190723,
-      "hash": "af1a3769d22cb758"
-    },
     "src/graph/rpg.ts:method:getNodes": {
       "feature": {
         "description": "method to get nodes in RepositoryPlanningGraph",
@@ -16120,6 +16014,209 @@
       "createdAt": 1770142668256,
       "hash": "8d9d940d4ff9b729"
     },
+    "src/tools/explore.ts:class:ExploreRPG": {
+      "feature": {
+        "description": "class representing explore rpg",
+        "keywords": [
+          "explore",
+          "rpg",
+          "class",
+          "src",
+          "tools"
+        ]
+      },
+      "createdAt": 1770143353785,
+      "hash": "59bea744ca28b99f"
+    },
+    "src/tools/explore.ts:method:traverse": {
+      "feature": {
+        "description": "method to traverse in ExploreRPG",
+        "keywords": [
+          "traverse",
+          "method",
+          "explorerpg",
+          "src",
+          "tools",
+          "explore"
+        ]
+      },
+      "createdAt": 1770143353785,
+      "hash": "2fb664d5ebe5905f"
+    },
+    "src/tools/explore.ts:method:resolveEdgeTypes": {
+      "feature": {
+        "description": "method to resolve edge types in ExploreRPG",
+        "keywords": [
+          "resolve",
+          "edge",
+          "types",
+          "method",
+          "explorerpg",
+          "src",
+          "tools",
+          "explore"
+        ]
+      },
+      "createdAt": 1770143353785,
+      "hash": "599cad405fa57e89"
+    },
+    "src/tools/explore.ts:method:exploreNode": {
+      "feature": {
+        "description": "method to explore node in ExploreRPG",
+        "keywords": [
+          "explore",
+          "node",
+          "method",
+          "explorerpg",
+          "src",
+          "tools"
+        ]
+      },
+      "createdAt": 1770143353785,
+      "hash": "a5af64da786f7f87"
+    },
+    "src/tools/explore.ts:method:processEdges": {
+      "feature": {
+        "description": "method to process edges in ExploreRPG",
+        "keywords": [
+          "process",
+          "edges",
+          "method",
+          "explorerpg",
+          "src",
+          "tools",
+          "explore"
+        ]
+      },
+      "createdAt": 1770143353785,
+      "hash": "d3750d172421f162"
+    },
+    "src/tools/explore.ts:method:processOutEdges": {
+      "feature": {
+        "description": "method to process out edges in ExploreRPG",
+        "keywords": [
+          "process",
+          "out",
+          "edges",
+          "method",
+          "explorerpg",
+          "src",
+          "tools",
+          "explore"
+        ]
+      },
+      "createdAt": 1770143353786,
+      "hash": "60891f15e1c3bbf8"
+    },
+    "src/tools/explore.ts:method:processInEdges": {
+      "feature": {
+        "description": "method to process in edges in ExploreRPG",
+        "keywords": [
+          "process",
+          "edges",
+          "method",
+          "explorerpg",
+          "src",
+          "tools",
+          "explore"
+        ]
+      },
+      "createdAt": 1770143353786,
+      "hash": "016e5f1e4fa29565"
+    },
+    "src/tools/explore.ts:method:addEdge": {
+      "feature": {
+        "description": "method to add edge in ExploreRPG",
+        "keywords": [
+          "add",
+          "edge",
+          "method",
+          "explorerpg",
+          "src",
+          "tools",
+          "explore"
+        ]
+      },
+      "createdAt": 1770143353786,
+      "hash": "13e22b365414d7ef"
+    },
+    "src/utils/llm.ts:class:LLMClient": {
+      "feature": {
+        "description": "class representing llmclient",
+        "keywords": [
+          "llmclient",
+          "class",
+          "src",
+          "utils",
+          "llm"
+        ]
+      },
+      "createdAt": 1770143353856,
+      "hash": "07e92375329529d7"
+    },
+    "src/utils/llm.ts:method:completeAnthropic": {
+      "feature": {
+        "description": "method to complete anthropic in LLMClient",
+        "keywords": [
+          "complete",
+          "anthropic",
+          "method",
+          "llmclient",
+          "src",
+          "utils",
+          "llm"
+        ]
+      },
+      "createdAt": 1770143353856,
+      "hash": "44235786dc7c9118"
+    },
+    "src/utils/llm.ts:method:completeOpenAI": {
+      "feature": {
+        "description": "method to complete open ai in LLMClient",
+        "keywords": [
+          "complete",
+          "open",
+          "method",
+          "llmclient",
+          "src",
+          "utils",
+          "llm"
+        ]
+      },
+      "createdAt": 1770143353856,
+      "hash": "a516efe4edd70f3f"
+    },
+    "src/graph/rpg.ts:class:RepositoryPlanningGraph": {
+      "feature": {
+        "description": "class representing repository planning graph",
+        "keywords": [
+          "repository",
+          "planning",
+          "graph",
+          "class",
+          "src",
+          "rpg"
+        ]
+      },
+      "createdAt": 1770143385881,
+      "hash": "d002d2a418010a34"
+    },
+    "src/graph/rpg.ts:method:getParent": {
+      "feature": {
+        "description": "method to get parent in RepositoryPlanningGraph",
+        "keywords": [
+          "get",
+          "parent",
+          "method",
+          "repositoryplanninggraph",
+          "src",
+          "graph",
+          "rpg"
+        ]
+      },
+      "createdAt": 1770143385881,
+      "hash": "c4596fec11282b58"
+    },
     "vendor/context-please/packages/core/test/integration/incremental-reindex.integration.test.ts:function:progressCallback": {
       "feature": {
         "description": "function that progress callback",
@@ -16136,7 +16233,7 @@
           "incremental-reindex.integration.test"
         ]
       },
-      "createdAt": 1770143163560,
+      "createdAt": 1770143387333,
       "hash": "962a819d7cdb8a60"
     },
     "vendor/context-please/packages/core/test/integration/indexing-workflow.integration.test.ts:function:progressCallback": {
@@ -16155,7 +16252,7 @@
           "indexing-workflow.integration.test"
         ]
       },
-      "createdAt": 1770143163583,
+      "createdAt": 1770143387354,
       "hash": "a578faabf1063c13"
     },
     "vendor/context-please/packages/core/test/vectordb/base-vector-database.test.ts:method:initialize": {
@@ -16174,7 +16271,7 @@
           "base-vector-database.test"
         ]
       },
-      "createdAt": 1770143163638,
+      "createdAt": 1770143387405,
       "hash": "f37148be66f32939"
     },
     "vendor/context-please/packages/core/test/vectordb/base-vector-database.test.ts:method:ensureLoaded": {
@@ -16194,7 +16291,7 @@
           "base-vector-database.test"
         ]
       },
-      "createdAt": 1770143163638,
+      "createdAt": 1770143387405,
       "hash": "049973ab083c5d39"
     },
     "vendor/context-please/packages/core/test/vectordb/base-vector-database.test.ts:method:createCollection": {
@@ -16214,7 +16311,7 @@
           "base-vector-database.test"
         ]
       },
-      "createdAt": 1770143163638,
+      "createdAt": 1770143387405,
       "hash": "67b0dc54b935d2d2"
     },
     "vendor/context-please/packages/core/test/vectordb/base-vector-database.test.ts:method:createHybridCollection": {
@@ -16235,7 +16332,7 @@
           "base-vector-database.test"
         ]
       },
-      "createdAt": 1770143163638,
+      "createdAt": 1770143387405,
       "hash": "d2490434d420947d"
     },
     "vendor/context-please/packages/core/test/vectordb/base-vector-database.test.ts:method:dropCollection": {
@@ -16255,7 +16352,7 @@
           "base-vector-database.test"
         ]
       },
-      "createdAt": 1770143163639,
+      "createdAt": 1770143387405,
       "hash": "3c644a6104cd00ce"
     },
     "vendor/context-please/packages/core/test/vectordb/base-vector-database.test.ts:method:hasCollection": {
@@ -16275,7 +16372,7 @@
           "base-vector-database.test"
         ]
       },
-      "createdAt": 1770143163639,
+      "createdAt": 1770143387405,
       "hash": "623769c8d9c897ba"
     },
     "vendor/context-please/packages/core/test/vectordb/base-vector-database.test.ts:method:listCollections": {
@@ -16295,7 +16392,7 @@
           "base-vector-database.test"
         ]
       },
-      "createdAt": 1770143163639,
+      "createdAt": 1770143387405,
       "hash": "c64522cc185f566d"
     },
     "vendor/context-please/packages/core/test/vectordb/base-vector-database.test.ts:method:insert": {
@@ -16314,7 +16411,7 @@
           "base-vector-database.test"
         ]
       },
-      "createdAt": 1770143163639,
+      "createdAt": 1770143387405,
       "hash": "47a3058cac46fc6c"
     },
     "vendor/context-please/packages/core/test/vectordb/base-vector-database.test.ts:method:insertHybrid": {
@@ -16334,7 +16431,7 @@
           "base-vector-database.test"
         ]
       },
-      "createdAt": 1770143163639,
+      "createdAt": 1770143387405,
       "hash": "f7742ff760d3c19d"
     },
     "vendor/context-please/packages/core/test/vectordb/base-vector-database.test.ts:method:search": {
@@ -16353,7 +16450,7 @@
           "base-vector-database.test"
         ]
       },
-      "createdAt": 1770143163639,
+      "createdAt": 1770143387405,
       "hash": "858f42019ffbadf3"
     },
     "vendor/context-please/packages/core/test/vectordb/base-vector-database.test.ts:method:hybridSearch": {
@@ -16373,7 +16470,7 @@
           "base-vector-database.test"
         ]
       },
-      "createdAt": 1770143163639,
+      "createdAt": 1770143387405,
       "hash": "3dbf5adb5cebcce7"
     },
     "vendor/context-please/packages/core/test/vectordb/base-vector-database.test.ts:method:delete": {
@@ -16392,7 +16489,7 @@
           "base-vector-database.test"
         ]
       },
-      "createdAt": 1770143163639,
+      "createdAt": 1770143387405,
       "hash": "7939148157b5900b"
     },
     "vendor/context-please/packages/core/test/vectordb/base-vector-database.test.ts:method:query": {
@@ -16411,7 +16508,7 @@
           "base-vector-database.test"
         ]
       },
-      "createdAt": 1770143163639,
+      "createdAt": 1770143387405,
       "hash": "9b4e5c2308b16dc0"
     },
     "vendor/context-please/packages/core/test/vectordb/base-vector-database.test.ts:method:checkCollectionLimit": {
@@ -16432,7 +16529,7 @@
           "base-vector-database.test"
         ]
       },
-      "createdAt": 1770143163639,
+      "createdAt": 1770143387405,
       "hash": "456c5e8af174840a"
     },
     "src/encoder/embedding.ts:method:constructor": {
@@ -16447,7 +16544,7 @@
           "embedding"
         ]
       },
-      "createdAt": 1770143169600,
+      "createdAt": 1770143393212,
       "hash": "14ec615b0d28cc73"
     },
     "src/encoder/embedding.ts:method:embed": {
@@ -16462,7 +16559,7 @@
           "embedding"
         ]
       },
-      "createdAt": 1770143169600,
+      "createdAt": 1770143393212,
       "hash": "6131e89dfa274f10"
     },
     "src/encoder/embedding.ts:method:embedBatch": {
@@ -16478,7 +16575,7 @@
           "embedding"
         ]
       },
-      "createdAt": 1770143169600,
+      "createdAt": 1770143393212,
       "hash": "0fa5ad5553f3ca96"
     },
     "src/encoder/embedding.ts:method:getDimension": {
@@ -16494,7 +16591,7 @@
           "embedding"
         ]
       },
-      "createdAt": 1770143169600,
+      "createdAt": 1770143393212,
       "hash": "a885b2d1b91bb115"
     },
     "src/encoder/embedding.ts:method:getProvider": {
@@ -16510,7 +16607,7 @@
           "embedding"
         ]
       },
-      "createdAt": 1770143169600,
+      "createdAt": 1770143393212,
       "hash": "09d9b68181a25ce8"
     }
   }

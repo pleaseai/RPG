@@ -1,4 +1,4 @@
-import { EdgeType, type Node, type RepositoryPlanningGraph } from '../graph'
+import { type Edge, EdgeType, type Node, type RepositoryPlanningGraph } from '../graph'
 
 /**
  * Edge type for exploration
@@ -32,6 +32,16 @@ export interface ExploreResult {
 }
 
 /**
+ * Internal state for exploration
+ */
+interface ExploreState {
+  visited: Set<string>
+  nodes: Node[]
+  edges: Array<{ source: string; target: string; type: string }>
+  maxDepthReached: number
+}
+
+/**
  * ExploreRPG - Cross-view traversal
  *
  * Navigate along functional and dependency edges to discover
@@ -50,45 +60,126 @@ export class ExploreRPG {
   async traverse(options: ExploreOptions): Promise<ExploreResult> {
     const { startNode, edgeType, maxDepth = 3, direction = 'out' } = options
 
-    const visited = new Set<string>()
-    const nodes: Node[] = []
-    const edges: Array<{ source: string; target: string; type: string }> = []
-    let maxDepthReached = 0
-
-    const getEdgeTypes = (): EdgeType[] => {
-      if (edgeType === 'both') return [EdgeType.Functional, EdgeType.Dependency]
-      return [edgeType === 'functional' ? EdgeType.Functional : EdgeType.Dependency]
+    const state: ExploreState = {
+      visited: new Set<string>(),
+      nodes: [],
+      edges: [],
+      maxDepthReached: 0,
     }
 
-    const explore = (nodeId: string, depth: number) => {
-      if (depth > maxDepth || visited.has(nodeId)) return
-      visited.add(nodeId)
+    const edgeTypes = this.resolveEdgeTypes(edgeType)
+    this.exploreNode(startNode, 0, maxDepth, direction, edgeTypes, state)
 
-      const node = this.rpg.getNode(nodeId)
-      if (!node) return
+    return {
+      nodes: state.nodes,
+      edges: state.edges,
+      maxDepthReached: state.maxDepthReached,
+    }
+  }
 
-      nodes.push(node)
-      maxDepthReached = Math.max(maxDepthReached, depth)
+  /**
+   * Resolve edge type option to EdgeType array
+   */
+  private resolveEdgeTypes(edgeType: ExploreEdgeType): EdgeType[] {
+    if (edgeType === 'both') {
+      return [EdgeType.Functional, EdgeType.Dependency]
+    }
+    return [edgeType === 'functional' ? EdgeType.Functional : EdgeType.Dependency]
+  }
 
-      for (const et of getEdgeTypes()) {
-        if (direction === 'out' || direction === 'both') {
-          for (const edge of this.rpg.getOutEdges(nodeId, et)) {
-            edges.push({ source: edge.source, target: edge.target, type: edge.type })
-            explore(edge.target, depth + 1)
-          }
-        }
+  /**
+   * Recursively explore a node and its connected edges
+   */
+  private exploreNode(
+    nodeId: string,
+    depth: number,
+    maxDepth: number,
+    direction: 'out' | 'in' | 'both',
+    edgeTypes: EdgeType[],
+    state: ExploreState
+  ): void {
+    if (depth > maxDepth || state.visited.has(nodeId)) {
+      return
+    }
+    state.visited.add(nodeId)
 
-        if (direction === 'in' || direction === 'both') {
-          for (const edge of this.rpg.getInEdges(nodeId, et)) {
-            edges.push({ source: edge.source, target: edge.target, type: edge.type })
-            explore(edge.source, depth + 1)
-          }
-        }
-      }
+    const node = this.rpg.getNode(nodeId)
+    if (!node) {
+      return
     }
 
-    explore(startNode, 0)
+    state.nodes.push(node)
+    state.maxDepthReached = Math.max(state.maxDepthReached, depth)
 
-    return { nodes, edges, maxDepthReached }
+    for (const et of edgeTypes) {
+      this.processEdges(nodeId, depth, maxDepth, direction, et, state)
+    }
+  }
+
+  /**
+   * Process edges for a node in given direction
+   */
+  private processEdges(
+    nodeId: string,
+    depth: number,
+    maxDepth: number,
+    direction: 'out' | 'in' | 'both',
+    edgeType: EdgeType,
+    state: ExploreState
+  ): void {
+    if (direction === 'out' || direction === 'both') {
+      this.processOutEdges(nodeId, depth, maxDepth, direction, edgeType, state)
+    }
+
+    if (direction === 'in' || direction === 'both') {
+      this.processInEdges(nodeId, depth, maxDepth, direction, edgeType, state)
+    }
+  }
+
+  /**
+   * Process outgoing edges
+   */
+  private processOutEdges(
+    nodeId: string,
+    depth: number,
+    maxDepth: number,
+    direction: 'out' | 'in' | 'both',
+    edgeType: EdgeType,
+    state: ExploreState
+  ): void {
+    const edgeTypes = [edgeType]
+    for (const edge of this.rpg.getOutEdges(nodeId, edgeType)) {
+      this.addEdge(edge, state)
+      this.exploreNode(edge.target, depth + 1, maxDepth, direction, edgeTypes, state)
+    }
+  }
+
+  /**
+   * Process incoming edges
+   */
+  private processInEdges(
+    nodeId: string,
+    depth: number,
+    maxDepth: number,
+    direction: 'out' | 'in' | 'both',
+    edgeType: EdgeType,
+    state: ExploreState
+  ): void {
+    const edgeTypes = [edgeType]
+    for (const edge of this.rpg.getInEdges(nodeId, edgeType)) {
+      this.addEdge(edge, state)
+      this.exploreNode(edge.source, depth + 1, maxDepth, direction, edgeTypes, state)
+    }
+  }
+
+  /**
+   * Add an edge to the state
+   */
+  private addEdge(edge: Edge, state: ExploreState): void {
+    state.edges.push({
+      source: edge.source,
+      target: edge.target,
+      type: edge.type,
+    })
   }
 }

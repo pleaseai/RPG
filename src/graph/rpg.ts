@@ -272,8 +272,9 @@ export class RepositoryPlanningGraph {
    */
   getParent(nodeId: string): Node | undefined {
     const edges = this.getInEdges(nodeId, EdgeType.Functional)
-    if (edges.length === 0) return undefined
-    return this.getNode(edges[0]!.source)
+    const firstEdge = edges[0]
+    if (!firstEdge) return undefined
+    return this.getNode(firstEdge.source)
   }
 
   /**
