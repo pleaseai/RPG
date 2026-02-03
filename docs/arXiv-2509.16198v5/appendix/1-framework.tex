@@ -1,0 +1,342 @@
+\section{Appendix of Proposal-Level Graph Construction}
+
+The construction of the \graph{} is central to our framework, as it transforms high-level repository goals into a structured and persistent representation. The process starts with carefully designed prompting strategies for selecting repository-relevant functionalities from the global feature ontology, followed by iterative refinement to ensure both semantic coverage and modular coherence.
+
+\subsection{Algorithms of Functionality Graph Construction}
+\label{app:algo-proposal}
+
+\begin{algorithm}[H]
+\caption{Feature Sampling with Diversity-Aware Rejection Sampling}
+\label{alg:diverse-reject}
+\begin{algorithmic}[1]
+
+\Require Root node $R$; frequency library $F$; temperature $t$; 
+        per-tree sample size $S$; overlap threshold $\rho$; 
+        maximum number of retries $T_{\max}$
+        
+\Function{BaseSample}{$R,F,t,S$}
+  \State selected\_set $\gets \emptyset$
+  \For{$s = 1$ to $S$}
+    \State $C \gets \textsc{get\_children}(R)$
+    \If{$C = \emptyset$} \State \textbf{break} \EndIf
+    \State $f_i \gets F[i]$ for all $i \in C$
+    \State $p_i \gets f_i / \sum_{j \in C} f_j$ for all $i \in C$
+    \State $q_i \gets \textsc{TempTransform}(p_i, t)$ for all $i \in C$
+    \State cur\_node $\gets \textsc{sample\_node}(C, [q_1,q_2,\dots])$
+    \State selected\_set.\textsc{add}(cur\_node)
+    \State $R \gets$ cur\_node \Comment{move root downward for next step}
+  \EndFor
+  \State \Return selected\_set
+\EndFunction
+
+\vspace{0.5em}
+\Statex
+\Function{RejectSample}{$R,F,t,S,\rho,T_{\max}$}
+  \State best\_T $\gets \emptyset$; \quad best\_ovl $\gets +\infty$
+  \State $T^\star \gets \emptyset$
+  \For{$\tau = 1$ to $T_{\max}$} \Comment{retry up to $T_{\max}$ times}
+     \State $T_{\text{cand}} \gets \textsc{BaseSample}(R,F,t,S)$ \Comment{sample a candidate tree}
+     \State $\text{ovl} \gets \textsc{Overlap}(T_{\text{cand}}, \mathcal{S}_{\text{seen}})$ \Comment{compute overlap with seen nodes}
+     \If{$\text{ovl} < \text{best\_ovl}$}
+        \State best\_ovl $\gets \text{ovl}$; \quad best\_T $\gets T_{\text{cand}}$ \Comment{update best candidate so far}
+     \EndIf
+     \If{$\text{ovl} \le \rho$}
+        \State $T^\star \gets T_{\text{cand}}$ \Comment{accept immediately if overlap $\le$ threshold}
+        \State \textbf{break}
+     \EndIf
+  \EndFor
+  \If{$T^\star = \emptyset$}
+     \State $T^\star \gets$ best\_T \Comment{fallback: choose least-overlap candidate}
+  \EndIf
+  \State \Return $T^\star$ \Comment{return the final selected tree}
+\EndFunction
+
+\end{algorithmic}
+\end{algorithm}
+
+\paragraph{Rejection Sampling Algorithm} 
+We extend the base sampling strategy introduced in \textsc{EpiCoder}~\citep{wang2025epicoder}  by incorporating a diversity-aware rejection mechanism, as shown in Algorithm~\ref{alg:diverse-reject}. At each step, a candidate tree is accepted only if its overlap with previously sampled nodes is below a specified threshold; otherwise, the tree with the minimal overlap is returned. This encourages broader feature space exploration under a limited number of sampling iterations.
+\vspace*{-8pt}
+\paragraph{Repository-Aligned Subtree Selection} Algorithm~\ref{alg:subtree-selection-llm} outlines the procedure for constructing a repository-specific feature subtree from a global feature tree. The algorithm iteratively selects candidate features based on a combination of exploitation (retrieving top-scoring nodes) and exploration (sampling unvisited nodes). At each iteration, an LLM agent filters and ranks candidates, proposes missing but relevant features, and performs batch-level self-checks to ensure internal consistency. Accepted candidates are incorporated into the current subtree, and the process continues until a fixed iteration budget is reached. The resulting subtree captures features most relevant to the target repository while balancing coverage and quality.
+\begin{algorithm}[htbp]
+\caption{Repository-Specific Subtree Selection}
+\label{alg:subtree-selection-llm}
+
+\begin{algorithmic}[1]
+\Require Global Feature Tree $\mathcal{T}$; Repo description $\mathcal{R}$; iteration budget $K$; top-$k$; termination threshold $\tau$; batch size $B$; \texttt{LLM}
+\Ensure Repository-specific subtree $\mathcal{T}'$
+
+\State Initialize current repo tree $\mathcal{T}' \gets \emptyset$; missing features $\mathcal{C}_{\text{missing}} \gets \emptyset$; visited set $\mathcal{V} \gets \emptyset$ 
+
+\For{$k = 1 \dots K$} \Comment{iterate with given budget}
+  \State $\mathcal{E}_{\text{exploit}} \gets \textsc{RetrieveTopK}(\mathcal{T}, \mathcal{R}, k=\text{top-}k)$ \Comment{select promising nodes (exploit)}
+  \State $\mathcal{E}_{\text{explore}} \gets \textsc{SampleUnvisited}(\mathcal{T}, \mathcal{V})$ \Comment{sample unexplored nodes (explore)}
+  
+  \State \textbf{// Candidate selection via LLM}
+  \State $\mathcal{C}_{\text{exploit}} \gets \texttt{LLM}.\textsc{SelectExploitCandidates}(\mathcal{E}_{\text{exploit}}, \mathcal{T}', \mathcal{R})$ \Comment{filter exploit candidates}
+  \Statex 
+  \State $\mathcal{C}_{\text{explore}} \gets \texttt{LLM}.\textsc{SelectExploreCandidates}(\mathcal{E}_{\text{explore}}, \mathcal{T}', \mathcal{R})$ \Comment{filter explore candidates}
+  \State $\mathcal{C}_{\text{missing}} \gets \mathcal{C}_{\text{missing}} \cup \texttt{LLM}.\textsc{ProposeMissing}(\mathcal{T}', \mathcal{R})$ \Comment{generate novel candidates not in tree}
+  \State $\mathcal{C}_{\text{raw}} \gets \mathcal{C}_{\text{exploit}} \cup \mathcal{C}_{\text{explore}} \cup \mathcal{C}_{\text{missing}}$ \Comment{merge all candidate sources}
+  
+  \State \textbf{// Batch self-check (filter useful paths within each batch)}
+
+    \Statex 
+  \ForAll{$\text{batch } \mathcal{B} \subseteq \mathcal{C}_{\text{raw}}$ with $|\mathcal{B}| \le B$} \Comment{process in small batches}
+    \State $\mathcal{B}^{\star} \gets \texttt{LLM}.\textsc{SELFCHECK}(\mathcal{T}', \mathcal{B})$ \Comment{accept only consistent/relevant paths}
+    \State $\mathcal{T}' \gets \textsc{InsertPaths}(\mathcal{T}', \mathcal{B}^{\star})$ \Comment{expand repo-specific tree}
+    \State $\mathcal{V} \gets \mathcal{V} \cup \mathcal{B}$ \Comment{mark all evaluated paths as visited}
+  \EndFor
+\EndFor
+
+\State \Return $\mathcal{T}'$ \Comment{return final subtree}
+\end{algorithmic}
+\end{algorithm}
+\vspace*{-5pt}
+\paragraph{Repository Subtree Reorganization into the functionality graph}
+The algorithm operates in three stages to refactor subtree. In the first stage, an LLM agent iteratively extracts features from the input, organizing them into subgraphs until sufficient coverage of leaf nodes is reached. In the second stage, the agent reorganizes subgraphs by merging semantically related components or moving branches across groups to improve structure. Finally, each subgraph is refined to ensure naming consistency and hierarchical coherence, yielding a clean, interpretable functionality graph.
+
+\vspace*{-10pt}
+\subsection{Detailed Construction Process}
+\label{ref:construction_process}
+
+
+\begin{figure}[thbp]
+    \centering
+    \includegraphics[width=\linewidth]{figs/multi_repo_leaf_count_grid.png}
+    \caption{Evolution of Feature Tree Leaf Counts over Iterations Across Repositories, Highlighting the Differences Between qwen3 coder and o3-mini}
+    \label{fig:leaf_count_grid}
+\end{figure}
+
+
+\begin{wrapfigure}[15]{r}{0.48\textwidth}
+    \centering
+    % --- 图 ---
+    \includegraphics[width=\linewidth]{figs/global_distribution.png}
+    \caption{Distribution of feature counts under Level-1 categories in the global feature tree.}
+    \label{fig:token-frequency}
+\end{wrapfigure}
+
+\paragraph{Global Feature Tree} 
+The global feature tree consists of more than one million nodes across seven hierarchical levels (Table~\ref{tab:global-feature-tree}), reflecting a broad and diverse functional knowledge base. Nevertheless, the distribution of features across Level-1 categories is highly skewed (Figure~\ref{fig:token-frequency}). In particular, the \textit{data processing} branch dominates the tree, while many other categories contain only a small number of nodes, resulting in a pronounced long-tail distribution. Such bias is inherent to real-world software ecosystems, where data processing utilities are disproportionately prevalent compared to specialized functionalities. As a consequence, constructing a repository-specific \graph{} requires large-scale filtering and reorganization in order to extract the most relevant features and mitigate the imbalance of the global distribution.
+
+\input{tables/global_tree}
+
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.8\linewidth]{appendix/figures/all_repos_feature_distribution-o3-mini.png}
+    \caption{Final distribution of feature counts across subtrees for all repositories under \textit{o3-mini}. The figure shows how features are reorganized after the iterative construction process, reflecting the model's preference in balancing breadth and precision.}
+    \label{fig:final-dist-o3mini}
+\end{figure}
+
+\paragraph{Model-Specific Growth Patterns}
+Beyond the two traces in Fig.~\ref{fig:leaf_count_grid}. Concretely, \textit{qwen3-coder} exhibits the most open expansion, with a linear increase in leaf counts—maximizing coverage early but with a higher risk of admitting loosely related features. \textit{o3-mini} follows with a moderately aggressive trajectory, striking a balance between breadth and relevance. Together, these curves delineate points on the recall–precision spectrum of subtree selection strategies matched to repository needs.
+% \begin{figure}[ht]
+%     \centering
+%     \includegraphics[width=\linewidth]{appendix/figures/all_repos_feature_distribution-o4-mini.png}
+%     \caption{Final distribution of feature counts across subtrees for all repositories under \textit{o4-mini}. The figure shows how features are reorganized after the iterative construction process, reflecting the model's preference in balancing breadth and precision.}
+%     \label{fig:final-dist-o3mini}
+% \end{figure}
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=0.8\linewidth]{appendix/figures/all_repos_feature_distribution-qwen3-coder.png}
+    \caption{Final distribution of feature counts across subtrees for all repositories under \textit{qwen3-coder}. The figure shows how features are reorganized after the iterative construction process, reflecting the model's preference in balancing breadth and precision.}
+    \label{fig:final-dist-o3mini}
+\end{figure}
+
+
+\paragraph{From Global to Repository-Specific Distributions}
+The comparison between the global feature tree (Fig.\ref{fig:token-frequency}) and the final repository-specific profiles (Figs.\ref{fig:final-dist-o3mini}) highlights the transformative effect of model-guided reorganization. While the global tree is dominated by generic categories such as \texttt{data processing} and \texttt{user interaction}, the restructured graphs consistently downweight these high-frequency but less discriminative categories and elevate domain-relevant branches to the foreground. This shift effectively counteracts the inherent long-tail bias of the global ontology, redistributing feature density toward categories that better capture repository semantics. As a result, the constructed graphs are not only semantically sharper but also more functionally coherent with respect to the target domain. Between models, \textit{qwen3-coder} favors broad coverage with slower convergence and higher variance, whereas \textit{o3-mini} achieves a more balanced trade-off between generality and specificity. Together, these contrasting tendencies illustrate complementary strategies along the recall–precision spectrum, offering flexibility in matching feature selection to downstream repository needs.
+
+\begin{figure}[ht]
+    \centering
+
+    \begin{subfigure}{0.8\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{appendix/figures/all_repos_graph_distribution-o3-mini.png}
+        \caption{\texttt{o3-mini}}
+        \label{fig:repo-feature-graph-o3}
+    \end{subfigure}
+
+    \vspace{0.8em}
+
+    % \begin{subfigure}{0.8\linewidth}
+    %     \centering
+    %     \includegraphics[width=\linewidth]{appendix/figures/all_repos_graph_distribution-o4-mini.png}
+    %     \caption{\texttt{o4-mini}}
+    %     \label{fig:repo-feature-graph-o4}
+    % \end{subfigure}
+
+    \vspace{0.8em}
+
+    \begin{subfigure}{0.8\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{appendix/figures/all_repos_graph_distribution-qwen3-coder.png}
+        \caption{\texttt{qwen3-coder}}
+        \label{fig:repo-feature-graph-qwen}
+    \end{subfigure}
+
+    \caption{Leaf node counts distribution across feature subgraphs in each repository \graph{}, reorganized by different models.}
+    \label{fig:repo-feature-graph}
+\end{figure}
+
+\paragraph{Final Graph Structures}
+The final \graph{}s (Figure~\ref{fig:repo-feature-graph-o3}, \ref{fig:repo-feature-graph-qwen}) reveal how repository-specific functionalities are consolidated into coherent modular organizations. Compared to the more diffuse subtree distributions, the resulting graphs exhibit a markedly skewed allocation of functionalities across subgraphs: a small number of core subgraphs absorb the majority of features, while peripheral subgraphs remain lightweight. This reflects a natural modularization process, where dominant clusters correspond to central repository capabilities and minor clusters capture auxiliary or specialized functions. Between models, the partitioning strategies diverge: \textit{qwen3-coder} produces a larger number of medium-sized subgraphs, favoring breadth and parallel coverage; whereas \textit{o3-mini} yields a more balanced distribution, with several subgraphs of comparable size anchoring distinct semantic roles. These differences indicate that model-driven reorganization not only mitigates the global ontology’s long-tail bias but also shapes the granularity of modular decomposition, thereby influencing how functional responsibilities are distributed within the generated graph.
+
+
+\subsection{Prompt Template}
+
+\begin{promptbox}[title={Parts of Prompt Templates for Exploit–Explore Strategy in Subtree Selection}]
+\textbf{Prompt for Exploitation Paths}
+
+You are a GitHub project assistant responsible for expanding a repository's feature tree through path-based modifications to ensure alignment with the project's goals.  
+
+In each response, you will be given:\\
+- An Exploit Feature Tree: A curated subset of high-relevance feature paths.  \\
+- The Current Repository Feature Tree.  
+
+When returning selected paths, always use `"path/to/feature"` format with `/` as the separator.  
+
+\textbf{Objective (excerpt)}  
+
+Expand the Repository Feature Tree so it:  
+1. Aligns with the repository's purpose and scope. \\ 
+2. Achieves broad coverage across functional areas.  \\
+3. Ensures essential capabilities are represented.  \\
+4. Identify and fill critical gaps. 
+\ldots  
+
+\textbf{Selection Principles (excerpt)}  
+
+- Select exclusively from the Exploit Feature Tree.  \\
+- Include all non-duplicated, useful paths.  \\
+- Maintain structural balance by covering underrepresented modules.  \\
+\ldots  
+
+\textbf{Exclusions (excerpt)}  
+
+Skip generic infra (e.g., logging, configuration) and abstract goals (e.g., “optimize CPU usage”).  
+
+\textbf{Response Format}  
+
+Respond only with a Thought and an Action.  
+
+$<$think$>$ \\
+Reason about relevance and gaps in the Exploit Tree.
+$<$/think$>$ \\
+$<$action$>$ \\
+\{ \\
+  "all\_selected\_feature\_paths": [ \\
+      "path/to/feature", ... \\
+  ] \\
+\}\\
+$<$/action$>$ 
+
+\vspace{0.5em}
+\textbf{Prompt for Exploration Paths}
+
+You are a GitHub project assistant responsible for expanding a repository's feature tree through path-based modifications to ensure alignment with the project's goals.   \\
+In each response, you will be given: \\
+- A Sampled Feature Tree (Exploration Tree). \\  
+- The Current Repository Feature Tree.  
+
+When returning selected paths, always use `"path/to/feature"` format with `/` as the separator.  
+
+\textbf{Objective (excerpt)}  
+
+Improve and expand the Repository Feature Tree so that it:  
+- Aligns with the repository’s purpose and usage scenarios.  \\
+- Achieves comprehensive coverage of core and supporting areas. \\  
+\ldots  
+
+\textbf{Selection Principles (excerpt)}  
+
+- Select only from the Exploration Tree.  \\
+- Include actionable, domain-relevant features. \\  
+- Skip paths already present in the current Repository Tree. \\ 
+- Slight over-inclusion is acceptable.  \\
+\ldots  
+
+\textbf{Exclusions (excerpt)}  
+
+Do not select generic infra (e.g., logging, config) or large-scale features (e.g., cloud integrations).  
+
+\textbf{Response Format}  
+
+Respond only with a single \texttt{<think>} and \texttt{<action>} block.  
+
+$<$think$>$  \\
+Explain how each Exploration Tree path was evaluated and why
+it was included or excluded. \\
+$<$/think$>$ \\
+$<$action$>$ \\
+\{
+  "all\_selected\_feature\_paths": [ 
+      "path/to/feature", ... 
+  ] 
+\}\\
+$<$/action$>$ 
+\end{promptbox}
+
+\begin{promptbox}[title={Parts for Prompt Template for Retrieving Missing Features}]
+\textbf{Instruction} 
+You are a GitHub project assistant tasked with designing a functionally complete, production-grade repository.  \\
+Your goal is to identify and recommend \textbf{missing functional capabilities or algorithms} that the project should include,  
+based on its real-world purpose, scope, and domain expectations.  
+
+Focus on intended functionality — not the existing Feature Tree, which may be incomplete.  
+
+\textbf{Objective (excerpt)}  
+
+Identify groups of functionally concrete features that:  
+1. Align with the repository’s domain and purpose. \\ 
+2. Are entirely missing or only superficially represented. \\  
+3. Are specific and implementable (e.g., functions, classes, modules, algorithms). \\
+
+\textbf{Inclusion Criteria (excerpt)}  
+
+- Must be code-level operations (computation, transformation, algorithm, evaluation). \\  
+- Realistically implementable within the repository’s scope. \\  
+- Both standard and advanced algorithms are allowed.  \\
+
+\textbf{Exclusion Criteria (excerpt)} 
+
+Do not include abstract intentions (e.g., “improve accuracy”), generic infra (e.g., logging, connectors), placeholders, or duplicates.  
+
+\textbf{Naming Rules (excerpt)}  
+
+- Use 3–5 lowercase words, separated by spaces.  \\
+- Each leaf node must describe a concrete algorithm or behavior. \\  
+- Avoid vague terms, camelCase, or snake\_case.  \\
+
+\textbf{Structure Guidelines (excerpt)}  
+
+- Organize into logical hierarchies (up to 4–5 levels).  \\ 
+- Reflect computational architecture, not documentation taxonomy.  
+
+\textbf{Response Format}  
+Respond with ONLY a \texttt{<think>} and \texttt{<action>} block:  
+
+$<$think$>$\\
+Reason about functional domains, workflows, and algorithms that are
+missing from the current Feature Tree but expected in real-world use. \\
+$<$/think$>$ \\
+$<$action$>$\\
+\{ 
+  "missing\_features": \{
+    "root node": \{
+      "child node 1": [  
+        "leaf feature 1",
+        "leaf feature 2"
+      ],
+      "child node 2": [
+        "leaf feature 3", 
+         "leaf feature 4" 
+      ] 
+    \}
+  \} 
+\}\\
+$<$/action$>$\\
+\end{promptbox}

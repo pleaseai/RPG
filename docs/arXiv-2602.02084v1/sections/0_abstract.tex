@@ -1,0 +1,20 @@
+\begin{abstract}
+\label{sec:abstract}
+
+Current repository agents encounter a reasoning disconnect due to fragmented representations, as existing methods rely on isolated API documentation or dependency graphs that lack semantic depth. We consider repository comprehension and generation to be inverse processes within a unified cycle: generation expands intent into implementation, while comprehension compresses implementation back into intent. To address this, we propose \ours{}, a framework that generalizes the Repository Planning Graph (RPG) from a static generative blueprint into a unified, high-fidelity representation. \ours{} closes the reasoning loop through three mechanisms: (1) Encoding raw code into the RPG that combines lifted semantic features with code dependencies; (2) Evolving the topology incrementally to decouple maintenance costs from repository scale, reducing overhead by 95.7\%; and (3) Operating as a unified interface for structure-aware navigation. In evaluations, \ours{} establishes state-of-the-art repository understanding on SWE-bench Verified with 93.7\% Acc@5 and exceeds the best baseline by over 10\% on SWE-bench Live Lite. These results highlight our superior fine-grained localization accuracy in complex codebases. Furthermore, it achieves 98.5\% reconstruction coverage on RepoCraft, confirming RPG's high-fidelity capacity to mirror the original codebase and closing the loop between intent and implementation.
+
+\vspace{5pt}
+\coloremojicode{1F4C5}~ \textbf{Date}: \usvardate\today
+
+\faGithub~ \textbf{Code}: \href{https://github.com/microsoft/RPG-ZeroRepo}{https://github.com/microsoft/RPG-ZeroRepo}
+
+\coloremojicode{1F310}~ \textbf{Project}: \href{https://ayanami2003.github.io/RPG-Encoder/}{https://ayanami2003.github.io/RPG-Encoder/}
+
+\coloremojicode{1F4C4}~ \textbf{Prior Work}: \href{https://arxiv.org/abs/2509.16198}{https://arxiv.org/abs/2509.16198}
+
+\coloremojicode{2709}~ \textbf{Correspondence}: \href{janeluo1210@163.com}{janeluo1210@163.com}; \href{xinzhang3@microsoft.com}{xinzhang3@microsoft.com}
+
+
+
+\end{abstract}
+

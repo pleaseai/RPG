@@ -1,0 +1,77 @@
+\vspace*{-5pt}
+\section{Analysis}
+\vspace*{-5pt}
+\subsection{Analysis of the \graph{}’s Scalability}
+\begin{wrapfigure}[18]{r}{0.42\textwidth}
+  \vspace{-8pt}
+    \centering
+    \includegraphics[width=\linewidth]{figs/leaf_count.png}
+    \caption{Feature comparison of \ours{} (\texttt{o3-mini}) against strong baselines (Codex, Gemini CLI, Claude Code) across iterations.}
+    %Other frameworks are omitted due to too few %planned functionalities.}
+    \label{fig:leaf_count}
+\end{wrapfigure}
+
+\paragraph{\graph{} enables near-linear growth of repository functionalities.}
+A key question in repository-level generation is whether functionalities can continue to expand with iterative planning, or whether growth quickly stagnates. To examine this, we compute the number of planned features at each iteration on RepoCraft, averaging across 30 rounds for strong baselines (Claude Code, Gemini CLI, Codex CLI) and for \ours{}. As shown in Figure~\ref{fig:leaf_count}, \ours{} exhibits near-linear growth, surpassing 1,100 leaf features with \texttt{o3-mini}, while natural-language–based baselines display limited scalability: Claude Code grows steadily but with diminishing rates, Gemini CLI increases only slowly before converging by round 30, and Codex ceases to add features after just 4–5 iterations. These results demonstrate that the \graph{} provides a persistent and extensible planning substrate, enabling high-level goals to be refined into progressively richer functionalities. In contrast to natural-language representations, which degrade in coherence and stagnate, \graph{} sustains structural consistency and extensibility, establishing it as a stronger representational foundation for modeling repositories with increasingly complex functionalities and architectures.
+
+\begin{wrapfigure}[18]{r}{0.42\textwidth}
+    \centering
+    \includegraphics[width=\linewidth]{figs/line_ablation.png}
+    \caption{Scaling behavior of total lines of code across iteration steps on MLKit-Py}
+    \label{fig:scaling}
+    
+\end{wrapfigure}
+
+\paragraph{\graph{} ensures near-linear growth in repository size.}
+Functional scalability is only meaningful if it translates into executable code. To examine this, we analyze how repository size evolves across iterations, measured in lines of code (LOC). As shown in Figure~\ref{fig:scaling}, \ours{} sustains near-linear growth, surpassing 30K LOC within 30 iterations. In contrast, natural-language–based baselines stagnate: Claude Code and Gemini CLI plateau around 3–4K LOC, while Codex remains below 1K LOC. This divergence reflects a fundamental representational gap. Natural language planning rapidly accumulates inconsistencies across iterations, leading to fragmented specifications that fail to translate into coherent code. In contrast, the \graph{} maintains a persistent, extensible structure in which proposed functionalities are grounded in explicit modules, interfaces, and data flows. This grounding ensures that planned expansions are consistently realized as executable code, producing repositories that grow not only in size but also in organizational coherence. These results highlight the \graph{}’s ability to sustain repository scaling in both volume and integrity, positioning it as a robust representational basis for long-horizon code generation.
+\vspace*{-5pt}
+\subsection{Analysis of \graph{}’s Stability and Innovation Potential}
+
+\begin{wrapfigure}[13]{r}{0.42\textwidth}
+    \centering
+    \captionof{table}{Coverage and Novelty of the Constructed \graph{} over Iterations on MLKit-Py (o3-mini)}
+    \label{tab:cov_and_nov}
+    \resizebox{\linewidth}{!}{%
+      \begin{tabular}{lcc}
+        \toprule
+        \textbf{Iteration} & \textbf{Cov.} (\%) $\uparrow$ & \textbf{Nov.} (\%) $\uparrow$ \\
+        \midrule
+        5  & 70.2 & 4.6 (15.3/336.1)  \\
+        10 & 80.9 & 5.4 (29.01/542.0) \\
+        15 & 83.0 & 4.9 (39.0/796.0)  \\
+        20 & 85.1 & 5.2 (51.0/981.0)  \\
+        25 & 87.2 & 7.0 (73.5/1043.0) \\
+        30 (\textbf{ours}) & \textbf{95.7} & \textbf{7.9} (\textbf{99.4}/\textbf{1258.0}) \\
+        \bottomrule
+      \end{tabular}%
+    }
+\end{wrapfigure}
+\vspace*{-3pt}
+\paragraph{\graph{} supports comprehensive and extensible functionality.}
+A central challenge in repository-level generation is ensuring repositories not only satisfy user-specified requirements but also extend beyond them coherently. As shown in Table~\ref{tab:cov_and_nov}, \ours{} steadily increases coverage from 70.2\% at 5 iterations to nearly 96\% at 30, far surpassing baselines below 60\% (Table~\ref{tab:main_results}). Simultaneously, it maintains novelty, reaching 8\% with over 100 additional features, whereas baselines contribute fewer than 50. These results suggest that \graph{} functions as a persistent planning substrate, enabling repositories to achieve comprehensive coverage while supporting principled growth beyond reference implementations. Representative examples in Appendix~\ref{app:cov_novelty} validate that \graph{} sustains coherence in both coverage allocation and novel feature proposals.
+\vspace*{-8pt}
+\subsection{Analysis of Graph-Guided Localization}
+\begin{wrapfigure}[11]{r}{0.42\textwidth} % 稍微再缩一点
+  \captionsetup{type=table}
+  \scriptsize
+  \setlength{\tabcolsep}{2pt}
+  \renewcommand{\arraystretch}{1.25}
+  \captionof{table}{Ablation of Graph-Guided Localization on MLKit-Py (\texttt{o3-mini}). Steps (mean ± SD). ``wo/Graph'' denotes \ours{} without Graph.}
+  \label{tab:fig_search}
+    \resizebox{\linewidth}{!}{%
+    \begin{tabular}{lccc}
+      \toprule
+      \textbf{Category} & \textbf{IntTest} & \textbf{IncDev} & \textbf{Debug} \\
+      \midrule
+      \ours{}             & \textbf{6.2 $\pm$ 2.1} & \textbf{6.8 $\pm$ 1.8} & \textbf{5.8 $\pm$ 2.8} \\
+      - w/o Graph & 13.3 $\pm$ 11.1 & 10.8 $\pm$ 2.6 & 8.5 $\pm$ 2.9 \\
+      \bottomrule
+    \end{tabular}
+    }
+\end{wrapfigure}
+\vspace*{-3pt}
+\paragraph{Graph guidance accelerates agent localization.}
+We evaluate the impact of \graph{} guidance by comparing localization steps with and without graph support (Table~\ref{tab:fig_search}). Across Integration Testing (Int.~Test.), Incremental Development (Incr.~Dev.), and Debugging (Debug.), graph-guided search reduces effort by 30–50\%. This demonstrates that \graph{} equips agents with a principled navigation mechanism, enabling faster dependency tracing, more accurate bug localization, and smoother module integration, thereby improving repository development efficiency. Compared to natural language, \graph{} offers a global structural representation of the repository, enabling agents to localize targets from a functionality-wide perspective and accelerating the development cycle.
+
+% \paragraph{Graph guidance structures localization into systematic search.}
+% Figure~\ref{fig:leaf_compare} shows that with graph guidance, localization behavior follows a structured \textbf{CCG} pattern (Coarse Search $\rightarrow$ Content Inspection $\rightarrow$ Global Graph Exploration). The agent begins by traversing the \graph{} at a coarse level to identify high-level candidates, then inspects content-rich nodes for detailed signals, and finally explores semantically related structures across the graph. Termination calls rise as the search converges. This progression indicates that the \graph{} reshapes the agent’s behavior into a systematic, relation-aware search process, replacing ad hoc or repetitive probing.

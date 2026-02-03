@@ -1,0 +1,247 @@
+\section{Experiment Setup}
+\label{app:exp_setup}
+
+This appendix provides additional experimental setup details. It is organized into two parts:
+(i) repository reconstruction and (ii) repository understanding, including detailed baseline configurations and formal metric definitions.
+
+% ============================================================
+\subsection{Repository Understanding}
+\label{app:under_detail}
+
+\subsubsection{Experiment Setup}
+\label{app:under_params_baselines}
+
+We describe the implementation details and baseline configurations for the repository understanding task.
+Our goal is to facilitate reproducibility and ensure fair and controlled comparisons across different localization pipelines.
+
+\paragraph{Common evaluation protocol.}
+All methods are evaluated under a shared protocol, including identical datasets, evaluation metrics, and termination criteria.
+Unless otherwise specified, we use the same preprocessing, canonicalization, and ranking-based evaluation procedures described in Section~\ref{app:under_metrics}.
+
+\paragraph{Backbone models.}
+We evaluate multiple large language model backbones to assess the robustness of each localization pipeline to the underlying model choice, including
+\emph{o3-mini}(\texttt{o3-mini-20250131})~\citep{o3-mini}, \emph{GPT-4o}(gpt-4o-20241120)~\citep{gpt4o-system-card}, \emph{GPT-4.1}(gpt-4.1-20250414)~\citep{gpt4.1}, \emph{GPT-5}(gpt-5-20250807)~\citep{gpt5-system-card},
+\emph{DeepSeek-V3.1}~\citep{deepseek-v3.1}, and \emph{Claude-Sonnet-4.5}~\citep{anthropic_claude_sonnet_4_5}.
+
+\paragraph{Baselines.}
+We compare against representative repository-level localization pipelines:
+\textbf{Agentless}~\citep{xia2024agentless},
+\textbf{LocAgent}~\citep{chen2025locagent},
+\textbf{CoSIL}~\citep{jiang2025cosil},
+and \textbf{OrcaLoca}~\citep{yu2025orcaloca}.
+For each baseline, we retain the original algorithmic structure and design choices, making only minimal and necessary adaptations to the benchmark interface and backbone model to ensure compatibility with the shared evaluation protocol.
+
+% ----------------------------
+\paragraph{Agentless} Agentless~\citep{xia2024agentless} employs a staged non-agentic workflow: (1) \textbf{Direct Prediction}: LLM predicts suspicious files directly from the issue description. (2) \textbf{Filtered Retrieval}: It performs embedding search within a search space pruned of "irrelevant folders." (3) \textbf{Candidate Aggregation}: Results from both streams are merged to maximize file-level recall.(4) \textbf{Element Localization}: Granularity is narrowed from files to specific code elements. (5) \textbf{Edit Localization}: The system pinpoints line-level edit targets within those elements. To ensure reproducibility, we apply specific parameter constraints corresponding to these stages. \textbf{Globally}, across all ranking steps, we maintain \texttt{top\_n=10} and enforce determinism via \texttt{num\_samples=1}. \textbf{Stage-specific configurations} are set as follows: For \textbf{Retrieval (Step 2)}, we employ \texttt{jinaai/jina-embeddings-v3} as the embedding backbone and set \texttt{filter\_type="given\_files"} to strictly enforce the LLM-generated folder constraints. For \textbf{Fine-grained Localization (Steps 4-5)}, we enable the \texttt{--compress} flag, which optimizes context utilization by condensing verbose code details while preserving salient information for precise element and edit identification.
+
+% ----------------------------
+\paragraph{LocAgent} LocAgent~\citep{chen2025locagent} is a dependency-graph integrated agent framework for repository-level localization, which wraps the dependency graph into three tools: (1) \textbf{SearchEntity}: searches relevant files/classes/functions from text queries (supports fuzzy match). (2) \textbf{TraverseGraph}: multi-hop traverses dependency relations from a seed entity to surface connected candidates. (3) \textbf{RetrieveEntity}: fetches the full metadata and code of selected entities for final inspection and ranking. For LocAgent, we do not impose any restriction on the number of iterative search rounds. To maximize the chance of producing a valid final prediction, we set the maximum retry budget to $3$ attempts, and take the first well-formed output that satisfies the evaluation interface. We run LocAgent in \textbf{function-calling} mode with parallelism set to $1$.
+We impose no explicit limit on the number of iterative search steps, and set the maximum retry budget to $3$ to maximize the chance of producing a valid final output.
+% TODO: Describe graph-guided traversal and ranking.
+% TODO: Graph construction: dependency graph? call graph? file graph?
+% TODO: Budget mapping: traversal steps / ranking iterations under T.
+
+% ----------------------------
+\paragraph{CoSIL} CoSIL~\citep{jiang2025cosil} adopts a hybrid \emph{agentic and workflow} strategy that explores code dependencies via iterative call-graph searching: it first performs broad exploration with a module call graph, then expands to a function call graph for deeper search, while using pruning and reflection to control direction and stabilize tool-formatted outputs. Following CoSIL’s implementation details, We run CoSIL in \textbf{function-calling} mode with parallelism set to $1$. We do not explicitly cap its iterative graph-search rounds, and allow up to $3$ retries to maximize the chance of obtaining a valid final output.
+
+% TODO: Describe graph-based search / localization.
+% TODO: Graph definition and query mechanism.
+% TODO: Budget mapping under T.
+
+% ----------------------------
+\paragraph{OrcaLoca} OrcaLoca~\citep{yu2025orcaloca} combines agentic code-graph exploration with a \textbf{dynamic-analysis} signal, using \emph{bug reproduction} and \emph{regression tests} to guide iterative search and candidate verification. It introduces two key mechanisms: (1) \textbf{Action decomposition} factorizes the large search action space into a hierarchical decision process (e.g., first selecting candidate classes, then narrowing to files), and applies top-$k$ selection for class decomposition and file decomposition; (2) \textbf{Distance-aware context pruning} retains only a fixed budget of the most relevant context entries ($12$ in our setup), prioritizing code units that are closer to the current targets in the dependency/call graph to improve context efficiency. We follow the original setup: for action decomposition, it applies top-$k$ selection with $k{=}3$ for class decomposition and $k{=}2$ for file decomposition, and uses distance-aware context pruning with a budget of $12$ retained entries.
+
+% TODO: Describe exploration and planning loop (browse/search/read/decide).
+% TODO: Tooling (file open, search) and how each action is counted as a step.
+% TODO: Budget mapping under T.
+
+% TODO: Provide concrete settings used in experiments
+
+
+% ============================================================
+\subsubsection{Evaluation Targets at Multiple Granularities}
+To assess localization quality at different levels of abstraction, we evaluate predictions at two granularities using a unified canonicalization scheme.
+
+Each predicted or ground-truth location is mapped to a canonical string key through a granularity-specific formatter, ensuring consistent comparison across methods.
+
+\paragraph{File-level.}
+At the file level, a location is represented by its relative file path, \emph{e.g.},
+\texttt{path/to/file.py}. For an instance $i$, both the ground-truth set
+$G^{\text{file}}_i$ and the ranked prediction list $\pi^{\text{file}}_i$
+consist of file paths. File-level evaluation measures whether a method can correctly identify the source files that contain the relevant implementation.
+
+\paragraph{Function-level.}
+At the function level, a location is represented by a fully qualified entity identifier within a file, formatted as \texttt{file:entity}. To avoid artificial mismatches caused by syntactic variations, constructor annotations are normalized by removing the suffix
+\texttt{.\_\_init\_\_} when present. For example,
+\texttt{a/b.py:Foo.\_\_init\_\_} is canonicalized to \texttt{a/b.py:Foo}.
+
+Function-level evaluation assesses whether a method can precisely localize the relevant function or class definition beyond the file boundary.
+
+When function-level annotations are unavailable for a given instance, we restrict the evaluation to the file level.
+
+For both ground-truth and predicted locations, we remove duplicate entries while preserving their original order before computing all ranking metrics.
+
+
+
+% ============================================================
+\subsubsection{Metrics}
+\label{app:under_metrics}
+
+We formalize the ranking-based evaluation protocol for file-level localization.
+Let $\mathcal{I}$ denote the set of evaluation instances. For each instance
+$i \in \mathcal{I}$:
+\begin{itemize}
+    \item $G_i$ denotes the set of ground-truth relevant files (or locations),
+    with cardinality $|G_i| = m_i$.
+    \item $\pi_i = (p_{i,1}, p_{i,2}, \ldots, p_{i,|\pi_i|})$ denotes the ranked
+    prediction list produced by a method.
+\end{itemize}
+
+We define a binary hit indicator sequence $\mathbf{h}_i \in \{0,1\}^{|\pi_i|}$ as
+\begin{equation}
+    h_{i,j} =
+    \begin{cases}
+        1, & \text{if } p_{i,j} \in G_i,\\
+        0, & \text{otherwise},
+    \end{cases}
+    \quad j = 1,\ldots,|\pi_i|.
+\end{equation}
+
+All metrics are computed per instance and then averaged over $\mathcal{I}$.
+
+\paragraph{Accuracy@k (Acc@k).}
+Accuracy@k measures whether at least one ground-truth item appears within the top-$k$ predictions:
+\begin{equation}
+\mathrm{Acc@k} =
+\frac{1}{|\mathcal{I}|}
+\sum_{i\in\mathcal{I}}
+\mathbb{I}\!\left[
+\sum_{j=1}^{k} h_{i,j} \ge 1
+\right].
+\end{equation}
+In our experiments, we report results for $k \in \{1, 3, 5\}$.
+
+\paragraph{Recall.}
+Recall measures the fraction of ground-truth items that are successfully retrieved by the model across the entire ranked list:
+\begin{equation}
+\mathrm{Recall} =
+\frac{1}{|\mathcal{I}|}
+\sum_{i\in\mathcal{I}}
+\begin{cases}
+\frac{\sum_{j=1}^{|\pi_i|} h_{i,j}}{|G_i|}, & |G_i| > 0,\\
+0, & |G_i| = 0.
+\end{cases}
+\end{equation}
+
+\paragraph{Precision.}
+Precision measures the proportion of correct predictions among all retrieved items:
+\begin{equation}
+\mathrm{Precision} =
+\frac{1}{|\mathcal{I}|}
+\sum_{i\in\mathcal{I}}
+\frac{\sum_{j=1}^{|\pi_i|} h_{i,j}}{|\pi_i|}.
+\end{equation}
+
+
+% ============================================================
+\subsection{Details about Repository Reconstruction}
+\label{app:recon_detail}
+In this section, we provide a comprehensive description of the experimental setup, workflow logic, and termination protocols for the two comparative settings: ZeroRepo-Doc and ZeroRepo-RPG.
+
+\subsubsection{RepoCraft Benchmark Construction}
+To rigorous evaluate the capabilities of automated repository reconstruction, we adapted the \textbf{RepoCraft} benchmark. The benchmark consists of real-world Python repositories selected for their popularity and structural complexity. 
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=1.0\linewidth]{figs/doc_example.pdf}
+    \caption{Illustration of the hierarchical organization of the API documentation (left) and an example of the granular content within a specific documentation node (right), detailing function signatures and parameter descriptions.}
+    \label{fig:doc_structure}
+\end{figure}
+
+\input{tables/api_doc_stat}
+
+\paragraph{Documentation Compilation.}
+A critical component of our control setting is the provision of high-quality, official API documentation to serve as the ground-truth specification. We constructed this documentation dataset by processing the source files located in the \texttt{docs/} directory of each target repository. Specifically, we utilized \textbf{Sphinx}, the standard Python documentation generator, to compile the raw reStructuredText (reST) or Markdown files into a unified textual representation, as illustrated in Figure~\ref{fig:doc_structure}. This compiled documentation captures the official definitions of classes, functions, and module hierarchies, ensuring that the baseline agents operate on the exact same informational standard as human developers reading the official manual. As summarized in Table~\ref{tab:repo_stats}, the scale of this context is substantial: the compiled documentation spans a total of 7,320 files and over 2.5 million tokens across the six subject repositories, presenting a rigorous benchmark for unstructured long-context understanding.
+
+
+\subsubsection{Baselines}
+\label{app:recon_baseline}
+
+\begin{figure*}[t]
+    \centering
+    \includegraphics[width=\linewidth]{figs/zerorepo.pdf} % 请替换为你的实际文件名
+    \caption{Comparison of reconstruction workflows adapted from ZeroRepo. \textbf{Top (ZeroRepo-Doc):} The baseline relies on unstructured API documentation, requiring the agent to perform autonomous self-planning and manual state tracking. \textbf{Bottom (ZeroRepo-RPG):} Our method leverages the extracted RPG as a structured prior, enabling deterministic topological traversal and context-aware batched execution.}
+    \label{fig:workflow}
+\end{figure*}
+
+\paragraph{Backbone Framework: ZeroRepo.}
+We adopt ZeroRepo \citep{luo2025rpg_zerorepo}, a state-of-the-art framework originally architected for zero-shot repository generation, as our unified execution backbone. In its native configuration, ZeroRepo operates by synthesizing a Repository Planning Graph (RPG) from high-level user intents. This graph serves as a rigid execution schedule, guiding the agent through a topological traversal where functionalities are implemented and verified via Test-Driven Development (TDD). The framework's modular design decouples \textit{planning} (Graph Construction) from \textit{execution} (Code Generation), making it an ideal substrate for isolating and comparing different planning strategies.
+
+\paragraph{Adaptation for Reconstruction.}
+For the task of Repository Reconstruction, the objective shifts from hallucinating new systems to recovering existing ground-truth architectures. To evaluate the efficacy of our extracted RPG against unstructured information, we adapt ZeroRepo into two distinct configurations by modifying its planning source:
+
+\paragraph{ZeroRepo-Doc (Unstructured Baseline).}
+In this configuration, we lobotomize the graph-based planning engine to simulate a conventional developer workflow. The agent is initialized solely with the raw API documentation of the target repository and an empty progress tracking file. Without a pre-computed graph, the reconstruction proceeds in an open-ended, iterative loop:
+\begin{itemize}
+    \item \textbf{Self-Planning}: In each iteration, the agent must manually cross-reference its progress against the documentation to identify pending modules and formulate its own immediate objectives.
+    \item \textbf{Manual State Tracking}: The agent bears the full cognitive burden of global state maintenance, creating and updating a checklist to prevent redundant or missed implementations.
+    \item \textbf{Execution}: It employs standard TDD, writing reproduction scripts and code based on its self-determined plan. The process terminates only when the agent subjectively judges that all documented requirements are met.
+\end{itemize}
+
+\paragraph{ZeroRepo-RPG (Graph-Guided Reconstruction).}
+In our proposed configuration, we replace the generative planner with the \textbf{RPG-Encoder}. Instead of generating a graph from scratch, we inject the pre-extracted RPG as a ground-truth topological prior. This shifts the burden of planning from the agent to the substrate, transforming reconstruction into a deterministic traversal:
+\begin{itemize}
+    \item \textbf{Topological Traversal}: The extracted nodes are arranged into a strict \textbf{dependency-based topological order}. This guarantees that prerequisite modules are implemented before dependent ones, eliminating circular dependency errors.
+    \item \textbf{LLM-Driven Batching}: To optimize efficiency, an LLM scheduler previews the topological queue and dynamically aggregates semantically coherent nodes (e.g., a set of related utility functions) into a single implementation batch.
+    \item \textbf{Context-Aware Execution}: The system executes these batches sequentially. The agent is relieved of global planning and focuses purely on implementation, leveraging the explicit context ($f, \mathbf{m}$) provided by the graph nodes to generate code that aligns with the established architecture.
+\end{itemize}
+
+\subsubsection{Metrics}
+To rigorously evaluate the fidelity of repository reconstruction, we adapt metrics from RepoCraft~\citep{luo2025rpg_zerorepo} to capture four complementary dimensions: \emph{functional coverage}, \emph{spectral novelty}, \emph{executable fidelity}, and \emph{structural scale}.
+These metrics collectively assess (i) whether the ground-truth functionalities are successfully recovered, (ii) whether the model introduces extraneous capabilities, (iii) whether the reconstructed logic is semantically correct, and (iv) the complexity level of the realized system.
+
+\paragraph{Functionality Coverage (Recovery Rate).} 
+This metric quantifies the \textbf{recall} of the reconstruction process—specifically, what fraction of the ground-truth functional topology has been successfully restored.
+We define the reference feature set $\mathcal{C} = \{c_1, \dots, c_K\}$ using the ground-truth repository's functional signature (derived from developer documentation or canonical feature lists).
+The generated functionalities $\mathcal{G} = \{g_1, \dots, g_N\}$ are extracted from the reconstructed codebase.
+To measure alignment, we employ K-Means clustering with $\mathcal{C}$ as fixed centroids, mapping each generated feature $g_i$ to its nearest reference intent $f(g_i) \in \mathcal{C} \cup \{c_{\text{OOD}}\}$ (where $c_{\text{OOD}}$ denotes Out-Of-Distribution).
+Feature assignments are further refined by an LLM-as-Judge to mitigate semantic drift.
+Coverage is defined as the proportion of ground-truth categories "hit" by the reconstruction:
+\begin{equation}
+\text{Coverage} = \frac{1}{|\mathcal{C}|} \sum_{j=1}^{K} \mathbbm{1}\left[\exists g_i \in \mathcal{G}, \ f(g_i) = c_j \right].
+\end{equation}
+A higher coverage indicates that the RPG successfully guided the agent to rebuild a more complete functional footprint of the original system.
+
+\paragraph{Functionality Novelty (Extrapolation).} 
+In the context of reconstruction, pure imitation is not always possible; models may "hallucinate" valid but unrequested features.
+To capture this behavior, we measure the proportion of generated functionalities that fall outside the ground-truth taxonomy.
+Novelty is calculated as the fraction of generated nodes assigned to the $c_{\text{OOD}}$ centroid:
+\begin{equation}
+\text{Novelty} = \frac{1}{|\mathcal{G}|} \sum_{i=1}^{N} \mathbbm{1}\left[f(g_i) = c_{\text{OOD}} \right].
+\end{equation}
+While high novelty is desirable in open-ended generation, for reconstruction tasks, it characterizes the model's tendency to extrapolate or deviate from the strict blueprint provided by the RPG.
+
+\paragraph{Functionality Accuracy (Executable Fidelity).} 
+Coverage validates intent, but fidelity requires correctness.
+We evaluate the semantic equivalence of the reconstructed code against the original repository's behavior using adapted test suites.
+We report two statistics:
+\begin{itemize}
+    \item \textbf{Voting Rate (Feature Presence)}: The fraction of tasks where the validation pipeline confirms that a plausible implementation of the target algorithm exists. This measures the system's ability to \emph{instantiate} the planned logic.
+    \item \textbf{Success Rate (Semantic Correctness)}: The fraction of tasks where the reconstructed code passes the unit tests. This measures the \emph{executable validity} of the implementation.
+\end{itemize}
+
+\paragraph{Code-Level Statistics (Structural Scale).} 
+Finally, to ensure the reconstruction is not merely a skeletal prototype, we compare the scale of the generated codebase against realistic standards.
+Metrics are computed over filtered source files (excluding non-production artifacts like \texttt{tests} or \texttt{benchmarks}) to assess structural complexity:
+\begin{itemize}
+    \item \textbf{File Count}: Reflects the modular granularity and file-level organization.
+    \item \textbf{Normalized LOC}: Effective lines of code (excluding comments/blanks), proxying implementation volume.
+    \item \textbf{Code Token Count}: Total lexical tokens, indicating the density and complexity of the synthesized logic.
+\end{itemize}
+
+
+\subsubsection{Model Configuration} 
+\label{app:recon_impl}
+
+To strictly separate structural reasoning from coding capability, we utilize distinct models for the planning and execution phases. We employ \textbf{GPT-4o}~\citep{gpt4o-system-card} as the extraction engine to analyze the source repository and generate the Repository Planning Graph (RPG), leveraging its strong reasoning abilities to ensure high-fidelity structural representation. For the downstream reconstruction tasks within the ZeroRepo framework, we evaluate two different backbone models: \textbf{GPT-5-mini} and \textbf{GPT-4.1}. This variation allows us to assess the robustness of our method across models with differing parameter scales.
+

@@ -1,0 +1,82 @@
+\section{Ablation}
+\label{app:ablations}
+
+\subsection{Repository Reconstruction}
+\label{app:abl_recon}
+
+\paragraph{Ablation Setup}
+To rigorously isolate the contribution of hierarchical topological signals to repository reconstruction, we conduct a controlled ablation study on the \texttt{scikit-learn} repository from the \textbf{RepoCraft} benchmark. All experiments utilize \textbf{GPT-5-mini} as the underlying reasoning engine. We define two specific ablation settings to evaluate the agent's capability in structural inference:
+\begin{itemize}
+    \item \textbf{Function-Level Ablation (-Func):} In this setting, we strip fine-grained implementation guidance by removing metadata from leaf nodes (functions) and eliminating function-to-function dependency edges from the RPG. Consequently, the agent retains file-level boundaries but must autonomously deduce necessary function signatures from high-level features and independently derive their logical implementation order.
+    \item \textbf{File-Level Ablation (-File/-Func):} Building upon the function-ablated graph, we further excise all file-level structural information, including file nodes and directory paths. This setting retains only the abstract semantic feature descriptions. It forces the agent to perform \textit{ab initio} structural organization: the agent must semantically aggregate discrete features to synthesize file architectures, design class and function hierarchies, and plan the global implementation sequence without any reference directory topology.
+\end{itemize}
+
+\begin{table}[htbp]
+\centering
+\caption{Feature Distribution across Different Modes}
+\label{tab:feature_distribution}
+\small
+\setlength{\tabcolsep}{4.5pt}  
+\renewcommand{\arraystretch}{1.15}
+
+\begin{tabular}{l c c c c c c c c c}
+\toprule
+\multirow{2}{*}{\textbf{Category}} &
+\multicolumn{3}{c}{\textbf{Full Mode}} &
+\multicolumn{3}{c}{\textbf{Func Ablation}} &
+\multicolumn{3}{c}{\textbf{File Ablation}} \\
+\cmidrule(lr){2-4}\cmidrule(lr){5-7}\cmidrule(lr){8-10}
+& \textbf{Count} & \textbf{Features} & \textbf{Avg$\pm$Std}
+& \textbf{Count} & \textbf{Features} & \textbf{Avg$\pm$Std}
+& \textbf{Count} & \textbf{Features} & \textbf{Avg$\pm$Std} \\
+\midrule
+File     & 250  & 4943 & $19.77\pm20.94$ & 275  & 6664 & $24.23\pm27.11$ & 154  & 5175 & $33.60\pm36.99$ \\
+Class    & 524  & 3584 & $6.84\pm6.51$   & 815  & 3676 & $4.51\pm4.76$   & 466  & 2462 & $5.28\pm6.16$   \\
+Function & 1366 & 1359 & $0.99\pm0.07$   & 1597 & 2988 & $1.87\pm2.07$   & 1202 & 2713 & $2.26\pm2.25$   \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Analysis of Structural Clustering Behaviors.}
+Table~\ref{tab:feature_distribution} illustrates how different topological priors influence the LLM's organization strategies.
+(1) \textbf{Granular Encapsulation in Function Ablation.} When function-level metadata is removed, the model exhibits a preference for explicit object-oriented modeling. The significant increase in class count (524 $\to$ 815) and function definitions indicates that without specific procedural guidance, the agent tends to atomize logic into smaller, discrete class-based units for encapsulation.
+(2) \textbf{Feature Consolidation in File Ablation.} Conversely, the absence of file-level constraints shifts the behavior towards coarse-grained aggregation. The model consolidates features into fewer physical files (250 $\to$ 154), resulting in a higher feature density per file ($19.77 \to 33.60$). This suggests that without directory boundaries to enforce separation, the model inherently clusters semantically related functionalities into larger, unified modules rather than distributing them across a file system hierarchy.
+
+
+\subsection{Repository Understanding}
+\label{app:abl_understanding}
+
+\paragraph{Ablation Setup}
+To quantify the individual contributions of structural connectivity and semantic annotation, we evaluate \textbf{ZeroRepo-RPG} under two degradation protocols:
+\begin{itemize}
+    \item \textbf{Dependency Graph Ablation (w/o Dependency):} In this variant, we sever all static dependency edges ($\mathcal{E}_{\text{dep}}$) from the RPG. This ablation strictly limits the \texttt{ExploreRPG} tool by occluding execution logic; the agent loses the ability to traverse call graphs or trace upstream/downstream relationships, forcing it to navigate solely based on physical file hierarchy.
+
+    \item \textbf{Semantic Feature Ablation (w/o Feature):} Here, we strip high-level feature descriptions ($f$) and functional subordination edges ($\mathcal{E}_{\text{feature}}$). This degradation fundamentally impairs semantic navigability: the \texttt{SearchNode} tool regresses from intent-based retrieval to rigid keyword matching, while \texttt{ExploreRPG} ceases to display functional hierarchies. Furthermore, retrieved nodes lack refined summaries, compelling the agent to infer utility solely from raw identifiers.
+\end{itemize}
+
+\paragraph{Efficiency Degradation from Component Loss.}
+Table~\ref{tab:ablation_steps_cost} quantifies the operational overhead introduced by removing structural and semantic priors. The full \textbf{\ours{}} model consistently achieves the minimal trajectory length and cost across both LLMs, validating the synergistic efficiency of the complete graph. (1) \textbf{Impact of Semantic Features:} Removing feature metadata (\textit{w/o Features}) incurs the most significant penalty in exploration steps (e.g., rising from 8.22 to 9.23 on GPT-4o). Without high-level summaries to guide intent-based retrieval, the agent is forced into a trial-and-error loop, repeatedly fetching raw code to verify relevance, which drastically prolongs the search process.
+(2) \textbf{Impact of Dependency Structure:} Severing dependency edges (\textit{w/o Dependency}) primarily inflates token cost (e.g., $+\$0.09$ on GPT-4.1). Lacking explicit execution paths, the agent must manually traverse the file system and read broader contexts to deduce logical connections, leading to inefficient information consumption compared to the surgical navigation enabled by the full RPG.
+
+\begin{table}[htbp]
+\centering
+\caption{Impact of Dependency and Feature Ablations on Steps and Cost.}
+\label{tab:ablation_steps_cost}
+\small
+\setlength{\tabcolsep}{5.5pt}
+\renewcommand{\arraystretch}{1.15}
+
+\begin{tabular}{lcc|cc}
+\toprule
+\multirow{2}{*}{\textbf{Setting}} &
+\multicolumn{2}{c|}{\textbf{GPT-4o}} &
+\multicolumn{2}{c}{\textbf{GPT-4.1}} \\
+\cmidrule(lr){2-3}\cmidrule(lr){4-5}
+& \textbf{Avg Steps} & \textbf{Cost (\$)} & \textbf{Avg Steps} & \textbf{Cost (\$)} \\
+\midrule
+\ours{}               & \textbf{8.22} & \textbf{0.20} & \textbf{6.75} & \textbf{0.26} \\
+w/o Dependency            & 8.53 & 0.27 & 7.31 & 0.35 \\
+w/o Features              & 9.23 & 0.30 & 7.37 & 0.37 \\
+\bottomrule
+\end{tabular}
+\end{table}

@@ -1,0 +1,263 @@
+\section{Details about RepoCraft Benchmark}
+\label{appendix:repocraft}
+In this section, we describe the construction of the \textsc{RepoCraft} benchmark, covering four key aspects: the choice of repositories, the preparation of test data, the evaluation methodology, and the configuration of agent systems.
+
+\subsection{Repositories Selection}
+For the benchmark, we curated six representative open-source repositories: \textit{scikit-learn}, \textit{pandas}, \textit{Django}, \textit{statsmodels}, \textit{SymPy}, and \textit{requests}. These projects span diverse functional domains including machine learning, data analysis, web frameworks, statistical modeling, symbolic computation, and HTTP communication, thereby ensuring broad coverage of typical software development tasks. To prevent models from simply memorizing or retrieving solutions from training data, we deliberately anonymized the repositories by modifying their names and descriptions. Furthermore, the task instructions prohibit directly reusing the original implementations, requiring models to generate solutions guided only by feature specifications. This setup enforces a fairer evaluation, focusing on the models’ capacity for feature-grounded reasoning and code generation rather than exploitation of prior exposure.
+\input{tables/appendix_repo_info}
+
+\subsection{Evaluation Tasks Collection}
+\label{app:task_collect}
+To construct a diverse and reliable evaluation set, we developed an automated pipeline that extends and systematizes the collection of test functions from the official repositories. Our design leverages the fact that mature open-source projects typically include comprehensive test suites with robust inputs and ground-truth outputs, ranging from unit-level checks to integration-level workflows. These tests provide a principled source of evaluation data, ensuring that generated repositories are assessed on both algorithmic diversity and functional correctness.
+
+\paragraph{Test Function Harvesting.}  
+For each repository, we first gathered all available test functions and classes. These serve as the raw pool of evaluation candidates, capturing the behaviors developers themselves deemed important to verify.
+
+\paragraph{Hierarchical Categorization.}  
+Next, we organized the collected tests into a hierarchical taxonomy. At the top level, categories follow the natural modular structure used by human developers (e.g., \texttt{metrics}, \texttt{linear\_model}, \texttt{decomposition}). Within each category, we grouped related test classes and functions by algorithmic target. For example:
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize, breaklines=true]
+{
+  "metrics": {
+    "test_regression": {
+      "functions": {
+        "reg_targets": [
+          "test__check_reg_targets",
+          "test__check_reg_targets_exception"
+        ],
+        "regression_metrics": [
+          "test_regression_metrics",
+          "test_root_mean_squared_error_multioutput_raw_value",
+          ...
+        ],
+        "pinball_loss": [
+          "test_mean_pinball_loss_on_constant_predictions",
+          "test_dummy_quantile_parameter_tuning",
+          "test_pinball_loss_relation_with_mae"
+        ]
+      }
+    }
+  }
+}
+\end{lstlisting}
+This taxonomy mirrors repository semantics: higher levels correspond to broad functional modules, while deeper levels capture fine-grained algorithmic tests.
+
+\paragraph{Sampling and Filtering.}  
+To ensure balanced coverage, we applied the sampling algorithm(Alg \ref{alg:diverse-reject}) to draw representative subsets of test categories. Each sampled test was then refined into a task description that models could follow during generation. Finally, we filtered out cases irrelevant to core algorithmic behavior (e.g., string formatting checks, version consistency tests), retaining only tests that probe substantive computational functionality.
+
+\paragraph{Example Task Instance.}  
+To illustrate the outcome of the pipeline, consider the following task specification extracted from the \textit{Django} repository:
+
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize, breaklines=true]
+{
+    "category": "gis_migrations",
+    "file": "tests/gis_tests/gis_migrations/test_operations.py",
+    "module": "class OperationTests",
+    "cap": "spatial_index",
+    "functions": [
+        "test_create_model_spatial_index",
+        "test_alter_field_add_spatial_index",
+        "test_alter_field_remove_spatial_index",
+        "test_alter_field_nullable_with_spatial_index",
+        "test_alter_field_with_spatial_index"
+    ],
+    "task_query": "You are testing an algorithm that applies migration operations to GIS models, ensuring that spatial indexes on spatial fields are properly created, enabled, disabled, or removed as dictated by the migration specifications.",
+    "id": "django-0109"
+}
+\end{lstlisting}
+
+Each task is represented by (i) its repository category and file location, (ii) the associated test class and functions, and (iii) a natural-language query summarizing the algorithm under test. 
+
+\noindent
+Given such a task, the benchmark provides the \textbf{algorithm description}, its corresponding \textbf{input–output ground truth}, and the \textbf{test method}. 
+Evaluation is then conducted along two dimensions:  
+(1) \emph{Algorithm Presence} — whether the generated repository contains an implementation that matches the target algorithm, and  
+(2) \emph{Algorithm Correctness} — whether the adapted tests pass against the generated implementation, reflecting functional accuracy.  
+This dual perspective allows us to measure both coverage of algorithmic functionality and the reliability of generated implementations.
+
+
+\subsection{Agent Pipeline}
+The evaluation employs a three-stage agent pipeline to connect task descriptions with generated repositories and derive executable judgments of success.
+
+\paragraph{Stage 1: Localization.}  
+Given a task and its algorithmic description, the agent first explores the generated repository to locate candidate functions or classes that may implement the target algorithm. This step uses the exploration tools detailed in Appendix~\ref{appendix:loc}, and produces a set of potentially relevant code anchors.
+
+\paragraph{Stage 2: Majority-Vote Validation.}  
+To verify whether the localized candidates truly correspond to the target algorithm, we employ a majority-voting mechanism with a large language model (LLM). Each candidate is evaluated five times; the majority outcome is taken as the decision. If the validation fails, the pipeline triggers a re-localization attempt. The localization–validation loop is retried up to three times; if all attempts fail, the repository is judged to lack an implementation of the algorithm.
+
+\paragraph{Stage 3: Test Adaptation and Execution.}  
+For validated candidates, the agent then adapts the task’s reference test code. Concretely, the provided ground-truth test (including inputs, outputs, and checking methods) is rewritten to match the naming and structural conventions of the localized function or class. The adapted test is executed, and its outcome determines whether the generated implementation is functionally correct.
+
+\noindent
+This pipeline ensures that evaluation captures both \emph{coverage} (whether an algorithm is present in the generated repository) and \emph{correctness} (whether its implementation passes the adapted tests).
+
+
+\subsubsection{Metrics}
+\label{app:metrics}
+To comprehensively evaluate the generated repositories, we adopt a multi-dimensional set of metrics that capture four complementary aspects: \emph{functionality alignment}, \emph{novelty}, \emph{execution accuracy}, and \emph{code scale}. 
+The motivation is to move beyond a single success/failure judgment and instead characterize (i) whether the right algorithms are generated, (ii) whether new functionalities are introduced, (iii) whether these implementations actually work, and (iv) at what level of scale and complexity they are realized. 
+Together, these metrics provide a holistic view of the strengths and limitations of different models.
+
+\paragraph{Functionality Coverage.}  
+The first question is whether a model can reproduce the expected range of functionalities in a target repository. 
+We extract feature descriptions from both ground-truth repositories and generated repositories, and define a reference set of categories $\mathcal{C} = \{c_1, \dots, c_K\}$ based on official documentation and developer guidelines. 
+Generated functionalities $\mathcal{G} = \{g_1, \dots, g_N\}$ are obtained either from structured intermediate outputs (for agent-based methods) or directly from raw code (for baseline models).  
+To align generated features with reference categories, we perform K-Means clustering with $\mathcal{C}$ as fixed centroids, plus an additional centroid $c_{\text{OOD}}$ for out-of-distribution features. 
+Each generated feature $g_i$ is mapped to $f(g_i) \in \mathcal{C} \cup \{c_{\text{OOD}}\}$, with assignments further refined by an LLM-as-Judge to reduce semantic drift. 
+Coverage is then defined as the fraction of reference categories that are “hit” by at least one generated feature:
+\begin{equation}
+\text{Coverage} = \frac{1}{|\mathcal{C}|} \sum_{j=1}^{K} \mathbbm{1}\left[\exists g_i \in \mathcal{G}, \ f(g_i) = c_j \right].
+\end{equation}
+This metric quantifies how well the generated repository aligns with the intended functionality footprint.
+
+\paragraph{Functionality Novelty.}  
+Coverage alone cannot distinguish between a model that simply memorizes existing categories and one that proposes extensions. 
+To capture creativity and diversity, we measure the proportion of generated functionalities that fall outside the reference taxonomy. 
+Specifically, novelty is the fraction of generated nodes assigned to the out-of-distribution centroid $c_{\text{OOD}}$:
+\begin{equation}
+\text{Novelty} = \frac{1}{|\mathcal{G}|} \sum_{i=1}^{N} \mathbbm{1}\left[f(g_i) = c_{\text{OOD}} \right].
+\end{equation}
+High novelty indicates a tendency to introduce new capabilities, though such capabilities may or may not be useful. 
+This metric is therefore best interpreted jointly with accuracy (below).
+
+\paragraph{Functionality Accuracy.}  
+Even if a repository covers the right categories, the implementations must be correct. 
+We therefore evaluate repository-specific tasks by checking whether generated code passes adapted test cases. 
+Two complementary statistics are reported:  
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Voting Rate} — the fraction of tasks where the localization–validation pipeline confirms that an implementation of the target algorithm is present. This measures algorithm \emph{presence}.  
+  \item \textbf{Success Rate} — the fraction of tasks where the adapted tests execute successfully. This measures algorithm \emph{correctness}.  
+\end{itemize}
+Together, these metrics disentangle whether errors stem from missing functionality versus incorrect implementation.
+
+\paragraph{Code-Level Statistics.}  
+Finally, we report statistics on the scale and complexity of generated codebases. 
+This helps distinguish minimal solutions from more realistic, full-fledged repositories. 
+We compute these metrics over filtered Python source files, excluding directories unrelated to core functionality (e.g., \texttt{tests}, \texttt{examples}, \texttt{benchmarks}). 
+The reported quantities are:  
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{File Count}: number of valid source files, reflecting modular spread;  
+  \item \textbf{Normalized LOC}: effective lines of code after removing comments, docstrings, and blank lines, capturing implementation size;  
+  \item \textbf{Code Token Count}: number of tokens in normalized code, measured with a standard tokenizer, reflecting lexical complexity.  
+\end{itemize}
+
+\noindent
+By jointly considering these four dimensions (coverage, novelty, accuracy in terms of presence and correctness, and scale), we obtain a nuanced evaluation of generated repositories. This design ensures that models are rewarded not only for producing functional code, but also for producing diverse, accurate, and realistically sized repositories.
+
+\subsection{Ground-Truth Taxonomy for Coverage and Novelty Calculation}
+\label{app:taxonomy}
+\begin{jsonbox}[title=Ground Taxonomy for Coverage and Novelty Calculation on MLKit-Py]
+\begin{lstlisting}[basicstyle=\ttfamily\small]
+{
+  "Supervised learning": {
+    "Linear Models": [],
+    "Kernel ridge regression": [],
+    "Support Vector Machines": {
+      "SVC": [],
+      "SVR": [],
+      "OneClassSVM": []
+    },
+    "Nearest Neighbors": [],
+    "Gaussian Processes": [],
+    "Cross decomposition": [],
+    "Naive Bayes": [],
+    "Decision Trees": [],
+    "Ensembles": [],
+    "Multiclass and multioutput algorithms": [],
+    "Feature selection": [],
+    "Semi-supervised learning": [],
+    "Isotonic regression": [],
+    "Probability calibration": [],
+    "Neural network models (supervised)": []
+  },
+  "Unsupervised learning": {
+    "Gaussian mixture models": [],
+    "Manifold learning": [],
+    "Clustering": [],
+    "Biclustering": [],
+    "matrix factorization problems": [],
+    "Covariance estimation": [],
+    "Novelty and Outlier Detection": [],
+    "Density Estimation": [],
+    "Neural network models (unsupervised)": []
+  },
+  "Model selection and evaluation": {
+    "Cross-validation": [],
+    "Tuning the hyper-parameters of an estimator": [],
+    "Validation curves": {
+      "Classification Metrics": [],
+      "Regression Metrics": [],
+      "Clustering Metrics": []
+    }
+  },
+  "Inspection": {
+    "Permutation feature importance": []
+  },
+  "Dataset transformations": {
+    "Feature extraction": {
+      "Feature hashing": [],
+      "Text feature extraction": [],
+      "Image feature extraction": []
+    },
+    "Preprocessing data": {
+      "Scaling and Normalization": [],
+      "Discretization and Binarization": [],
+      "Polynomial and Non-linear Feature Engineering": [],
+      "Categorical Feature Encoding": [],
+      "Missing Value Imputation": [],
+      "Kernel and Matrix Centering": []
+    },
+    "Unsupervised dimensionality reduction": [],
+    "Random Projection": [],
+    "Kernel Approximation": [],
+    "Pairwise metrics, Affinities and Kernels": []
+  },
+  "Dataset loading utilities": {},
+  "Model persistence": []
+}
+\end{lstlisting}
+\end{jsonbox}
+
+
+
+\begin{jsonbox}[title=Ground Taxonomy for Coverage and Novelty Calculation on MLKit-Py]
+\begin{lstlisting}[basicstyle=\ttfamily\small]
+{
+  "requests": {
+    "Core Request Features": {
+      "HTTP Method Support": [],
+      "URL and Query Handling": [],
+      "Request Body Construction": [],
+      "Custom Headers": []
+    },
+    "Response Handling": {
+      "Response Body Access": [],
+      "JSON Processing": [],
+      "Response Metadata": [],
+      "Cookie Handling": []
+    },
+    "Session Management": {
+      "Session Persistence": [],
+      "Session Customization": []
+    },
+    "Advanced Configuration": {
+      "Timeouts and Retries": [],
+      "Redirect Control": [],
+      "Streaming and Chunking": [],
+      "Authentication Support": [],
+      "Event Hooks": []
+    },
+    "Security and Transport": {
+      "SSL Verification": [],
+      "Client Certificates": [],
+      "Transport Control": [],
+      "Proxy Support": []
+    },
+    "Compliance and Encoding": {
+      "Encoding Handling": [],
+      "Standards Compliance": [],
+      "Blocking Behavior": []
+    }
+  }
+}
+\end{lstlisting}
+\end{jsonbox}

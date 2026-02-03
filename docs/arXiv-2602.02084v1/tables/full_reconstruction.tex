@@ -1,0 +1,215 @@
+\FloatBarrier
+
+% =================Requests Repo=================
+\begin{table}[ht]
+\centering
+\caption{Main results on \textbf{Requests} reconstruction tasks in RepoCraft.}
+\label{tab:requests_full_reconstruction}
+\small
+\renewcommand{\arraystretch}{0.88}
+\setlength{\tabcolsep}{4pt}      
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{llccccc}
+\toprule
+\textbf{Framework} & \textbf{Backbone} & \textbf{Coverage} (\%) $\uparrow$ & \textbf{Pass Rate} (\%) $\uparrow$ & \textbf{\#Files} $\uparrow$ & \textbf{nLOC} $\uparrow$ & \textbf{Code Tokens} $\uparrow$ \\
+\midrule
+\rowcolor{modelbg}
+\multirow{1}{*}{Gold Projects (Reference)} 
+  & Human Developers 
+  & 100.0
+  & 93.0 / 93.0
+  & 17
+  & 2273
+  & 22,297 \\
+\midrule
+\multirow{2}{*}{ZeroRepo-Doc (Baseline)}
+  & GPT-4.1    & 54.6 & 13.2 / 32.1 & 7 & 968 & 8141 \\
+  & GPT-5-mini & 72.7 & 27.5 / 54.9 & 28 & 1,890 & 15,842 \\
+\midrule
+\multirow{2}{*}{\textbf{ZeroRepo-RPG (Ours)}}
+  & GPT-4.1    & 100.0 & 88.4 / 95.3 & 23 & 2901 & 24,734 \\
+  & GPT-5-mini & 100.0 & 88.4 / 95.3 & 20 & 3503 & 27,188 \\
+\bottomrule
+\end{tabular}%
+}
+\vspace*{-5pt}
+\end{table}
+
+% =================Sklearn Repo=================
+\begin{table}[ht]
+\centering
+\caption{Main results on \textbf{Scikit-Learn} reconstruction tasks in RepoCraft.}
+\label{tab:sklearn_full_reconstruction}
+\small
+\renewcommand{\arraystretch}{0.88}
+\setlength{\tabcolsep}{4pt}        
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{llccccc}
+\toprule
+\textbf{Framework} & \textbf{Backbone} & \textbf{Coverage} (\%) $\uparrow$ & \textbf{Pass Rate} (\%) $\uparrow$ & \textbf{\#Files} $\uparrow$ & \textbf{nLOC} $\uparrow$ & \textbf{Code Tokens} $\uparrow$ \\
+\midrule
+\rowcolor{modelbg}
+\multirow{1}{*}{Gold Projects (Reference)} 
+  & Human Developers 
+  & 100.0
+  & 99.5 / 100.0
+  & 185
+  & 65,927
+  & 592,187 \\
+\midrule
+\multirow{2}{*}{ZeroRepo-Doc (Baseline)}
+  & GPT-4.1    & 68.1 & 53.9 / 64.0 & 181 & 6,787 & 69,468 \\
+  & GPT-5-mini & 72.3 & 55.6 / 66.3 & 76 & 12,007 & 101,988 \\
+\midrule
+\multirow{2}{*}{\textbf{ZeroRepo-RPG (Ours)}}
+  & GPT-4.1    & 100.0 &  79.3 / 99.5 & 269 & 71,835 & 698,602 \\
+  & GPT-5-mini & 100.0 &  82.8 / 99.5 & 267  & 96,806  & 900,381  \\
+\bottomrule
+\end{tabular}%
+}
+\vspace*{-5pt}
+\end{table}
+
+% =================Sympy Repo=================
+\begin{table}[ht]
+\centering
+\caption{Main results on \textbf{Sympy} reconstruction tasks in RepoCraft.}
+\label{tab:sympy_full_reconstruction}
+\small
+\renewcommand{\arraystretch}{0.88} 
+\setlength{\tabcolsep}{4pt} 
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{llccccc}
+\toprule
+\textbf{Framework} & \textbf{Backbone} & \textbf{Coverage} (\%) $\uparrow$ & \textbf{Pass Rate} (\%) $\uparrow$ & \textbf{\#Files} $\uparrow$ & \textbf{nLOC} $\uparrow$ & \textbf{Code Tokens} $\uparrow$ \\
+\midrule
+\rowcolor{modelbg}
+\multirow{1}{*}{Gold Projects (Reference)} 
+  & Human Developers 
+  & 100.0
+  & 97.8 / 100.0
+  & 699
+  & 218,924
+  & 943,873 \\
+\midrule
+\multirow{2}{*}{ZeroRepo-Doc (Baseline)}
+  & GPT-4.1    & 33.3 & 36.4 / 48.2 & 29 & 605 & 5347 \\
+  & GPT-5-mini & 66.7 & 52.5 / 64.7 & 135 & 10,454 & 99,460 \\
+\midrule
+\multirow{2}{*}{\textbf{ZeroRepo-RPG (Ours)}}
+  & GPT-4.1    & 91.7 & 63.6 / 89.6 & 220 & 59,283 & 565,680 \\
+  & GPT-5-mini & 95.8 & 81.4 / 96.6 & 288 & 80,534 & 686,951  \\
+\bottomrule
+\end{tabular}%
+}
+\vspace*{-5pt}
+\end{table}
+
+% =================Statsmodels Repo=================
+\begin{table}[ht]
+\centering
+\caption{Main results on \textbf{Statsmodels} reconstruction tasks in RepoCraft.}
+\label{tab:statsmodels_full_reconstruction}
+\small
+\renewcommand{\arraystretch}{0.88}
+\setlength{\tabcolsep}{4pt}        
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{llccccc}
+\toprule
+\textbf{Framework} & \textbf{Backbone} & \textbf{Coverage} (\%) $\uparrow$ & \textbf{Pass Rate} (\%) $\uparrow$ & \textbf{\#Files} $\uparrow$ & \textbf{nLOC} $\uparrow$ & \textbf{Code Tokens} $\uparrow$ \\
+\midrule
+\rowcolor{modelbg}
+\multirow{1}{*}{Gold Projects (Reference)} 
+  & Human Developers 
+  & 100.0
+  & 96.8 / 100.0
+  & 271
+  & 83,325
+  & 893,824 \\
+\midrule
+\multirow{2}{*}{ZeroRepo-Doc (Baseline)}
+  & GPT-4.1    & 66.7 & 71.7 / 75.9 & 87 & 5,235 & 55,688 \\
+  & GPT-5-mini & 75.0 & 57.8 / 79.5 & 163 & 25,472 & 274,983 \\
+\midrule
+\multirow{2}{*}{\textbf{ZeroRepo-RPG (Ours)}}
+  & GPT-4.1    & 96.6 & 89.8 / 98.9 & 303 & 66,045 & 709,424 \\
+  & GPT-5-mini & 97.7 & 91.4 / 100.0 & 297 & 92,618 & 942,411 \\
+\bottomrule
+\end{tabular}%
+}
+\vspace*{-5pt}
+\end{table}
+
+% =================Pandas Repo=================
+\begin{table}[ht]
+\centering
+\caption{Main results on \textbf{Pandas} reconstruction tasks in RepoCraft.}
+\label{tab:pandas_full_reconstruction}
+\small
+\renewcommand{\arraystretch}{0.88}
+\setlength{\tabcolsep}{4pt}    
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{llccccc}
+\toprule
+\textbf{Framework} & \textbf{Backbone} & \textbf{Coverage} (\%) $\uparrow$ & \textbf{Pass Rate} (\%) $\uparrow$ & \textbf{\#Files} $\uparrow$ & \textbf{nLOC} $\uparrow$ & \textbf{Code Tokens} $\uparrow$ \\
+\midrule
+\rowcolor{modelbg}
+\multirow{1}{*}{Gold Projects (Reference)} 
+  & Human Developers 
+  & 100.0
+  & 99.0 / 100.0
+  & 217
+  & 106,447
+  & 943,873 \\
+\midrule
+\multirow{2}{*}{ZeroRepo-Doc (Baseline)}
+  & GPT-4.1    & 81.8 & 63.4 / 82.5 & 726 & 14,770 & 127,326 \\
+  & GPT-5-mini & 75.0 & 56.2 / 81.4 & 180 & 14,610 & 125,957 \\
+\midrule
+\multirow{2}{*}{\textbf{ZeroRepo-RPG (Ours)}}
+  & GPT-4.1    & 97.4 & 89.5 / 92.8 & 146 & 21,657 & 201,484 \\
+  & GPT-5-mini & 97.4 & 80.1 / 97.4 & 115 & 30,066 & 249,094 \\
+\bottomrule
+\end{tabular}%
+}
+\vspace*{-5pt}
+\end{table}
+
+% =================Django Repo=================
+\begin{table}[ht]
+\centering
+\caption{Main results on \textbf{Django} reconstruction tasks in RepoCraft.}
+\label{tab:django_full_reconstruction}
+\small
+\renewcommand{\arraystretch}{0.88}
+\setlength{\tabcolsep}{4pt}       
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{llccccc}
+\toprule
+\textbf{Framework} & \textbf{Backbone} & \textbf{Coverage} (\%) $\uparrow$ & \textbf{Pass Rate} (\%) $\uparrow$ & \textbf{\#Files} $\uparrow$ & \textbf{nLOC} $\uparrow$ & \textbf{Code Tokens} $\uparrow$ \\
+\midrule
+\rowcolor{modelbg}
+\multirow{1}{*}{Gold Projects (Reference)} 
+  & Human Developers 
+  & 100.0 
+  & 83.0 / 100.0
+  & 681
+  & 109,457
+  & 917,622 \\
+\midrule
+\multirow{2}{*}{ZeroRepo-Doc (Baseline)}
+  & GPT-4.1    & 83.3 & 61.3 / 77.5 & 228 & 8114 & 687,718 \\
+  & GPT-5-mini & 83.3 & 66.2 / 81.8 & 276 & 16,053 & 135,523 \\
+\midrule
+\multirow{2}{*}{\textbf{ZeroRepo-RPG (Ours)}}
+  & GPT-4.1    & 100.0 & 96.2 / 98.1 & 408 & 43,468  & 391,260 \\
+  & GPT-5-mini & 100.0 & 91.9 / 97.5 & 369 & 61,702  & 496,570 \\
+\bottomrule
+\end{tabular}%
+}
+\vspace*{-5pt}
+\end{table}
+
+\FloatBarrier
+
+

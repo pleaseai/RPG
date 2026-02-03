@@ -1,0 +1,59 @@
+\section{More Results}
+\label{app:results}
+
+\subsection{Repository Reconstruction}
+\label{app:results_recon}
+In this section, we provide detailed per-repository results on RepoCraft, reporting performance for each repository individually to complement the main aggregated statistics.
+\input{tables/full_reconstruction}
+
+\paragraph{Analysis of Repository-Specific Performance.} The breakdown of results across six diverse repositories reveals consistent patterns confirming the scalability of \ours{}. First, in large-scale scientific libraries like Scikit-Learn and Sympy, the documentation-based baseline suffers from severe structural collapse, often recovering less than 20\% of the file structure (e.g., only 29 files for Sympy with GPT-4.1). In contrast, \ours{} leverages hierarchical planning to maintain architectural integrity, reconstructing code volumes that closely approximate the human-written gold standard (e.g., generating $\sim$900k tokens for Scikit-Learn). Second, for frameworks with intricate inter-dependencies like Django, \ours{} achieves 100\% coverage and a pass rate exceeding 96\%, demonstrating that topological constraints effectively guide the agent through complex logic flows where linear documentation fails. Ultimately, across all datasets, \ours{} consistently bridges the gap between sparse intent and dense implementation, proving its robustness as a domain-agnostic substrate for repository reconstruction.
+
+\subsection{Agent Behavior}
+\label{app:results_behavior}
+
+\begin{figure}[ht]
+    \centering
+    \includegraphics[width=1.0\linewidth]{figs/model_tool_ratio.pdf} 
+    \caption{\label{fig:tool_usage_analysis} Breakdown of the Tool/Action ratio for each tool across different models. This metric reflects the frequency of specific tool invocations relative to the total actions performed.}
+\end{figure}
+
+We calculated the tool-to-action ratios across all evaluation episodes to quantify the behavioral strategies of each model, as shown in Figure \ref{fig:tool_usage_analysis}. The results indicate that the agents generally maintain a robust balance between keyword-based retrieval and structural navigation. While \texttt{SearchNode} serves as a foundational tool for locating initial entry points, the significant utilization of \texttt{ExploreRPG}—especially by high-performing models like GPT-4o—highlights its critical role in the reasoning loop. This distribution suggests that capable agents effectively recognize the value of \texttt{ExploreRPG}, strategically employing it to leverage topological connections and gain a holistic understanding of the codebase, rather than relying solely on local keyword matches.
+
+\subsection{Error Analysis}
+\label{app:err_analysis}
+
+\input{tables/error_analysis}
+
+To look beyond aggregate metrics and understand the behavioral divergence between RPG-enhanced agents and baselines, we conducted a manual qualitative analysis on a stratified sample of failure cases. Based on the taxonomy defined in Table~\ref{tab:error_taxonomy}, we observe distinct error patterns that highlight the structural advantages of RPG while exposing persistent challenges in agentic reasoning.
+
+
+\begin{figure}[htbp]
+    \centering
+    % 请确保文件名与你项目中的实际文件名一致
+    \includegraphics[width=\linewidth]{figs/t1_error.pdf}
+    \caption{Case study of tool misuse and execution failure. COSIL exhibits \textbf{Wrong Tool Selection} by investigating unrelated functions (e.g., \texttt{wcs\_to\_celestial\_frame}) instead of the core issue (`world\_to\_pixel`), leading to persistent environment errors and a failure to reproduce the bug.}
+    \label{fig:t1_error_case_study}
+    \vspace*{-10pt}
+\end{figure}
+
+\begin{figure*}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{figs/t3_error.pdf}
+    \caption{Case study of a search and exploration failure. The agent attempts to resolve a \texttt{lambdify} bug in SymPy but fails due to \textbf{Insufficient Coverage (T3)}, missing critical code generation logic, and \textbf{Query Formulation Errors (T4)}, where searches were too broad to locate the root cause.}
+    \label{fig:t3_error_case_study}
+    \vspace*{-10pt}
+\end{figure*}
+
+
+\subsection{Cost Analysis}
+\label{app:cost_analysis}
+
+\input{tables/cost_full}
+
+Beyond effectiveness and behavioral patterns, we further analyze the computational cost of different agents to assess their practical efficiency. We report the average token consumption and monetary cost per instance across all evaluation episodes.
+
+Overall, RPG-enhanced agents incur moderately higher costs than lightweight baselines due to more frequent structured exploration and reasoning steps. However, this increase is well-controlled and scales sublinearly with performance gains, indicating that improved task success is not achieved through excessive tool usage or redundant interactions. In particular, high-performing models demonstrate a favorable cost--performance trade-off by allocating additional budget primarily to informative exploration rather than repeated failed actions.
+
+We note that for \textsc{LocAgent} with \texttt{o3-mini}, the reported cost can be unusually low, as the agent often terminates after only 1--2 rounds and may occasionally produce an answer without invoking any tool. This reflects early termination behavior rather than efficient full-loop reasoning, and is specific to the \textsc{LocAgent}--\texttt{o3-mini} pairing.
+
+For completeness, we provide the full cost breakdown for all models, including prompt tokens, completion tokens, and estimated monetary cost, in Table~\ref{tab:full_efficiency_analysis}.

@@ -1,0 +1,36 @@
+
+\begin{algorithm}[h]
+\caption{Bottom-Up Path Metadata Propagation}
+\label{alg:metadata-propagation}
+\begin{algorithmic}[1]
+\Require Feature Tree $T = (V, E)$, Leaf paths $\text{path}(\cdot)$
+\Ensure Grounded path assignments $\hat{\pi}(v)$ for all $v \in V$
+
+\State \textbf{Function} \textsc{Propagate}$(v)$:
+    \If{$v$ is Leaf}
+        \State \Return $\{ \text{dir}(\text{path}(v)) \}$ \Comment{Base case: Return physical directory}
+    \EndIf
+    
+    \State $\mathcal{S} \leftarrow \emptyset$
+    \For{$child \in \text{Children}(v)$}
+        \State $\mathcal{S} \leftarrow \mathcal{S} \cup \textsc{Propagate}(child)$ \Comment{Recursively aggregate child coverage}
+    \EndFor
+    
+    \State $\hat{\pi}(v) \leftarrow \textsc{ComputeLCA}(\mathcal{S})$ \Comment{Abstract concrete paths into logical scopes}
+    \State \Return $\mathcal{S}$ \Comment{Propagate full coverage to upper layers}
+\State \textbf{End Function}
+
+\Statex
+\State \textbf{Function} \textsc{ComputeLCA}$(\mathcal{S})$:
+    \State $Trie \leftarrow \textsc{BuildTrie}(\mathcal{S})$ \Comment{Construct Prefix Tree from path set}
+    \State $L \leftarrow \emptyset$
+    \For{$node \in \textsc{PostOrder}(Trie)$} \Comment{Bottom-up traversal for optimal pruning}
+        \If{$node.\text{is\_branching}()$ \textbf{or} $node.\text{is\_terminal}()$}
+             \State $L.\text{add}(node.\text{path})$ \Comment{Identify meaningful functional boundary}
+             \State \textsc{PruneSubtree}$(node)$ \Comment{Consolidate redundant sub-paths}
+        \EndIf
+    \EndFor
+    \State \Return $L$
+\State \textbf{End Function}
+\end{algorithmic}
+\end{algorithm}

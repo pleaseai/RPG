@@ -1,0 +1,42 @@
+\begin{tcblisting}{
+  title={ExploreRPG Tool Prompt},
+  colback=lightgray,
+  colframe=black,
+  arc=1mm,
+  boxrule=1pt,
+  left=1mm,right=1mm,top=1mm,bottom=1mm,
+  breakable,
+  fontupper=\scriptsize\ttfamily,
+  listing only,
+  listing engine=listings,
+  listing options={
+    breaklines=true,
+    breakatwhitespace=false,
+    breakindent=0pt,
+    prebreak=\mbox{},
+    postbreak=\mbox{},
+    keepspaces=true,
+    columns=fullflexible,
+    tabsize=4
+  }
+}
+## Tool Name: ExploreRPG
+### Description
+- Explore call chains and functional paths in the Repository Planning Graph.
+- Starting from known code or feature entities, traverse upstream/downstream to discover related functions, files, and feature nodes.
+### Parameters
+{
+  "tool_name": "ExploreRPG",
+  "parameters": {
+    "start_code_entities": "<Optional list of existing code entities in the current repository (file paths, classes, functions, or qualified names). Non-existent/speculative entities may be ignored or rejected.>",
+    "start_feature_entities": "<Optional list of existing feature paths in the current repository. Non-existent entries may be ignored or rejected.>",
+    "direction": "<Traversal direction: 'upstream' (dependencies), 'downstream' (dependents), or 'both'. Default: 'downstream'.>",
+    "traversal_depth": "<Maximum traversal depth. Default: 2. Use -1 for unlimited depth.>",
+    "entity_type_filter": "<Optional filter restricting traversal node types. Valid values: 'directory', 'file', 'class', 'function', 'method'.>",
+    "dependency_type_filter": "<Optional filter restricting dependency edge types. Valid values: 'composes', 'contains', 'inherits', 'invokes', 'imports'.>"
+  }
+}
+### Returns
+- Connected nodes and edges (code or feature view)
+- Hints for invalid or fuzzy matches
+\end{tcblisting}

@@ -1,0 +1,858 @@
+\section{Appendix of Implementation-Level Graph Construction}
+This section illustrates how the \graph{} is enriched with file organization and function design to form concrete code structures.
+
+\subsection{Prompt Template for Implementation-Level Graph Construction}
+We provide the prompt templates that guide the transformation from graph subtrees into modular code skeletons.
+
+\begin{promptbox}
+You are a system architect tasked with designing the inter-subtree data flow for a Python software repository. Your goal is to define how data moves between functional modules (subtrees) — including who produces it, who consumes it, and how it is transformed — and express this as a structured, directed graph.\\
+
+\#\# Data Flow \\
+\#\#\# Format 
+
+[
+    \{
+        "from": "$<$source subtree name$>$",
+        "to": "$<$target subtree name$>$",
+        "data\_id": "$<$unique name or description of the data$>$",
+        "data\_type": "$<$type or structure of the data$>$",
+        "transformation": "$<$summary of what happens to the data, if anything$>$"
+    \},
+    ...
+]
+
+\#\#\# Validity \& Structural Constraints \\
+2. Full Connectivity Required \\
+    - Every subtree listed in \{trees\_names\} must appear in at least one edge.\\
+    - No subtree should be isolated or unused. \\
+3. Acyclic Structure \\
+    - The data flow must form a Directed Acyclic Graph (DAG): \\
+4. Field Guidelines \\
+    - `data\_id`: Use unique, descriptive names to identify each data exchange. \\
+    - `data\_type`: Use precise and interpretable types to describe the structure, format, or abstract role of the data being passed. \\
+    - `transformation`: Describe how the data is modified, filtered, enriched, or combined. If unchanged, say `"none"`. \\
+... \\
+
+\#\# Output Format \\
+$<$solution$>$ 
+
+[ 
+    \{ 
+        "from": "...", 
+        "to": "...", 
+        "data\_id": "...", 
+        "data\_type": "...", 
+        "transformation": "..." 
+    \}, 
+    ... 
+]
+$<$/solution$>$
+\end{promptbox}
+
+\begin{promptbox}[title={Parts of Prompt Templates for Raw Skeleton Mapping}]
+You are a repository architect responsible for designing the initial project structure of a software repository in its early development stage. Your task is to design a clean, modular file system skeleton that organizes the repository into appropriate top-level folders based on these subtrees. \\
+
+\#\# Requirements
+
+1. The folder structure must clearly separate each functional subtree and reflect logical domain boundaries. \\
+2. Folder names must be concise, meaningful, and follow Python conventions (e.g., `snake\_case`). Names should feel natural and developer-friendly. \\
+3. Folder names do not need to match subtree names exactly.  \\
+   - Treat subtree names as functional labels.  \\
+   - Rename folders as needed for clarity and convention, while preserving the correct mapping.  \\
+   - When assigning a subtree to a folder, include the exact subtree name in the mapping (e.g., `"ml\_models": ["Machine Learning"]`). \\
+4. You may choose a flat structure (all folders at root level) or a nested structure (e.g., under `src`), depending on what best supports clarity, organization, and practical use. \\
+5. Include commonly used auxiliary folders as appropriate. \\
+6. The proposed structure should balance clarity, scalability, and maintainability. Avoid unnecessary complexity or excessive nesting.\\
+
+...\\
+
+\#\# Output Format 
+
+Return a single JSON-style nested object representing the repository folder structure: \\
+- `"folder\_name": ["Subtree Name"]` means this folder is assigned to a specific subtree. The name in the list must match exactly what appears in the given list of subtrees. \\
+- `"folder\_name": []` means the folder exists but does not correspond to a specific subtree (e.g., utility or support folders). \\
+- `"file\_name.ext": null` indicates the presence of a file. File content is not required. 
+\end{promptbox}
+
+
+\begin{promptbox}[title={Prompt for Mapping Feature Paths to Python Skeleton Files}]
+You are a repository architect tasked with incrementally assigning all remaining leaf-level features from a functional subtree into the repository's file structure. This is an iterative process, You are not expected to assign all features at once — each round should make clear, meaningful progress. Your ultimate goal is a production-grade file organization that evolves cleanly and logically over time.
+
+\#\# Context
+
+In each iteration, you will receive: \\
+- A list of unassigned leaf features (each is a full path like `"a/b/c"`). 
+
+- A designated functional folder under which all new paths must begin. 
+
+- A partial skeleton showing the current structure (existing assignments are hidden). 
+
+Assign the remaining features to `.py` file paths that: \\
+- Begin with the designated folder. 
+
+- Group semantically related features together.
+
+- Reflect how real developers would modularize logic in a production Python codebase.
+- Prefer organizing major functional categories into subfolders when appropriate. \\
+
+\#\#\# File \& Folder Structure \\
+- Group features by functionality into logically meaningful modules that reflect real-world development practice. 
+
+- Avoid bundling many unrelated features into a single file 
+
+- If a folder contains 10 or more files, introduce subfolders based on semantic structure (e.g., `format/`, `client/`, `csv/`) to keep directories manageable. \\
+
+\#\#\# Naming \& Organization Guidelines \\
+...
+
+\#\#\# Examples \\
+... 
+
+\#\# Output Format \\
+You must structure your response in two clearly separated blocks, each wrapped with the appropriate tags:\\
+$<$think$>$ \\
+Explain how you grouped the features into logically coherent modules with clean file and folder structure. \\  
+Describe how your choices improve clarity, minimize clutter, and reflect good design principles. \\
+$<$/think$>$ \\
+$<$solution$>$ \\
+\{
+  "$<$path to file1.py$>$": [
+    "feature1",
+    "feature2"
+  ],
+  "$<$path to file2.py$>$": [
+    "feature3"
+  ]
+\}
+$<$/solution$>$
+\end{promptbox}
+
+\begin{promptbox}[title={Prompt for Converting Subgraphs into Base Classes}]
+You are an expert software engineer tasked with designing reusable abstractions and shared data structures for a Python codebase.
+
+... \\
+
+\#\# Base Class Output Format \\
+You must return your design as a set of code blocks grouped by target subtree and file: \\
+\#\# General \\
+\#\#\# path/to/file.py \\
+```python \\
+... \\
+``` \\
+... \\
+
+\#\# $<$Subtree Name$>$\\
+\#\#\# path/to/file.py \\
+```python \\
+... \\
+``` \\
+$<$/solution$>$ \\
+
+\#\# Design Strategy \\
+Abstractions must follow system structure and dataflow analysis, not mechanical repetition.  
+
+- Shared Data Structures: define for nodes with high out-degree (outputs consumed widely). Good candidates are feature batches, inference results, or training containers. Create a global type only when field names, data types, and usage context are stable and consistent. 
+
+- Functional Base Classes: define for nodes with high in-degree (consuming many inputs). Use when multiple modules share roles (e.g., cleaning, predicting), follow common lifecycles (`run()`, `build()`, `validate()`), or rely on similar hooks.  
+
+- Principles: \\  
+  - Avoid speculative abstractions. \\  
+  - Prefer fewer, well-justified classes (typically 1–3 globally).  \\
+  - Capture structural commonality that aids extensibility and coordination.\\  
+...
+
+\#\# Output Formate \\
+Wrap your entire output in two blocks:\\
+$<$think$>$ \\
+... \\ 
+$<$/think$>$ \\
+$<$solution$>$ \\
+\#\# SubtreeA 
+
+\#\#\# path/to/file.py 
+
+```python 
+
+... 
+
+``` 
+
+... \\
+$<$/solution$>$
+\end{promptbox}
+
+
+\begin{promptbox}[title={Prompt for Mapping Feature Paths to Interfaces}]
+You are designing modular interfaces for a large-scale Python system.  
+You are given repository context: overview, tree structure, skeleton, data flow, base classes, upstream interfaces, target subtree, and target file.
+
+\#\#\# Objective
+
+- For each feature, define exactly one interface (function or class).  
+
+- Provide imports, signature, and detailed docstring (purpose, args, returns, assumptions).  
+
+- No implementation: use `pass`.  
+
+- One interface per block.
+
+\#\#\# Design Guidelines
+
+- Function: simple, atomic, stateless.  
+
+- Class: stateful, multiple methods, inherits base class, or extensible.  
+
+- Prefer fewer, well-justified abstractions.  
+
+- Group only tightly related features.  
+
+- Use global abstractions sparingly.
+
+\#\#\# Output Format
+
+Use two blocks:  
+
+$<$think$>$
+
+reasoning 
+
+$<$/think$>$  
+
+
+$<$solution$>$ 
+
+design\_itfs\_for\_feature(features=["feature/path", ...]):  
+
+```python
+
+\# One interface (function or class) with docstring and pass
+
+```
+
+$<$/solution$>$
+
+\end{promptbox}
+
+\subsection{Case of Built Skeleton and Designed Interfaces}
+
+We present the skeleton generated by \texttt{o3-mini}, together with the mapping between the generated skeleton and the nodes of machine learning algorithms. In addition, we illustrate one or two designed base classes as well as concrete functions or classes.
+
+\begin{skeletonbox}
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize, breaklines=true]
+src/
+  algorithms/
+    advanced/
+      enhancements/
+        general_enhancements/
+          __init__.py
+          active_learning_strategies.py
+          classification_clustering_enhancements.py
+          misc_general_enhancements.py
+          optimization_and_meta_learning.py
+          regression_enhancements.py
+        __init__.py
+      extended_techniques/
+        extended_methods/
+          __init__.py
+          interpolation_and_model_learning.py
+          validation_and_clustering.py
+        new_models/
+          __init__.py
+          new_model_techniques.py
+          new_model_techniques_additional.py
+        __init__.py
+        baselines.py
+      supplemental_algorithms/
+        __init__.py
+        advanced_clustering_and_dimensionality_methods.py
+        advanced_tokenization_and_perceptron.py
+        classification_and_feature_importance_methods.py
+        diverse_algorithmic_methods.py
+        ensemble_evaluation_and_anomaly_detection.py
+        meta_optimization_methods.py
+        model_optimization_methods.py
+        numerical_interpolation_methods.py
+        regression_and_svm_optimization_methods.py
+        spline_interpolation_and_adjusted_classifiers.py
+        svm_ensemble_and_optimization_methods.py
+        tokenization_methods.py
+      __init__.py
+    ensemble_tree/
+      boosting_bagging/
+        boosting/
+          __init__.py
+          boosting_advanced_features.py
+          boosting_algorithms.py
+          boosting_parameter_tuning.py
+        stacking_voting/
+          __init__.py
+          primary.py
+          secondary.py
+        __init__.py
+        bagging.py
+        gradient_boosting.py
+      decision_trees/
+        __init__.py
+        gradient_boosting_tree.py
+        id3.py
+        post_pruning.py
+        random_forest.py
+        regression_tree.py
+      __init__.py
+    regression/
+      linear_models/
+        __init__.py
+        lasso.py
+        multiple_linear.py
+        polynomial.py
+        simple_linear.py
+      __init__.py
+      elastic_net_regression.py
+      ridge_classifier.py
+    supervised/
+      classification/
+        logistic/
+          __init__.py
+          cost.py
+          optimization.py
+          sigmoid.py
+        __init__.py
+        decision_tree.py
+        knearest.py
+        naive_bayes.py
+        support_vector.py
+      __init__.py
+    unsupervised/
+      clustering/
+        __init__.py
+        advanced_clustering.py
+        kmeans.py
+        supplemental_clustering.py
+      dimensionality_reduction/
+        __init__.py
+        extended_dr.py
+        kernel_pca.py
+        pca.py
+      __init__.py
+    __init__.py
+  core/
+    data_conversion/
+      __init__.py
+      api_requests.py
+      feature_encoding.py
+      feature_extraction.py
+      format_conversion.py
+      sql_queries.py
+    data_transform/
+      __init__.py
+      filter_advanced.py
+      filter_basic.py
+      join_operations.py
+      scaling_advanced.py
+      scaling_basic.py
+      sorting.py
+      splitting.py
+    numerics/
+      __init__.py
+      basic_statistics.py
+      block_multiplication.py
+      decompositions.py
+      dot_products.py
+      integration_and_distances.py
+      inversions.py
+      matrix_factorization.py
+      matrix_rearrangements.py
+      regression_statistics.py
+      sparse_lu.py
+    preprocessing/
+      __init__.py
+      csv_io.py
+      data_cleaning.py
+      dimensionality_analysis.py
+      inverse_transformations.py
+      json_io.py
+      log_transformations.py
+      noise_augmentation.py
+    __init__.py
+  data_processing/
+    analysis_pipeline/
+      analytical/
+        __init__.py
+        aggregation_algorithms.py
+        data_perturbation.py
+        data_query.py
+        join_operations.py
+        list_manipulation.py
+        sample_partition.py
+        seasonal_analysis.py
+      pipeline_utilities/
+        __init__.py
+        data_streaming.py
+        learning_setup.py
+        model_validation.py
+        performance_metrics.py
+      __init__.py
+    cleaning_preparation/
+      advanced/
+        __init__.py
+        duplicate_handling.py
+        imputation_methods.py
+        outlier_detection.py
+      preparation/
+        __init__.py
+        data_splitting.py
+        imputation_labeling.py
+        validation.py
+      __init__.py
+      type_conversion.py
+    integration_merge/
+      __init__.py
+      aggregation_retrieval.py
+      merge_operations.py
+      merge_search.py
+    integration_storage/
+      __init__.py
+      api_operations.py
+      conversion_auth.py
+      dictionary_config.py
+      export_integration.py
+      io_logging.py
+    manipulation/
+      __init__.py
+      data_manipulation.py
+      shuffling.py
+    string_pivot/
+      __init__.py
+      pivoting.py
+      string_operations.py
+    transformation_feature_eng/
+      __init__.py
+      feature_extraction_encoding.py
+      file_io.py
+      text_enhancements.py
+      transformation_normalization.py
+    utilities/
+      __init__.py
+      metadata.py
+      metrics.py
+      parallel.py
+      sparse_storage.py
+      text_processing.py
+    validation/
+      inspection/
+        __init__.py
+        overview.py
+        sorting.py
+        statistics.py
+      __init__.py
+      data_integrity.py
+    __init__.py
+  extended_eval/
+    diagnostics/
+      __init__.py
+      model_quality.py
+      statistical_diagnostics.py
+      temporal_analysis.py
+    __init__.py
+    explainability.py
+    predictive_assessment.py
+    robustness.py
+  math_utils/
+    algorithms/
+      core_techniques/
+        __init__.py
+        clustering_and_detection.py
+        fairness_and_feature_analysis.py
+        matrix_operations.py
+        optimization_and_selection.py
+        statistical_methods.py
+      __init__.py
+    auxiliary/
+      __init__.py
+      data_manipulation.py
+      geometric_operations.py
+      gradient_and_imaging.py
+      math_computations.py
+      ml_utilities.py
+      optimization_methods.py
+      outlier_validation.py
+      random_operations.py
+      tensor_and_likelihood.py
+      text_processing.py
+      time_processing.py
+    data_preprocessing/
+      __init__.py
+      model_persistence.py
+      sampling.py
+      text_tools.py
+    performance/
+      __init__.py
+      drift_detection.py
+      statistical_tests.py
+      system_monitoring.py
+      time_series_analysis.py
+    pipeline_evaluation/
+      __init__.py
+      advanced_analysis.py
+      data_resampling.py
+      evaluation_metrics.py
+      hyperparameter_tuning.py
+      model_export_and_cv.py
+      online_learning_support.py
+      performance_benchmarking.py
+      pipeline_creator.py
+    simulation/
+      __init__.py
+      hyperparameter_tuning.py
+      nearest_neighbor_search.py
+      random_sampling.py
+      simulation.py
+      time_interpolation.py
+    statistical_analysis/
+      __init__.py
+      descriptive_stats.py
+      inferential_methods.py
+      multivariate_analysis.py
+      probabilistic_models.py
+      survival_analysis.py
+      time_series_models.py
+      variance_metrics.py
+    __init__.py
+  ml_compute/
+    ml_methods/
+      __init__.py
+      clustering_methods.py
+      dimensionality_reduction.py
+      svm_validation.py
+    optimization/
+      __init__.py
+      clustering_graph_techniques.py
+      optimization_algorithms.py
+      training_control.py
+    stat_inference/
+      __init__.py
+      hypothesis_tests_advanced.py
+      hypothesis_tests_basic.py
+      model_evaluation_metrics.py
+      model_selection_metrics.py
+      parameter_estimation.py
+      statistical_tests_metrics.py
+    time_series/
+      distribution/
+        __init__.py
+        bayesian_likelihood.py
+        distribution_estimation.py
+        inferential_hypothesis.py
+        inferential_variance.py
+      __init__.py
+      forecast_plots.py
+      forecasting_algorithms.py
+    __init__.py
+  model_eval/
+    deployment/
+      __init__.py
+      deployment_ops.py
+      testing_resources.py
+    evaluation/
+      diagnostics/
+        __init__.py
+        advanced_diagnostics.py
+        basic_diagnostics.py
+        performance_metrics.py
+      __init__.py
+      additional_analysis.py
+      error_display.py
+      regression_diagnostics.py
+      training_ops.py
+    management/
+      __init__.py
+      counterfactual.py
+      feature_explanation.py
+      hyperparameter.py
+      persistence_ops.py
+      pipeline_integration.py
+      uncertainty.py
+    visualization/
+      __init__.py
+      dashboard.py
+      visual_reports.py
+    __init__.py
+  pipeline/
+    data_cleaning/
+      __init__.py
+      dimensionality.py
+      encoding.py
+      filtering.py
+      imputation.py
+      knn_methods.py
+      merging.py
+    deployment/
+      __init__.py
+      export.py
+      integration_testing.py
+      interactive.py
+      monitoring.py
+      online.py
+      reporting_formats.py
+      standard_plots.py
+      trend_analysis.py
+    evaluation/
+      __init__.py
+      cross_validation.py
+      gd_optimization.py
+      metrics_plots.py
+      misc_evaluation.py
+      monitoring.py
+    feature_engineering/
+      __init__.py
+      basic_transformation.py
+      extraction.py
+      interaction.py
+      selection.py
+      synthesis.py
+    orchestration/
+      __init__.py
+      configuration.py
+      startup.py
+      transformers.py
+      workflow.py
+    preprocessing/
+      __init__.py
+      advanced_parsing.py
+      imputation.py
+      input_validation.py
+    training/
+      __init__.py
+      training_adjustments.py
+      training_strategies.py
+    tuning/
+      __init__.py
+      calibration.py
+      evolution.py
+      gaussian.py
+      meta.py
+      parzen.py
+    __init__.py
+  ui/
+    interactivity/
+      __init__.py
+      domain_commands.py
+      general_commands.py
+      help_support.py
+      navigation_actions.py
+    visualization/
+      __init__.py
+      dashboard.py
+      standard_charts.py
+    __init__.py
+  __init__.py
+main.py
+setup.py
+\end{lstlisting}
+\end{skeletonbox}
+
+\begin{graphbox}
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize, breaklines=true]
+Machine Learning Algorithms
+    AdvancedExtensions [-> dir: src/algorithms/advanced]
+        Miscellaneous [-> dir: src/algorithms/advanced/supplemental_algorithms]
+            OtherAlgorithms [-> file: src/algorithms/advanced/supplemental_algorithms/classification_and_feature_importance_methods.py, file: src/algorithms/advanced/supplemental_algorithms/regression_and_svm_optimization_methods.py, file: src/algorithms/advanced/supplemental_algorithms/advanced_clustering_and_dimensionality_methods.py, file: src/algorithms/advanced/supplemental_algorithms/meta_optimization_methods.py, file: src/algorithms/advanced/supplemental_algorithms/svm_ensemble_and_optimization_methods.py, file: src/algorithms/advanced/supplemental_algorithms/spline_interpolation_and_adjusted_classifiers.py, file: src/algorithms/advanced/supplemental_algorithms/numerical_interpolation_methods.py, file: src/algorithms/advanced/supplemental_algorithms/diverse_algorithmic_methods.py, file: src/algorithms/advanced/supplemental_algorithms/advanced_tokenization_and_perceptron.py, file: src/algorithms/advanced/supplemental_algorithms/ensemble_evaluation_and_anomaly_detection.py, file: src/algorithms/advanced/supplemental_algorithms/tokenization_methods.py, file: src/algorithms/advanced/supplemental_algorithms/model_optimization_methods.py]
+        ExtendedTechniques [-> dir: src/algorithms/advanced/extended_techniques]
+            ExtendedMethods [-> file: src/algorithms/advanced/extended_techniques/extended_methods/interpolation_and_model_learning.py, file: src/algorithms/advanced/extended_techniques/extended_methods/validation_and_clustering.py]
+            NewModels [-> file: src/algorithms/advanced/extended_techniques/new_models/new_model_techniques.py, file: src/algorithms/advanced/extended_techniques/new_models/new_model_techniques_additional.py]
+            Baselines [-> file: src/algorithms/advanced/extended_techniques/baselines.py]
+        EnhancementsAndGeneral [-> dir: src/algorithms/advanced/enhancements/general_enhancements]
+            GeneralEnhancements [-> file: src/algorithms/advanced/enhancements/general_enhancements/optimization_and_meta_learning.py, file: src/algorithms/advanced/enhancements/general_enhancements/regression_enhancements.py, file: src/algorithms/advanced/enhancements/general_enhancements/active_learning_strategies.py, file: src/algorithms/advanced/enhancements/general_enhancements/misc_general_enhancements.py, file: src/algorithms/advanced/enhancements/general_enhancements/classification_clustering_enhancements.py]
+    Regression [-> dir: src/algorithms/regression/linear_models]
+        LinearModels [-> dir: src/algorithms/regression/linear_models]
+            MultipleLinear [-> file: src/algorithms/regression/linear_models/multiple_linear.py, file: src/algorithms/regression/linear_models/lasso.py]
+            PolynomialRegression [-> file: src/algorithms/regression/linear_models/polynomial.py]
+            Lasso [-> file: src/algorithms/regression/linear_models/multiple_linear.py, file: src/algorithms/regression/linear_models/lasso.py]
+            SimpleLinear [-> file: src/algorithms/regression/linear_models/simple_linear.py]
+        OtherRegression [-> dir: src/algorithms/regression]
+            RidgeRegressionClassification [-> file: src/algorithms/regression/ridge_classifier.py]
+            ElasticNet [-> file: src/algorithms/regression/elastic_net_regression.py]
+    UnsupervisedLearning [-> dir: src/algorithms/unsupervised]
+        DimensionalityReduction [-> dir: src/algorithms/unsupervised/dimensionality_reduction]
+            KernelMethods [-> file: src/algorithms/unsupervised/dimensionality_reduction/kernel_pca.py]
+            OtherDR [-> file: src/algorithms/unsupervised/dimensionality_reduction/extended_dr.py]
+            PCA [-> file: src/algorithms/unsupervised/dimensionality_reduction/pca.py]
+        Clustering [-> dir: src/algorithms/unsupervised/clustering]
+            KMeans [-> file: src/algorithms/unsupervised/clustering/kmeans.py]
+            OtherClustering [-> file: src/algorithms/unsupervised/clustering/supplemental_clustering.py]
+            AdvancedClustering [-> file: src/algorithms/unsupervised/clustering/advanced_clustering.py]
+    EnsembleAndTreeMethods [-> dir: src/algorithms/ensemble_tree/boosting_bagging]
+        BoostingBagging [-> dir: src/algorithms/ensemble_tree/boosting_bagging]
+            StackingVoting [-> file: src/algorithms/ensemble_tree/boosting_bagging/stacking_voting/secondary.py, file: src/algorithms/ensemble_tree/boosting_bagging/stacking_voting/primary.py]
+            Bagging [-> file: src/algorithms/ensemble_tree/boosting_bagging/bagging.py]
+            GradientBoosting [-> file: src/algorithms/ensemble_tree/boosting_bagging/gradient_boosting.py]
+            Boosting [-> file: src/algorithms/ensemble_tree/boosting_bagging/boosting/boosting_algorithms.py, file: src/algorithms/ensemble_tree/boosting_bagging/boosting/boosting_advanced_features.py, file: src/algorithms/ensemble_tree/decision_trees/gradient_boosting_tree.py, file: src/algorithms/ensemble_tree/boosting_bagging/boosting/boosting_parameter_tuning.py]
+        DecisionTrees [-> dir: src/algorithms/ensemble_tree/decision_trees]
+            ID3 [-> file: src/algorithms/ensemble_tree/decision_trees/id3.py]
+            RegressionTree [-> file: src/algorithms/ensemble_tree/decision_trees/regression_tree.py]
+            GradientBoostingTree [-> file: src/algorithms/ensemble_tree/boosting_bagging/boosting/boosting_advanced_features.py, file: src/algorithms/ensemble_tree/decision_trees/gradient_boosting_tree.py]
+            PostPruning [-> file: src/algorithms/ensemble_tree/decision_trees/post_pruning.py]
+            RandomForest [-> file: src/algorithms/ensemble_tree/decision_trees/random_forest.py]
+    SupervisedLearning [-> dir: src/algorithms/supervised/classification/logistic]
+        Classification [-> dir: src/algorithms/supervised/classification/logistic]
+            LogisticRegression [-> file: src/algorithms/supervised/classification/logistic/sigmoid.py, file: src/algorithms/supervised/classification/logistic/optimization.py, file: src/algorithms/supervised/classification/logistic/cost.py]
+            SupportAndTree [-> file: src/algorithms/supervised/classification/decision_tree.py, file: src/algorithms/supervised/classification/support_vector.py]
+            NaiveBayes [-> file: src/algorithms/supervised/classification/naive_bayes.py]
+            KNearest [-> file: src/algorithms/supervised/classification/knearest.py]
+\end{lstlisting}
+\end{graphbox}
+
+\begin{baseclsbox}
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize, breaklines=true]
+## General
+### src/general/base_components.py
+```python
+from abc import ABC, abstractmethod
+
+class BaseComponent(ABC):
+    """
+    Abstract base class for core pipeline components.
+
+    Provides a standard lifecycle:
+      - initialize(): Prepare the component.
+      - process(data): Process input data.
+      - finalize(): Clean up resources.
+
+    Concrete subclasses must implement process().
+    """
+
+    def __init__(self) -> None:
+        self.initialized: bool = False
+
+    def initialize(self) -> None:
+        """
+        Set up the component before processing starts.
+        """
+        self.initialized = True
+
+    @abstractmethod
+    def process(self, data):
+        """
+        Process the input data.
+
+        Args:
+            data: Input data in a predefined schema.
+
+        Returns:
+            Output data after processing.
+        """
+        pass
+
+    def finalize(self) -> None:
+        """
+        Tear down or clean up the component after processing.
+        """
+        self.initialized = False
+
+class EstimatorComponent(BaseComponent):
+    """
+    Abstract base class for estimator components (e.g., models).
+
+    Defines the contract for model training and prediction.
+    """
+
+    @abstractmethod
+    def fit(self, training_data) -> None:
+        """
+        Train the estimator using the provided training data.
+
+        Args:
+            training_data: Data batch conforming to a shared TrainingBatch schema.
+        """
+        pass
+
+    @abstractmethod
+    def predict(self, input_data):
+        """
+        Generate predictions based on the input data.
+
+        Args:
+            input_data: Data in a format specified by the pipeline.
+
+        Returns:
+            Predictions corresponding to the input features.
+        """
+        pass
+
+    def process(self, data):
+        """
+        For an estimator, process() defaults to prediction.
+        """
+        return self.predict(data)
+```
+\end{lstlisting}
+\end{baseclsbox}
+
+\begin{itfsbox}
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize, breaklines=true]
+## Feature Paths: "Regression/LinearModels/PolynomialRegression/Cubic Regression with regularization", "Regression/LinearModels/PolynomialRegression/polynomial model fitting", "Regression/LinearModels/PolynomialRegression/cubic regression", "Regression/LinearModels/PolynomialRegression/quadratic regression", "Regression/LinearModels/PolynomialRegression/Quadratic Regression with regularization"         
+### src/algorithms/regression/linear_models/polynomial.py
+from src.general.base_components import EstimatorComponent
+class PolynomialRegressor(EstimatorComponent):
+
+    def __init__(self, degree: int, regularization_lambda: float=0.0) -> None:
+        pass 
+        
+    def fit(self, X: list[float], y: list[float]) -> None:
+        """
+        Fit the polynomial regression model to the provided data.
+
+        Constructs the polynomial features based on the specified degree and applies
+        optional regularization if regularization_lambda is provided (> 0).
+
+        Args:
+            X (list[float]): A list of feature values.
+            y (list[float]): A list of target values corresponding to the features.
+
+        Returns:
+            None
+
+        Raises:
+            ValueError: If the degree is not supported or if input lists are empty or mismatched.
+        """
+        pass
+        
+    def predict(self, X: list[float]) -> list[float]:
+        """
+        Generate predictions using the fitted polynomial regression model.
+
+        Transforms the input features into polynomial features and computes
+        the output via the fitted model coefficients. Applies regularization adjustments
+        if the model was fitted with a regularization term.
+
+        Args:
+            X (list[float]): A list of feature values for prediction.
+
+        Returns:
+            list[float]: A list of predicted values.
+        """
+        pass
+\end{lstlisting}
+\end{itfsbox}
+
+
+\subsection{Patterns in Implementation-Level Graph Construction}
+The mapping from \graph{}s to code structures exhibits a strong isomorphic relationship: 
+each subgraph corresponds to a coherent code region, with files, classes, and functions serving as structural anchors. 
+Table~\ref{tab:mlkit-subgraph} illustrates this correspondence for the case of \textit{o3-mini} during \texttt{sklearn} generation, 
+where algorithmic subgraphs (e.g., ML Algorithms, Data Processing, ML Pipeline) map to a larger number of files and functions, 
+while auxiliary subgraphs (e.g., Diagnostics, Visualization) remain compact yet feature-dense. 
+This pattern reflects the semantic granularity of different subgraphs: core computational domains require broader structural scaffolding, 
+whereas specialized domains concentrate more features per unit. 
+Extending to the cross-repository view in Table~\ref{tab:model-stats}, 
+we observe that both models preserve this structural isomorphism but with distinct emphases: 
+\textit{o3-mini} tends to distribute features more evenly across units, 
+while \textit{qwen3-coder} consistently produces the highest feature densities, especially at the class level. 
+Together, these results demonstrate that the graph-to-code translation process not only preserves the hierarchical semantics of the \graph{} 
+but also manifests in distinct structural footprints that vary with model choice.
+
+\input{tables/appendix_feature_map}
+
+
+\input{tables/appendix_subgraph_map}
+

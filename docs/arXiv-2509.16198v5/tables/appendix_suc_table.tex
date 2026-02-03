@@ -1,0 +1,18 @@
+\begin{table*}[ht]
+\centering
+\caption{Average success rate and test coverage (\%) for six repositories across two models.}
+\renewcommand{\arraystretch}{1.2}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{l|rr|rr|rr|rr|rr|rr}
+\toprule
+Model & \multicolumn{2}{c|}{TableKit} & \multicolumn{2}{c|}{MLKit-Py} & \multicolumn{2}{c|}{HttpEasy} & \multicolumn{2}{c|}{PyWebEngine} & \multicolumn{2}{c|}{StatModeler} & \multicolumn{2}{c}{SymbolicMath} \\
+\midrule
+ & Success & Coverage & Success & Coverage & Success & Coverage & Success & Coverage & Success & Coverage & Success & Coverage \\
+\midrule
+o3-mini      & 81.8\% & 65.0\% & 82.8\% & 61.0\% & 88.9\% & 64.0\% & 74.7\% & 60.0\% & 71.0\% & 62.0\% & 84.8\% & 59.0\% \\
+qwen3-coder  & 55.0\% & 48.0\% & 52.0\% & 46.0\% & 50.0\% & 45.0\% & 53.0\% & 47.0\% & 54.0\% & 48.0\% & 51.0\% & 46.0\% \\
+\bottomrule
+\end{tabular}
+}
+\label{tab:repo-success-coverage}
+\end{table*}

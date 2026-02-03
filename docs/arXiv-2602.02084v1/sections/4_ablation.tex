@@ -1,0 +1,61 @@
+\section{Ablation Study}
+\label{sec:abl}
+
+\paragraph{Experimental Setup.} To isolate semantic and topological contributions, we run two ablations (detailed in Appendix~\ref{app:ablations}). For Reconstruction (RepoCraft), we progressively strip node metadata bottom-up while retaining semantic features to evaluate representational fidelity. For Understanding (SWE-bench Live), we remove structural metadata $\mathbf{m}$ to assess navigational efficacy under \ours{}.
+
+\begin{wraptable}{r}{0.52\columnwidth}
+\centering
+\caption{Ablation study of \ours{} on SWE-bench Live. Best results are highlighted in \textbf{bold}.}
+\label{tab:ablation_live_gpt4o_gpt41}
+\renewcommand{\arraystretch}{1.15}
+\setlength{\tabcolsep}{2.1pt}
+
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{@{}l l cccc cccc@{}}
+\toprule
+\multirow{2}{*}{Backbone} & \multirow{2}{*}{Method} &
+\multicolumn{4}{c}{File-level} &
+\multicolumn{4}{c}{Function-level} \\
+\cmidrule(lr){3-6}\cmidrule(lr){7-10}
+& & Acc@1 & Acc@5 & Pre & Rec & Acc@1 & Acc@5 & Pre & Rec \\
+\midrule
+\multirow{3}{*}{GPT-4o}
+& \ours{} & \textbf{69.2} & \textbf{83.5} & \textbf{73.2} & \textbf{60.3} & \textbf{50.5} & \textbf{69.4} & \textbf{59.4} & \textbf{41.8} \\
+& w/o Dependency & 58.4 & 77.4 & 63.0 & 53.3 & 44.8 & 66.3 & 53.4 & 36.4 \\
+& w/o Feature    & 60.9 & 76.3 & 64.6 & 52.4 & 43.1 & 63.4 & 52.3 & 35.5 \\
+\midrule
+\multirow{3}{*}{GPT-4.1}
+& \ours{} & \textbf{78.0} & \textbf{90.5} & \textbf{81.4} & \textbf{69.0} & \textbf{64.7} & \textbf{81.9} & \textbf{72.1} & \textbf{52.6} \\
+& w/o Dependency & 77.4 & 89.4 & 80.6 & 68.3 & 63.7 & 80.2 & 71.1 & 51.9 \\
+& w/o Feature    & 71.7 & 87.5 & 76.9 & 64.5 & 57.4 & 76.3 & 66.3 & 47.8 \\
+\bottomrule
+\end{tabular}%
+}
+\end{wraptable}
+
+\paragraph{Semantics and Topology are Mutually Reinforcing.}
+Table~\ref{tab:ablation_live_gpt4o_gpt41} delineates the distinct functional contributions of graph components. Semantic Features provide essential semantic grounding for fine-grained localization; their removal causes the sharpest decline in Function-level Acc@1 ($50.5\% \to 43.1\%$ on GPT-4o), indicating that abstract summaries are indispensable for aligning natural language intent with concrete implementations. Dependencies establish structural connectivity; severing these edges disrupts execution tracing, significantly degrading File-level retrieval. The Full RPG integrates these layers to maximize context discovery, consistently outperforming all ablated variants.
+
+
+\begin{wraptable}{r}{0.52\columnwidth}
+\centering
+\caption{Ablation on representational fidelity on \texttt{scikit-learn} (GPT-5-mini).}
+\label{tab:reconstruction_ablation_sklearn_gpt5mini}
+\setlength{\tabcolsep}{4.2pt}
+
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{l ccccc}
+\toprule
+Method & Coverage & Pass Rate & \#Files & nLOC & Tokens \\
+\midrule
+ZeroRepo-Docs & 72.3 & 55.6 / 66.3 & 76  & 12,007 & 101,988 \\
+ZeroRepo-RPG (\ours{}) & \textbf{100.0} & \textbf{82.8 / 99.5} & \textbf{256} & \textbf{96,831} & \textbf{898,026} \\
+w/o Function Metadata & 91.5 & 74.1 / 90.9 & 248 & 87,413 & 854,886 \\
+w/o All Node Metadata & 87.2 & 65.3 / 84.7 & 157 & 63,489 & 687,879 \\
+\bottomrule
+\end{tabular}%
+}
+\end{wraptable}
+
+\paragraph{Hierarchical Constraints Ensure Structural Fidelity.}
+Table~\ref{tab:reconstruction_ablation_sklearn_gpt5mini} indicates that the multi-level topology of RPG is essential for preserving repository modularity. Removing file and function metadata (\textit{w/o File \& Function}) results in a notable loss of structure: the number of files decreases from 256 to 157, and code volume drops by approximately 200,000 tokens. This suggests that without explicit topological boundaries, the model tends to merge distinct modules, leading to a loss of granularity. Additionally, the removal of function metadata (\textit{w/o Function Metadata}) reduces the Pass Rate from 82.8\% to 74.1\%, showing that detailed structural signals are important for code correctness. Finally, all graph-based variants outperform the text-based ZeroRepo-Docs, confirming that structured representations provide a better basis for reconstruction than linear documentation.

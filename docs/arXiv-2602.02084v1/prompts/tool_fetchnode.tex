@@ -1,0 +1,41 @@
+\begin{tcblisting}{
+  title={FetchNode Tool Prompt},
+  colback=lightgray,
+  colframe=black,
+  arc=1mm,
+  boxrule=1pt,
+  left=1mm,right=1mm,top=1mm,bottom=1mm,
+  breakable,
+  fontupper=\scriptsize\ttfamily,
+  listing only,
+  listing engine=listings,
+  listing options={
+    breaklines=true,
+    breakatwhitespace=false,
+    breakindent=0pt,
+    prebreak=\mbox{},
+    postbreak=\mbox{},
+    keepspaces=true,
+    columns=fullflexible,
+    tabsize=4
+  }
+}
+## Tool Name: FetchNode
+### Description
+- Retrieve precise metadata and source context for known code or feature entities.
+- Use this tool to verify candidate code locations after identifying them through searches or graph exploration.
+- Returns exact file path, entity type, start/end lines, mapped feature information, and a code preview.
+
+### Parameters
+{
+  "tool_name": "FetchNode",
+  "parameters": {
+    "code_entities": "<List of existing and validated code entities in the current repository; non-existent paths or speculative entities may be ignored. Optional.>",
+    "feature_entities": "<List of existing and validated feature paths in the current repository; non-existent entries may be ignored. Optional.>"
+  }
+}
+### Returns
+- Entity type (file/class/method/feature)
+- Feature paths and code content (with source context / preview)
+- Start/end lines and mapped feature information (when available)
+\end{tcblisting}

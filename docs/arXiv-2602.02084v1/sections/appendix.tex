@@ -1,0 +1,27 @@
+\appendix
+
+
+\addtocontents{toc}{\protect\setcounter{tocdepth}{3}}
+\renewcommand{\contentsname}{Appendix Contents for \ours{}}
+\hypersetup{linkcolor=black}
+\tableofcontents 
+\hypersetup{linkcolor=red}
+\clearpage
+
+
+
+\lstset{
+    basicstyle=\footnotesize\ttfamily,
+    breaklines=true,
+    frame=lines,  
+    breakindent=0pt,
+    extendedchars=true,
+    belowcaptionskip=0.5em,
+    escapechar=@,
+    literate={á}{{\'a}}1 {ã}{{\~a}}1 {é}{{\'e}}1 {£}{{\pounds}}1 {–}{{-}}1 {’}{{'}}1,
+}
+
+\input{appendix/method}
+\input{appendix/exp_setup}
+\input{appendix/results}
+\input{appendix/ablations}

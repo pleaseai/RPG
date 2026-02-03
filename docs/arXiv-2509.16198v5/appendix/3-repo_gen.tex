@@ -1,0 +1,424 @@
+\section{Appendix of Graph-Guided Repository Generation}
+\label{app:codegen-details}
+
+\subsection{Details on Localization}
+\label{appendix:loc}
+To facilitate the localization stage in graph-guided repository generation, we designed a graph-guided toolset that allows agents to systematically explore and map design-level features onto concrete code artifacts. The tools support both fine-grained inspection of files and interfaces, as well as feature-driven exploration across the repository. Specifically, \texttt{view\_file\_interface\_feature\_map} and \texttt{get\_interface\_content} enable inspection of code structures and retrieval of their implementations, while \texttt{expand\_leaf\_node\_info} and \texttt{search\_interface\_by\_functionality} allow navigation of the \graph{} and fuzzy semantic search. Finally, the \texttt{Terminate} command ensures that the localization process produces a ranked and standardized output. Together, these tools provide a structured workflow that balances automation with flexibility, ensuring both accuracy and interpretability in the localization process.
+
+\begin{locsbox}
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize, breaklines=true]
+### Interface Inspection Tools
+- `view_file_interface_feature_map(file_path)`  
+  Inspects a single Python file to list the interface structures (functions, classes, methods) it contains, along with the feature mappings they support.  
+  *Usage*: Useful for quickly understanding which interfaces exist in a given file and the feature tags associated with them.  
+  *Example*:  
+  \begin{verbatim}
+  view_file_interface_feature_map('src/algorithms/classifier.py')
+  \end{verbatim}
+
+- `get_interface_content(target_specs)`  
+  Retrieves the full implementation code of a specific function, class, or method, given its fully qualified name (file path + entity name).  
+  *Usage*: Applied when a particular interface has been located and its source code needs to be examined in detail.  
+  *Example*:  
+  \begin{verbatim}
+  get_interface_content(['src/core/data_loader.py:DataLoader.load_data'])
+  get_interface_content(['src/core/utils.py:clean_text'])
+  \end{verbatim}
+
+
+### Feature-Driven Exploration Tools
+- `expand_leaf_node_info(feature_path)`  
+  Given a feature path from the implemented feature tree, this tool expands and lists all associated interfaces (functions or classes) in a structural summary.  
+  *Usage*: Applied when analyzing how a specific functional leaf node in the design tree maps to repository interfaces.  
+  *Example*:  
+  \begin{verbatim}
+  expand_leaf_node_info('Algorithm/Supervised Learning/Classification Algorithms/Naive Bayes')
+  \end{verbatim}
+
+- `search_interface_by_functionality(keywords)`  
+  Performs a fuzzy semantic search for interfaces based on given keywords and returns the top-5 most relevant interface implementations.  
+  *Usage*: Useful when the exact file or interface name is unknown, but functionality-related keywords are available.  
+  *Example*:  
+  \begin{verbatim}
+  search_interface_by_functionality(['optimize', 'initialize'])
+  \end{verbatim}
+
+### Termination Tool
+- `Terminate(result)`  
+  Terminates the localization exploration and returns the final ranked list of located interfaces. The result must follow the specified JSON-style format, including file path and interface type (function, class, or method).  
+  *Usage*: Invoked after completing exploration to deliver the final interface localization results.  
+  *Example*:  
+  \begin{verbatim}
+  Terminate(result=[
+    {"file_path": "top1_file_fullpath.py", "interface": "method: Class1.function1"},
+    {"file_path": "top2_file_fullpath.py", "interface": "function: function2"},
+    {"file_path": "top3_file_fullpath.py", "interface": "class: Class3"},
+  ])
+  \end{verbatim}
+\end{lstlisting}
+\end{locsbox}
+
+\subsection{Tools for Coding}
+
+To support systematic repository modification, we introduce a suite of editing tools that operate at multiple levels of code granularity.  
+
+\begin{editbox}
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize, breaklines=true]
+
+### edit_whole_class_in_file(file_path, class_name)
+Use when: An entire class (including all methods and its docstring) requires editing or replacement.  
+Output must: Provide the full class definition, with all methods and docstring.  
+
+### edit_method_of_class_in_file(file_path, class_name, method_name)
+Use when: A single method inside a class needs to be edited or replaced.  
+Output must:  
+- Return the full `class ClassName:` block containing only the target method.  
+- Exclude all unrelated methods.  
+- Do not output the method alone; it must appear within its class block.  
+
+### edit_function_in_file(file_path, function_name)
+Use when: A top-level function requires editing or replacement.  
+Output must: Provide the full function, including signature, logic, and docstring.  
+
+### edit_imports_and_assignments_in_file(file_path)
+Use when: Import statements or top-level assignments in the file need to be added or corrected.  
+Output must:  
+- Contain only import statements and top-level assignments (no functions or classes).  
+- Follow a strict import order: (1) standard library, (2) third-party packages, (3) local modules.  
+Important:  
+- Do not remove existing imports unless they are demonstrably incorrect (e.g., invalid path, typo, or non-existent module).  
+- Retain imports even if they appear unused, to preserve runtime dependencies.  
+
+
+### Terminate()
+Use when: All required edits are complete and no further tool invocations are necessary.  
+Important: Do not call prematurely; ensure the issue is fully resolved before termination.  
+
+\end{lstlisting}
+\end{editbox}
+
+\subsection{Graph-Guided Localization and Editing Logs}
+To illustrate how the proposed system operates in practice, we include representative logs that demonstrate the end-to-end process: (i) locating relevant interfaces in the repository through \graph{}–guided exploration, and (ii) applying code editing operations to implement the required functionality. These logs capture the step-by-step decision process, tool invocations, and final termination results.
+
+\begin{taskbox}
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize, breaklines=true]
+Task:  This issue is to implement the AdvancedDifferentialTransformer class in src/symbolic/enhanced/calculus_summation/differential.py. Contributors should aim to encapsulate the necessary transformation logic and ensure the methods integrate well with the rest of the symbolic algebra framework. Clear error handling and input validation are expected in order to gracefully manage undefined behaviors.
+
+               ============Localization================
+Agent: <think>
+I will begin by exploring the file "src/symbolic/enhanced/calculus_summation/differential.py" since the AdvancedDifferentialTransformer class should be implemented here. I will use the view_file_interface_feature_map tool on that file to inspect its structure and get an idea of what is already provided, and any hints or TODOs might be present.
+</think>
+<solution>
+```
+view_file_interface_feature_map('src/symbolic/enhanced/calculus_summation/differential.py')
+```
+</solution>
+
+Env: ```python
+## src/symbolic/enhanced/calculus_summation/differential.py
+from typing import Any, Dict
+### Features: Calculus & Advanced Summation/Differential & Asymptotic Methods/Advanced Transformation Methods/asymptotic series expansion, Calculus & Advanced Summation/Differential & Asymptotic Methods/Advanced Transformation Methods/differentiate special functions, Calculus & Advanced Summation/Differential & Asymptotic Methods/Advanced Transformation Methods/simplify inequality expressions
+class AdvancedDifferentialTransformer:
+
+    def asymptotic_series_expansion(self, expression: Any, expansion_order: int) -> Any:
+        ...
+
+    def differentiate_special_function(self, expression: Any, function_name: str, additional_params: Dict[str, Any]=None) -> Any:
+        ...
+
+    def simplify_inequality(self, inequality_expr: Any, tolerance: float=1e-05) -> Any:
+        ...
+```
+
+Agent: <think>
+I'll now check the file "src/symbolic/enhanced/simplification/algebraic.py" since it is part of the Enhanced Symbolic Algorithms simplification area, and it might contain functions or methods relevant to simplifying inequalities.
+</think>
+<solution>
+```
+view_file_interface_feature_map('src/symbolic/enhanced/simplification/algebraic.py')
+```
+</solution>
+
+Env: ```python
+## src/symbolic/enhanced/simplification/algebraic.py
+from typing import Any
+from src.expr_transform.simplification.techniques import apply_commutative_associative_rewriting, order_terms
+from src.symbolic.core.expression_manipulation.tree_utils import collect_like_terms
+from src.symbolic.core.expression_manipulation.rewriting import canonicalize_expression_tree
+### Features: Simplification/Algebraic Simplification/Basic Techniques/simplify expressions
+def simplify_expression(expr: Any) -> Any:
+    ...
+```
+
+Agent: <think>
+I will now search for interfaces related to "differentiate special function" or advanced symbolic differentiation since our method differentiate_special_function might rely on those routines. This might reveal supporting functions or logic that can be reused.
+</think>
+<solution>
+```
+search_interface_by_functionality(['differentiate special function', 'advanced symbolic differentiation'])
+```
+</solution>
+
+Env:  Keyword "differentiate special function" matched interfaces: class AdvancedExpressionAnalyzer, class AutomaticDifferentiator, class MultivariableDifferentiator.
+Keyword "advanced symbolic differentiation" matched interfaces: class AutomaticDifferentiator, class IntegerAdditionOperations, class MultivariableDifferentiator.
+
+## File: src/calculus/differentiation/partial_derivatives.py
+
+from typing import Any, List, Callable
+
+### Features: Differentiation/Specialized/Techniques/validate partial derivatives, Differentiation/Specialized/Techniques/compute partial derivatives, Differentiation/Specialized/Techniques/symbolic gradient computation, Differentiation/Specialized/Techniques/Jacobian matrix, Differentiation/Specialized/Techniques/symbolic hessian computation, Differentiation/Specialized/Techniques/multivariable differentiation
+class MultivariableDifferentiator:
+
+    def validate_partial_derivatives(self, function: Callable[..., Any], variables: List[str], computed: Any) -> bool:
+        ...
+
+    def compute_partial_derivative(self, function: Any, variable: str) -> Any:
+        """
+      ...
+
+    def compute_symbolic_gradient(self, function: Any, variables: List[str]) -> Any:
+       ...
+
+    def compute_jacobian_matrix(self, functions: List[Any], variables: List[str]) -> Any:
+        ...
+        
+    def compute_symbolic_hessian(self, function: Any, variables: List[str]) -> Any:
+        ...
+        
+    def differentiate_multivariable(self, function: Any, variables: List[str]) -> Any:
+        ...
+...
+
+Agent: <think>
+Next, I'll search for interfaces that mention "asymptotic series expansion" because that functionality is required in AdvancedDifferentialTransformer.asymptotic_series_expansion. This might reveal candidate functions that can be reused to generate series expansions.
+
+I'll also search for interfaces related to "simplify inequality" to see if there's any existing logic for inequality simplification that we can leverage.
+
+Let's perform both searches.
+</think>
+<solution>
+```
+search_interface_by_functionality(['asymptotic series expansion'])
+search_interface_by_functionality(['simplify inequality'])
+```
+</solution>
+
+Env: Keyword "asymptotic series expansion" matched interfaces: class AdvancedExpressionAnalyzer, class MultivariableDifferentiator, class NumericalIntegrator.
+
+## File: src/calculus/differentiation/partial_derivatives.py
+
+from typing import Any, List, Callable
+
+### Features: Differentiation/Specialized/Techniques/validate partial derivatives, Differentiation/Specialized/Techniques/compute partial derivatives, Differentiation/Specialized/Techniques/symbolic gradient computation, Differentiation/Specialized/Techniques/Jacobian matrix, Differentiation/Specialized/Techniques/symbolic hessian computation, Differentiation/Specialized/Techniques/multivariable differentiation
+class MultivariableDifferentiator:
+    ...
+
+
+Agent: <think>
+We have gathered several candidate supporting interfaces needed for our implementation of AdvancedDifferentialTransformer. Our analysis indicates that the following components are very likely to be relevant dependencies:
+...
+
+These are our top-5 interface-level code units that are most likely to serve as essential dependencies for implementing the class AdvancedDifferentialTransformer with its three key methods.
+
+</think>
+<solution>
+```
+Terminate(result=[
+  {"file_path": "src/symbolic/core/calculus/differentiation.py", "interface": "function: differentiate_expression_tree"},
+  {"file_path": "src/symbolic/enhanced/simplification/algebraic.py", "interface": "function: simplify_expression"},
+  {"file_path": "src/expr_transform/transformation/analysis_expression.py", "interface": "class: AdvancedExpressionAnalyzer"},
+  {"file_path": "src/arith_algebra/differentiation.py", "interface": "class: AutomaticDifferentiator"},
+  {"file_path": "src/arith_algebra/equation_solving/nonlinear_symbolic.py", "interface": "class: SymbolicEquationSolver"}
+])
+```
+              ===========Coding============
+Agent: <think>
+We need to implement the AdvancedDifferentialTransformer class in the file src/symbolic/enhanced/calculus_summation/differential.py. The class should provide three methods. For asymptotic_series_expansion, we will check that expansion_order is a positive integer and that the expression is provided. Our implementation will simulate an asymptotic expansion by returning a new symbolic expression with a type marker (e.g., "asymptotic_series") including the original expression and the specified order. Similarly, differentiate_special_function should validate that the provided function name is among a set of allowed special functions (for example, erf, gamma, beta, bessel, hypergeometric) and then simulate a specialized differentiation by returning a new symbolic expression that indicates that the transformation has been applied. Finally, simplify_inequality will check that the input is structured (i.e. a dictionary) and that tolerance is a positive float reasonably bounded (we can enforce tolerance > 0 and maybe below 1 to avoid very high tolerance) and then simulate a simplification by deep-copying the input expression with additional metadata fields. We also include proper error handling and input validation.
+</think>
+<solution>
+edit_whole_class_in_file("src/symbolic/enhanced/calculus_summation/differential.py", "AdvancedDifferentialTransformer")
+```python
+from typing import Any, Dict
+import copy
+
+class AdvancedDifferentialTransformer:
+    """
+    Provides advanced differential transformation methods for asymptotic series expansion,
+    differentiating special functions, and simplifying inequality expressions within symbolic mathematics.
+
+    This class encapsulates transformation techniques that are applied to symbolic expressions
+    in the context of differential and asymptotic methods, enabling enhanced symbolic analyses and computations.
+    
+    Methods:
+        asymptotic_series_expansion(expression: Any, expansion_order: int) -> Any:
+            Expand the provided expression into its asymptotic series representation up to the given order.
+        
+        differentiate_special_function(expression: Any, function_name: str, additional_params: Dict[str, Any] = None) -> Any:
+            Differentiate a symbolic expression that contains a special function using advanced rules.
+        
+        simplify_inequality(inequality_expr: Any, tolerance: float = 1e-5) -> Any:
+            Simplify a symbolic inequality expression using transformation techniques to reduce complexity.
+    """
+...
+```
+</solution>
+
+Env: 
+# Code Patch Diff:
+--- src/symbolic/enhanced/calculus_summation/differential.py
++++ src/symbolic/enhanced/calculus_summation/differential.py
+@@ -1,4 +1,5 @@
+ from typing import Any, Dict
++import copy
+ 
+ class AdvancedDifferentialTransformer:
+     """
+@@ -18,6 +19,7 @@
+         simplify_inequality(inequality_expr: Any, tolerance: float = 1e-5) -> Any:
+             Simplify a symbolic inequality expression using transformation techniques to reduce complexity.
+     """
++    ALLOWED_SPECIAL_FUNCTIONS = {'erf', 'gamma', 'beta', 'bessel', 'hypergeometric'}
+ 
+     def asymptotic_series_expansion(self, expression: Any, expansion_order: int) -> Any:
+         """
+@@ -26,15 +28,23 @@
+         Args:
+             expression (Any): The symbolic expression to be expanded.
+             expansion_order (int): The order up to which the series expansion should be computed.
+-        
++
+         Returns:
+             Any: A symbolic expression representing the asymptotic series expansion.
+         
+-        Edge Cases:
+-            - If expansion_order is non-positive, the behavior is undefined.
+-            - The function expects a valid symbolic expression input.
++        Raises:
++            ValueError: If expansion_order is not a positive integer.
++            TypeError: If the expression is not in a valid symbolic format (e.g., a dictionary).
+         """
+-        pass
++        if not isinstance(expansion_order, int) or expansion_order <= 0:
+...
+
+Agent: <solution>
+Terminate()
+</solution>
+\end{lstlisting}
+\end{taskbox}
+
+\subsection{Testing Framework}
+As illustrated in Algorithm~\ref{alg:patch-testing}, the testing framework combines \textbf{unit tests}, \textbf{regression tests}, and \textbf{integration tests} into a unified process. Unit tests validate each new patch at a fine-grained level, regression tests re-execute existing nodes to ensure backward compatibility, and integration tests verify that multiple patched components interact correctly when combined.
+
+\begin{algorithm}[ht]
+\caption{Patch-Oriented Testing with Unit, Regression, and Integration Stages}
+\label{alg:patch-testing}
+\begin{algorithmic}[1]
+
+\Require Patch set $\mathcal{P}$; repo skeleton $\mathcal{R}$; dependency code $D$;
+         existing unit nodes $\mathcal{N}_{u}$; existing integration nodes $\mathcal{N}_{i}$;
+         task description $\Theta$
+
+\Function{TestPatches}{$\mathcal{P}, \mathcal{R}, D, \Theta$}
+   \State $\mathcal{T}_{unit} \gets []$; \quad $\mathcal{T}_{inte} \gets []$
+   \State $\mathcal{T}_{traj} \gets \{ \texttt{unit}: \{\}, \texttt{inte}: \{\}\}$
+
+   \State $\mathcal{P}' \gets \mathcal{P} \cup \textsc{FindDepPatches}(\mathcal{P})$
+   \Comment{Extend patch set with dependency patches}
+
+   \For{patch $p \in \mathcal{P}'$}
+       \State $n_{old} \gets \textsc{FindExistingUnitNode}(\mathcal{N}_u, p)$
+       \If{$n_{old} \neq \emptyset$ \textbf{and} \textsc{SameSignatureOrLogic}($n_{old}, p$)}
+           \State $n_{new} \gets n_{old}$ 
+           \Comment{Regression test: reuse existing node if signature/logic unchanged}
+       \Else
+           \State $n_{new}, traj \gets \textsc{CreateOrUpdateUnitNode}(p, D, \Theta, n_{old})$
+           \State $\mathcal{T}_{traj}[\texttt{unit}][p.\texttt{key}] \gets traj$
+       \EndIf
+       \State $\mathcal{R}.\textsc{InsertFile}(n_{new}.\texttt{test\_file}, n_{new}.\texttt{test\_code})$
+       \State $res \gets n_{new}.\textsc{ExecuteTest}()$
+       \State $\mathcal{T}_{unit}.\textsc{append}(res)$
+   \EndFor
+
+   \For{patch group $\mathcal{G}$ clustered by integration-node}
+       \State $n_{old} \gets \textsc{FindExistingIntegrationNode}(\mathcal{N}_i, \mathcal{G})$
+       \If{$n_{old} \neq \emptyset$ \textbf{and} \textsc{AllEqual}($n_{old}, \mathcal{G}$)}
+           \State $n_{new} \gets n_{old}$ 
+           \Comment{Regression integration test: reuse existing node}
+       \Else
+           \State $n_{new}, traj \gets \textsc{CreateIntegrationNode}(\mathcal{G}, \Theta)$
+           \State $\mathcal{T}_{traj}[\texttt{inte}][\mathcal{G}] \gets traj$
+           \State $\mathcal{R}.\textsc{InsertFile}(n_{new}.\texttt{test\_file}, n_{new}.\texttt{test\_code})$
+       \EndIf
+       \State $res \gets n_{new}.\textsc{ExecuteTest}()$
+       \State $\mathcal{T}_{inte}.\textsc{append}(res)$
+   \EndFor
+
+   \State \Return $\mathcal{T}_{unit} \cup \mathcal{T}_{inte}, \mathcal{T}_{traj}$
+\EndFunction
+
+\end{algorithmic}
+\end{algorithm}
+
+As illustrated in Algorithm~\ref{alg:test-generation}, the testing pipeline proceeds in a sequence of stages: branch planning, test generation, execution, judgment, and repair. First, a candidate test branch is created for the given code unit(s). Then, test code is generated and wrapped into a \texttt{TestNode} or  \texttt{IntegrationTestNode}, which is executed inside a controlled Docker environment. The execution results are judged by an LLM; if failures are detected, the framework automatically generates fix queries and iteratively repairs the test until a validated version is obtained.
+
+\begin{algorithm}[ht]
+\caption{End-to-End Test Generation, Execution, and Repair}
+\label{alg:test-generation}
+\begin{algorithmic}[1]
+
+\Require Repo skeleton $\mathcal{R}$; tested unit(s) $U$; source code $C$; 
+         optional prior test node $n_{old}$; maximum retries $T_{\max}$
+
+\Function{RunTestingPipeline}{$\mathcal{R}, U, C, n_{old}$}
+   \Comment{Main entry point for testing workflow}
+
+   \State // --- Step 1: Plan test branches ---
+   \State $branch \gets \textsc{GenerateCodeBranch}(C, n_{old}, T_{\max})$
+
+   \State // --- Step 2: Generate candidate test code ---
+   \State $test\_code \gets \textsc{GenerateTest}(branch, C, U, n_{old})$
+
+   \State // --- Step 3: Build a TestNode ---
+   \If{$U$ represents integration of multiple units}
+      \State $n \gets \textsc{IntegrationTestNode}(U, test\_code)$
+   \Else
+      \State $n \gets \textsc{UnitTestNode}(U, C, test\_code)$
+   \EndIf
+
+   \State // --- Step 4: Execute test code in Docker ---
+   \State $result \gets n.\textsc{ExecuteTest}()$
+   \State $output \gets result.stdout \parallel result.stderr$
+
+   \State // --- Step 5: LLM judge outcome ---
+   \If{$result$ contains errors}
+      \State $(err\_type, reviews) \gets \textsc{LLMJudge}(C, test\_code, output, branch)$
+      \If{$err\_type \in \{\texttt{test\_code}, \texttt{environment}\}$}
+         \State $query \gets \textsc{GenerateFixQuery}(C, test\_code, output, branch, reviews)$
+         \State $n \gets \textsc{FixTestandEnv}(query, U, C, output, n)$      \EndIf
+   \EndIf
+
+   \State // --- Step 7: Return final validated test node ---
+   \State \Return $n$
+\EndFunction
+
+\end{algorithmic}
+\end{algorithm}
+
+\subsection{Statistics of Three Stage}
+Table~\ref{tab:localization-results} demonstrates that graph-guided localization provides reasonable efficiency across repositories, with \emph{Incremental Development} generally easier to localize than \emph{Integration Testing} or \emph{Debugging}. In terms of models, \texttt{o3-mini} achieves higher localization efficiency but with larger variance, whereas \texttt{qwen3-coder} shows more stable yet overall lower efficiency. These results suggest that while graph guidance is effective, model capacity and stability jointly influence localization performance.
+\input{tables/appendix_loc_table}
+
+As shown in Table~\ref{tab:repo-success-coverage}, \textbf{o3-mini} achieves relatively high code success rates across repositories, often exceeding 75\% and in some cases approaching 90\%, whereas \textbf{qwen3-coder} lags behind with rates around 50–55\%. In contrast, the corresponding test coverage remains moderate, typically within the 60–70\% range. Figure~\ref{fig:coverage-mlkitpy} further illustrates that coverage fluctuates and tends to decline as code length increases: shorter implementations reach high class-level coverage, but both function-level and overall coverage drop significantly with greater complexity. These results suggest that while current models are increasingly effective at generating functional code, their ability to produce comprehensive and high-quality test cases remains limited, highlighting test generation as a key bottleneck for practical deployment.
+
+\input{tables/appendix_suc_table}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=0.85\linewidth]{appendix/figures/coverage.png}
+    \caption{%
+    Test coverage of \textbf{o3-mini} on \textbf{MLKit-Py} during generation. 
+    The figure shows how the coverage of generated test functions varies as code length increases.
+    }
+    \label{fig:coverage-mlkitpy}
+\end{figure}

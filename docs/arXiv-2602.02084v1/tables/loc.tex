@@ -1,0 +1,247 @@
+\begin{table*}[h]
+\centering
+% \scriptsize
+\renewcommand{\arraystretch}{1.2}
+\caption{
+Comprehensive localization results on SWE-bench Verified and SWE-bench Live Lite across File and Function levels.
+Acc@k: Accuracy@k. Pre/Rec: Precision/Recall.
+\textbf{Bold} indicates the best result, and \underline{Underline} indicates the second best.
+}
+\label{tab:loc_result}
+
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}l cccc cccc | cccc cccc@{}}
+\toprule
+% === Header Row 1 ===
+\multirow{3}{*}{\textbf{Method}} & 
+\multicolumn{8}{c}{\textbf{SWE-bench Verified}} & 
+\multicolumn{8}{c}{\textbf{SWE-bench Live}} \\
+\cmidrule(lr){2-9} \cmidrule(l){10-17}
+
+% === Header Row 2: Granularity===
+ & \multicolumn{4}{c}{\textbf{File-level}} & \multicolumn{4}{c}{\textbf{Function-level}} 
+ & \multicolumn{4}{c}{\textbf{File-level}} & \multicolumn{4}{c}{\textbf{Function-level}} \\
+\cmidrule(lr){2-5} \cmidrule(lr){6-9} 
+\cmidrule(lr){10-13} \cmidrule(l){14-17} 
+
+% === Header Row 3: Metrics===
+ & Acc@1 & Acc@5 & Pre & Rec & Acc@1 & Acc@5 & Pre & Rec 
+ & Acc@1 & Acc@5 & Pre & Rec & Acc@1 & Acc@5 & Pre & Rec \\
+\midrule
+
+% ================= Model: o3-mini =================
+\rowcolor{modelbg}
+\multicolumn{17}{c}{\textbf{Model: o3-mini}} \\
+
+Agentless & \heat{67.1} & \heatul{88.1} & \heat{67.0} & \heatul{64.7} & \heat{34.7} & \heat{60.3} & \heat{39.4} & \heat{33.2} & \heat{54.2} & \heat{78.5} & \heat{55.6} & \heat{47.7} & \heat{28.8} & \heat{54.2} & \heat{39.3} & \heat{25.6} \\
+
+OrcaLoca & \heatul{67.5} & \heat{71.9} & \heatul{68.3} & \heat{64.0} & \heat{46.3} & \heat{52.9} & \heat{48.3} & \heat{41.5} & \heat{35.4} & \heat{38.0} & \heat{36.2} & \heat{27.6} & \heat{23.1} & \heat{26.1} & \heat{25.3} & \heat{15.6} \\
+
+LocAgent & \heat{62.8} & \heat{77.2} & \heat{64.7} & \heat{61.4} & \heat{32.1} & \heat{40.5} & \heat{33.9} & \heat{28.9} & \heat{47.6} & \heat{59.4} & \heat{49.7} & \heat{41.2} & \heat{23.8} & \heat{31.0} & \heat{26.6} & \heat{17.7} \\
+
+CoSIL & \heat{66.5} & \heat{85.7} & \heat{66.2} & \heat{63.6} & \heatul{52.2} & \heatul{73.3} & \heatul{54.7} & \heatul{47.1} & \heatul{60.9} & \heatul{80.8} & \heatul{66.1} & \heatul{54.8} & \heatul{43.8} & \heatul{65.1} & \heatul{51.4} & \heatul{35.6} \\
+
+\textbf{Repo-Enc} & \heatbf{78.3} & \heatbf{91.2} & \heatbf{80.7} & \heatbf{76.8} & \heatbf{58.5} & \heatbf{77.8} & \heatbf{62.9} & \heatbf{55.1} & \heatbf{73.7} & \heatbf{88.2} & \heatbf{77.5} & \heatbf{64.5} & \heatbf{56.5} & \heatbf{75.6} & \heatbf{64.7} & \heatbf{46.9} \\
+
+\hline
+\textbf{$\Delta_{\text{best}}$} & 
+\color[HTML]{2D885D}\textbf{+10.8} & 
+\color[HTML]{2D885D}\textbf{+3.1} & 
+\color[HTML]{2D885D}\textbf{+12.4} & 
+\color[HTML]{2D885D}\textbf{+12.1} & 
+\color[HTML]{2D885D}\textbf{+6.3} & 
+\color[HTML]{2D885D}\textbf{+4.5} & 
+\color[HTML]{2D885D}\textbf{+8.2} & 
+\color[HTML]{2D885D}\textbf{+8.0} & 
+\color[HTML]{2D885D}\textbf{+12.8} & 
+\color[HTML]{2D885D}\textbf{+7.4} & 
+\color[HTML]{2D885D}\textbf{+11.4} & 
+\color[HTML]{2D885D}\textbf{+9.7} & 
+\color[HTML]{2D885D}\textbf{+12.7} & 
+\color[HTML]{2D885D}\textbf{+10.5} & 
+\color[HTML]{2D885D}\textbf{+13.3} & 
+\color[HTML]{2D885D}\textbf{+11.3} \\
+
+
+% ================= Model: GPT-4o =================
+\rowcolor{modelbg}
+\multicolumn{17}{c}{\textbf{Model: GPT-4o}} \\
+
+Agentless & \heat{63.0} & \heat{86.1} & \heat{63.1} & \heat{61.1} & \heat{31.4} & \heat{58.8} & \heat{34.7} & \heat{29.3} & \heat{56.1} & \heat{78.8} & \heat{57.1} & \heat{48.3} & \heat{30.6} & \heat{57.4} & \heat{41.4} & \heat{26.4} \\
+
+OrcaLoca & \heat{64.3} & \heat{69.3} & \heat{65.0} & \heat{61.4} & \heat{39.8} & \heat{53.3} & \heat{42.5} & \heat{36.7} & \heat{42.5} & \heat{47.6} & \heat{45.0} & \heat{34.0} & \heat{28.2} & \heat{37.0} & \heat{32.5} & \heat{21.1} \\
+
+LocAgent & \heatul{71.9} & \heatul{87.9} & \heatul{73.4} & \heatul{69.3} & \heat{40.1} & \heatul{67.4} & \heat{44.8} & \heat{38.1} & \heatul{62.5} & \heatul{80.0} & \heatul{66.8} & \heatul{54.2} & \heat{35.7} & \heat{56.4} & \heat{44.5} & \heatul{29.9} \\
+
+CoSIL & \heat{64.9} & \heat{84.4} & \heat{65.0} & \heat{62.2} & \heatul{43.2} & \heat{66.2} & \heatul{48.2} & \heatul{40.1} & \heat{60.1} & \heat{77.0} & \heat{63.7} & \heat{50.7} & \heatul{41.2} & \heatul{61.6} & \heatul{49.1} & \heat{29.4} \\
+
+\textbf{Repo-Enc} & \heatbf{74.5} & \heatbf{89.6} & \heatbf{77.0} & \heatbf{72.7} & \heatbf{53.1} & \heatbf{76.7} & \heatbf{57.9} & \heatbf{49.5} & \heatbf{69.2} & \heatbf{83.5} & \heatbf{73.2} & \heatbf{60.3} & \heatbf{50.5} & \heatbf{69.4} & \heatbf{59.4} & \heatbf{41.8} \\
+
+\hline
+\textbf{$\Delta_{\text{best}}$} & 
+\color[HTML]{2D885D}\textbf{+2.6} &
+\color[HTML]{2D885D}\textbf{+1.7} &
+\color[HTML]{2D885D}\textbf{+3.6} &
+\color[HTML]{2D885D}\textbf{+3.4} &
+\color[HTML]{2D885D}\textbf{+9.9} &
+\color[HTML]{2D885D}\textbf{+9.3} &
+\color[HTML]{2D885D}\textbf{+9.7} &
+\color[HTML]{2D885D}\textbf{+9.4} &
+\color[HTML]{2D885D}\textbf{+6.7} &
+\color[HTML]{2D885D}\textbf{+3.5} &
+\color[HTML]{2D885D}\textbf{+6.4} &
+\color[HTML]{2D885D}\textbf{+6.1} &
+\color[HTML]{2D885D}\textbf{+9.3} &
+\color[HTML]{2D885D}\textbf{+7.8} &
+\color[HTML]{2D885D}\textbf{+10.3} &
+\color[HTML]{2D885D}\textbf{+11.9} \\
+
+
+% ================= Model: GPT-4.1 =================
+\rowcolor{modelbg}
+\multicolumn{17}{c}{\textbf{Model: GPT-4.1}} \\
+
+Agentless 
+& \heat{65.2} & \heat{90.8} & \heat{65.7} & \heat{63.5}
+& \heat{29.3} & \heat{49.0} & \heat{32.7} & \heat{26.4}
+& \heat{62.0} & \heat{85.5} & \heat{63.0} & \heat{54.5}
+& \heat{35.1} & \heat{59.4} & \heat{46.0} & \heat{25.4} \\
+
+OrcaLoca
+& \heat{75.2} & \heat{80.0} & \heat{76.5} & \heat{71.3}
+& \heatul{55.2} & \heat{66.7} & \heatul{59.0} & \heatul{50.1}
+& \heat{56.2} & \heat{59.6} & \heat{57.1} & \heat{44.2}
+& \heat{42.0} & \heat{50.5} & \heat{46.2} & \heat{29.1} \\
+
+LocAgent
+& \heatul{79.5} & \heatul{90.9} & \heatul{80.8} & \heatul{77.2}
+& \heat{32.3} & \heat{65.6} & \heat{36.7} & \heat{31.2}
+& \heatul{74.7} & \heatul{87.9} & \heatul{76.8} & \heatul{66.1}
+& \heat{43.4} & \heat{68.7} & \heat{52.5} & \heat{38.7} \\
+
+CoSIL
+& \heat{69.8} & \heat{90.6} & \heat{70.7} & \heat{67.6}
+& \heat{51.8} & \heatul{74.5} & \heat{55.3} & \heat{47.0}
+& \heat{62.3} & \heat{84.7} & \heat{67.3} & \heat{55.6}
+& \heatul{48.8} & \heatul{72.2} & \heatul{58.3} & \heatul{41.2} \\
+
+\textbf{Repo-Enc}
+& \heatbf{82.6} & \heatbf{93.2} & \heatbf{83.6} & \heatbf{79.3}
+& \heatbf{68.7} & \heatbf{83.4} & \heatbf{71.0} & \heatbf{62.4}
+& \heatbf{78.0} & \heatbf{90.5} & \heatbf{81.4} & \heatbf{69.0}
+& \heatbf{64.7} & \heatbf{81.9} & \heatbf{72.1} & \heatbf{52.6} \\
+
+\hline
+\textbf{$\Delta_{\text{best}}$}
+& \color[HTML]{2D885D}\textbf{+3.1}
+& \color[HTML]{2D885D}\textbf{+2.3}
+& \color[HTML]{2D885D}\textbf{+2.8}
+& \color[HTML]{2D885D}\textbf{+2.1}
+& \color[HTML]{2D885D}\textbf{+13.5}
+& \color[HTML]{2D885D}\textbf{+8.9}
+& \color[HTML]{2D885D}\textbf{+12.0}
+& \color[HTML]{2D885D}\textbf{+12.3}
+& \color[HTML]{2D885D}\textbf{+3.3}
+& \color[HTML]{2D885D}\textbf{+2.6}
+& \color[HTML]{2D885D}\textbf{+4.6}
+& \color[HTML]{2D885D}\textbf{+2.9}
+& \color[HTML]{2D885D}\textbf{+15.9}
+& \color[HTML]{2D885D}\textbf{+9.7}
+& \color[HTML]{2D885D}\textbf{+13.8}
+& \color[HTML]{2D885D}\textbf{+11.4} \\
+
+
+
+% ================= Model: GPT-5 =================
+\rowcolor{modelbg}
+\multicolumn{17}{c}{\textbf{Model: GPT-5}} \\
+
+Agentless 
+& \heat{78.7} & \heat{95.9} & \heat{78.3} & \heat{76.2}
+& \heat{45.1} & \heat{68.1} & \heat{47.3} & \heat{41.3}
+& \heat{64.5} & \heat{87.4} & \heat{65.1} & \heat{57.4}
+& \heat{38.8} & \heat{64.6} & \heat{49.7} & \heat{31.6} \\
+
+OrcaLoca
+& \heatul{88.2} & \heat{93.9} & \heatul{88.6} & \heat{84.2}
+& \heatul{76.1} & \heatul{86.2} & \heatul{79.1} & \heatul{68.6}
+& \heat{74.4} & \heat{82.3} & \heat{77.6} & \heat{63.5}
+& \heatul{59.6} & \heat{74.0} & \heatul{68.6} & \heat{46.6} \\
+
+LocAgent
+& \heat{88.2} & \heatul{96.7} & \heat{88.4} & \heatul{86.7}
+& \heat{50.9} & \heat{80.3} & \heat{55.9} & \heat{49.7}
+& \heatul{79.7} & \heatul{93.0} & \heatul{81.4} & \heatul{74.2}
+& \heat{48.0} & \heat{68.7} & \heat{56.6} & \heat{40.5} \\
+
+CoSIL
+& \heat{82.8} & \heat{95.7} & \heat{82.3} & \heat{80.2}
+& \heat{68.3} & \heat{81.8} & \heat{68.9} & \heat{62.3}
+& \heat{69.8} & \heat{89.3} & \heat{72.9} & \heat{62.2}
+& \heat{55.2} & \heatul{76.2} & \heat{62.3} & \heatul{46.5} \\
+
+\textbf{Repo-Enc}
+& \heatbf{91.9} & \heatbf{97.7} & \heatbf{91.1} & \heatbf{89.1}
+& \heatbf{83.4} & \heatbf{93.6} & \heatbf{84.5} & \heatbf{76.9}
+& \heatbf{82.1} & \heatbf{94.4} & \heatbf{85.4} & \heatbf{76.2}
+& \heatbf{71.9} & \heatbf{87.8} & \heatbf{78.1} & \heatbf{61.1} \\
+
+\hline
+\textbf{$\Delta_{\text{best}}$}
+& \color[HTML]{2D885D}\textbf{+3.7}
+& \color[HTML]{2D885D}\textbf{+1.0}
+& \color[HTML]{2D885D}\textbf{+2.5}
+& \color[HTML]{2D885D}\textbf{+2.4}
+& \color[HTML]{2D885D}\textbf{+7.3}
+& \color[HTML]{2D885D}\textbf{+7.4}
+& \color[HTML]{2D885D}\textbf{+5.4}
+& \color[HTML]{2D885D}\textbf{+8.3}
+& \color[HTML]{2D885D}\textbf{+2.4}
+& \color[HTML]{2D885D}\textbf{+1.4}
+& \color[HTML]{2D885D}\textbf{+4.0}
+& \color[HTML]{2D885D}\textbf{+2.0}
+& \color[HTML]{2D885D}\textbf{+12.3}
+& \color[HTML]{2D885D}\textbf{+11.6}
+& \color[HTML]{2D885D}\textbf{+9.5}
+& \color[HTML]{2D885D}\textbf{+14.5} \\
+
+% ================= Model: Claude-4.5 =================
+\rowcolor{modelbg}
+\multicolumn{17}{c}{\textbf{Model: Claude-4.5-Sonnet}} \\
+
+Agentless & \heat{76.6} & \heatul{96.5} & \heat{76.9} & \heat{74.4} & \heat{31.7} & \heat{34.6} & \heat{32.0} & \heat{27.1} & \heat{63.8} & \heatul{89.7} & \heat{66.1} & \heat{58.0} & \heat{41.4} & \heat{72.4} & \heat{55.3} & \heat{35.9} \\
+
+OrcaLoca & \heatul{87.2} & \heat{89.6} & \heatul{87.5} & \heatul{82.2} & \heatul{74.5} & \heatul{79.3} & \heatul{76.5} & \heatul{65.1} & \heatul{74.7} & \heat{78.3} & \heatul{76.2} & \heatul{61.5} & \heatul{65.1} & \heat{69.4} & \heatul{67.8} & \heatul{46.1} \\
+
+LocAgent & \heat{71.4} & \heat{76.6} & \heat{72.7} & \heat{70.2} & \heat{49.3} & \heat{57.8} & \heat{51.5} & \heat{44.9} & \heat{58.7} & \heat{69.0} & \heat{61.6} & \heat{54.7} & \heat{47.3} & \heat{60.5} & \heat{52.6} & \heat{39.3} \\
+
+CoSIL & \heat{75.5} & \heat{96.1} & \heat{75.9} & \heat{73.7} & \heat{57.5} & \heat{78.7} & \heat{60.7} & \heat{52.9} & \heat{64.5} & \heat{88.3} & \heat{69.4} & \heat{57.5} & \heat{51.1} & \heatul{74.9} & \heat{60.1} & \heat{39.6} \\
+
+\textbf{Repo-Enc} & \heatbf{90.5} & \heatbf{97.6} & \heatbf{91.8} & \heatbf{88.6} & \heatbf{79.8} & \heatbf{93.7} & \heatbf{83.4} & \heatbf{75.8} & \heatbf{82.0} & \heatbf{93.9} & \heatbf{85.6} & \heatbf{75.8} & \heatbf{74.8} & \heatbf{90.4} & \heatbf{80.7} & \heatbf{63.3} \\
+
+\hline
+\textbf{$\Delta_{\text{best}}$} & 
+\color[HTML]{2D885D}\textbf{+3.3} &
+\color[HTML]{2D885D}\textbf{+1.1} &
+\color[HTML]{2D885D}\textbf{+4.3} &
+\color[HTML]{2D885D}\textbf{+6.4} &
+\color[HTML]{2D885D}\textbf{+5.3} &
+\color[HTML]{2D885D}\textbf{+14.4} &
+\color[HTML]{2D885D}\textbf{+6.9} &
+\color[HTML]{2D885D}\textbf{+10.7} &
+\color[HTML]{2D885D}\textbf{+7.3} &
+\color[HTML]{2D885D}\textbf{+4.2} &
+\color[HTML]{2D885D}\textbf{+9.4} &
+\color[HTML]{2D885D}\textbf{+14.3} &
+\color[HTML]{2D885D}\textbf{+9.7} &
+\color[HTML]{2D885D}\textbf{+15.5} &
+\color[HTML]{2D885D}\textbf{+12.9} &
+\color[HTML]{2D885D}\textbf{+17.2} \\
+
+\bottomrule
+\end{tabular}%
+} % end resizebox
+\end{table*}
+
+
+

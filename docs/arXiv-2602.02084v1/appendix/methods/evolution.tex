@@ -1,0 +1,117 @@
+% =========================
+% A.2 Incremental Evolution
+% =========================
+\subsection{Incremental Evolution: Differential Update and Maintenance}
+\label{app:evolution}
+
+This subsection details how RPG-Encoder maintains the Repository Planning Graph (RPG) under continuous codebase
+evolution. Given a repository update (e.g., a commit), our goal is to \emph{incrementally} update the semantic
+hierarchy and its grounded mapping, ensuring the RPG remains a faithful semantic reflection of the codebase while
+avoiding expensive full reconstruction. We formulate repository evolution as a stream of \textbf{atomic operations}:
+\textsc{Delete}, \textsc{Modify}, and \textsc{Insert}. Each operation updates both (i) the local semantic
+representation of affected entities and (ii) their placement within the feature hierarchy.
+
+% -------------------------
+% A.2.1 Differential Event Detection
+% -------------------------
+\subsubsection{Differential Event Detection and Operation Scheduling}
+\label{app:evolution_diff}
+
+\paragraph{From code diffs to semantic events.}
+Given a code change $\Delta$ (e.g., a git diff between two revisions), we extract changed code entities at the
+function/method granularity whenever possible. Each affected entity $u$ is categorized into one of three evolution events:
+\begin{itemize}
+    \item \textbf{Deletion:} $u$ is removed from the repository.
+    \item \textbf{Modification:} $u$ exists in both revisions but its implementation changes.
+    \item \textbf{Insertion:} $u$ is newly introduced in the new revision.
+\end{itemize}
+For \textsc{Modification}, we further distinguish between semantically stable edits and substantial semantic drift (Section~\ref{app:evolution_modify}), which determines whether the update can be handled locally or requires
+structural relocation.
+
+\paragraph{Scheduling principle.}
+We schedule evolution operations under constraints that preserve structural consistency of the hierarchy,
+prevent intermediate abstract nodes from accumulating dead branches,
+and ensure that newly introduced entities do not disrupt the existing topological organization.
+
+% -------------------------
+% A.2.2 Deletion
+% -------------------------
+\subsubsection{Node Deletion with Structural Hygiene}
+\label{app:evolution_delete}
+
+\input{algos/deletion}
+
+\paragraph{Motivation.}
+Deletion must maintain structural integrity of the hierarchy. Removing a leaf entity may render its ancestor abstract
+nodes semantically vacuous (i.e., nodes that no longer cover any concrete code entities). Without cleanup, these dead
+branches accumulate and reduce the signal-to-noise ratio for search and routing.
+
+\paragraph{Recursive pruning.}
+We enforce \textbf{structural hygiene} via bottom-up pruning: after removing a leaf node, we recursively delete any
+ancestor abstract node whose subtree becomes empty. Pruning terminates once an ancestor still has remaining children
+or once the root is reached.
+This mechanism prevents stale semantic categories from persisting after refactors and ensures that the hierarchy remains compact and representative of the current repository state.
+
+\paragraph{Algorithm.}
+Algorithm~\ref{alg:deletion} specifies the deletion procedure and the recursive pruning logic.
+
+% -------------------------
+% A.2.3 Modification
+% -------------------------
+\subsubsection{Differential Modification Processing}
+\label{app:evolution_modify}
+
+\input{algos/modified}
+
+\paragraph{Motivation.}
+A code edit may either preserve the original intent (e.g., bug fixes, refactoring, parameter tuning) or substantially
+change functionality (semantic drift). Treating both cases identically is suboptimal: in-place updates are sufficient
+for minor edits, while major drift requires relocating the entity to a semantically congruent domain.
+
+\paragraph{Minor update vs.\ semantic drift.}
+Given a modified entity $u$ with old/new versions $(u^{old}, u^{new})$, we compute semantic features
+$f(u^{old})$ and $f(u^{new})$ using the same parsing constraints as in extraction. We then assess drift based on:
+(i) feature overlap/consistency, and (ii) an LLM judgement constrained by explicit criteria. If drift is minor, we perform an in-place update
+of the node’s semantic summary; otherwise, we trigger re-routing.
+
+\paragraph{Re-routing as composition.}
+When semantic drift is significant, we treat modification as a composition of atomic operations:
+\[
+\textsc{Modify}(u) \;\Rightarrow\; \textsc{Delete}(u^{old}) + \textsc{Insert}(u^{new}),
+\]
+which relocates the entity to a new functional domain via the same semantic routing procedure used for insertion.
+This guarantees that the hierarchy reflects the updated intent rather than only updating text summaries in an
+incorrect domain.
+
+\paragraph{Algorithm.}
+Algorithm~\ref{alg:modification} formalizes the differential modification procedure, including the branching logic
+between in-place update and re-routing.
+
+% -------------------------
+% A.2.4 Insertion
+% -------------------------
+\subsubsection{Node Insertion via Semantic Routing}
+\label{app:evolution_insert}
+
+\input{algos/insertion}
+
+\paragraph{Motivation.}
+Naively attaching new entities to the root (or a fixed default module) breaks the semantic organization of the RPG and
+degrades downstream navigation. Instead, we treat insertion as a \textbf{semantic placement} problem: find the most
+appropriate abstract parent node in the current feature hierarchy that best matches the new entity’s functionality.
+
+\paragraph{Routing objective.}
+Let $u$ be a newly added code entity with semantic features $f(u)$. Starting from the root of the feature hierarchy,
+we iteratively select the child domain whose description best aligns with $f(u)$, drilling down until no more
+meaningful specialization is possible. This \textbf{top-down semantic routing} ensures that $u$ is inserted into the
+most specific functional domain available while preserving interpretability of the hierarchy.
+
+\paragraph{Algorithm.}
+Algorithm~\ref{alg:insertion} formalizes the insertion procedure. At each step, the router considers the candidate
+children of the current node and chooses the best target; if no child is sufficiently compatible, the algorithm
+terminates and inserts $u$ at the current level. This prevents over-forcing entities into unrelated subtrees.
+
+\paragraph{Complexity and scalability.}
+Incremental evolution in RPG-Encoder is inherently local.
+Each atomic operation affects only a bounded region of the hierarchy, without requiring global reconstruction.
+As a result, maintenance cost scales with the \emph{magnitude of the change} rather than the size of the repository, enabling efficient and stable synchronization of the RPG under continuous development.

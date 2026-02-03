@@ -1,0 +1,45 @@
+\begin{table*}[t]
+\centering
+\caption{Performance of agent frameworks and model backbones on RepoCraft. "Nov." denotes the novelty rate; the number in parentheses is Novel/Total, where Novel is the number of novel functionalities and Total is the total number of planned functionalities. Gold Projects are used as a confidence ablation for the automatic evaluation pipeline, and per-repository detailed results are reported in Appendix~\ref{app:detailed_result}.}
+\label{tab:main_results}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{llcccccc}
+\toprule
+\textbf{Agent} & \textbf{Model} & \textbf{Cov.} (\%) $\uparrow$ & \textbf{Nov.} (\%) (Novel/Total) $\uparrow$ & \textbf{Pass. / Vot.} (\%) $\uparrow$ & \textbf{Files} $\uparrow$ & \textbf{LOC} $\uparrow$ & \textbf{Tokens} $\uparrow$ \\
+\midrule
+\multirow{2}{*}{MetaGPT}
+  & o3-mini     & 16.6 & 0.0 (0.0/24.8) & 4.5 / 10.2 & 2.3 & 225.3 & 2180.3 \\
+  & Qwen3-Coder & 17.1 & 0.0 (0.0/32.7) & 3.2 / 9.4 & 8.5 & 326.5 & 3369.3 \\
+\midrule
+\multirow{2}{*}{ChatDev}
+  & o3-mini     & 18.3 & 9.2 (3.0/32.8) & 2.6 / 10.5 & 5.8 & 410.3 & 4458 \\
+  & Qwen3-Coder & 22.1 & 3.9 (1.5/38.3) & 6.9 / 11.6 & 6.3 & 540.7 & 5422.2 \\
+\midrule
+\multirow{2}{*}{OpenHands}
+  & o3-mini     & 22.0 & 0.3 (0.1/36.5) & 5.1 / 16.9 & 9.8 & 292.2 & 2712.8 \\
+  & Qwen3-Coder & 21.7 & 0.0 (0.0/33.7) & 5.8 / 11.2 & 8.3 & 458.0 & 4778.3 \\
+\midrule
+\multirow{2}{*}{Paper2Code}
+  & o3-mini     & 21.7 & 5.2 (2.1/40.0) & 6.0 / 15.8 & 7.2 & 547.7 & 5920.8 \\
+  & Qwen3-Coder & 30.2 & 5.5 (4.0/73.8)& 4.9 / 15.9 & 8.8 & 1365.2 & 14,555.0 \\
+\midrule
+Codex CLI        & o3 pro             & 28.4 & 0.0 (0.0/48.5) & 11.0 / 20.0 & 5.3 & 611.5 & 6248.5 \\
+Gemini CLI       & gemini 2.5 pro     & 42.0 & 0.6 (0.8/132.7) & 14.5 / 37.9 & 15.2 & 1484.8 & 14,922.2 \\
+Claude Code CLI  & claude 4 sonnet    & 54.2 & 6.7 (41.6/621.0) & 33.9 / 52.5 & 33.3 & 10,586.7 &  105,236.2 \\
+\midrule
+\rowcolor{gray!20}
+\multirow{1}{*}{Gold Projects} 
+  & Human Developers 
+  & - & - 
+  & 81.0 / 92.0 
+  & 345 
+  & 97,819.7 
+  & 951,614 \\
+\midrule
+\multirow{2}{*}{\textbf{\ours}}
+  & o3-mini     & \textbf{81.5} & \textbf{13.6} (\textbf{151.5}/\textbf{1114.2}) & \textbf{69.7 / 75.0} & \textbf{271.5} & \textbf{23,977.3} & \textbf{260,761.2} \\
+  & Qwen3-Coder & \textbf{75.1} & \textbf{9.2} (\textbf{108.3}/\textbf{1173.3}) & \textbf{57.3 / 68.0} & \textbf{389.0} & \textbf{36,941.0} & \textbf{445,511.8} \\
+\bottomrule
+\end{tabular}%
+}
+\end{table*}

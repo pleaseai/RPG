@@ -1,0 +1,71 @@
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\textwidth]{figs/pipeline.pdf}
+     \caption{The \ours{} pipeline for repository generation. 
+    (A) Proposal-level construction translates specifications into a functionality graph. 
+    (B) Implementation-level construction refines it via (B1) file-structure encoding into a file-augmented graph and (B2) data-flow/function encoding into the final Repository Planning Graph (\graph{}). 
+    (C) Graph-guided code generation traverses \graph{} in topological order to produce a stable repository.}
+    \label{fig:pipeline}
+    \vspace{-10pt}
+\end{figure}
+\vspace*{-10pt}
+\section{Repository Planning Graph Construction}
+\label{sec:graph-structure}
+\vspace*{-3pt}
+To address the ambiguity of natural language plans, we propose the \textbf{Repository Planning Graph} (\graph{}), a structured representation that encodes repository functionality and implementation logic as nodes and edges. Building on \graph{}, we develop \ours{}, a framework for repository generation from scratch. This section first introduces the structure of \graph{} (§\ref{sec:graph-structure}), and then explains how \ours{} constructs it through proposal-level planning (§\ref{sec:proposal}) and implementation-level refinement (§\ref{sec:implement}). The overall pipeline is shown in Figure~\ref{fig:pipeline}(A-B).
+
+% To replace unstable natural language plans, \ours{} introduces the \textit{Feature Graph}, a persistent and evolvable representation that encodes repository functionality through structured nodes and edges. It expresses planning information directly on the graph, progressively refining high-level user descriptions into executable blueprints through \textbf{proposal-level planning} of functional capabilities and \textbf{implementation-level planning} of files, functions, and data flows.
+
+\subsection{Repository Planning Graph Structure}
+\label{sec:graph-structure}
+\vspace*{-5pt}
+\begin{wrapfigure}[18]{r}{0.48\textwidth}
+  \centering
+    \includegraphics[width=\linewidth]{figs/feature_graph.pdf}
+       \caption{Example of a Repository Planning Graph: Solid lines show hierarchy, black arrows for inter-module flows, dashed gray arrows for intra-module order.}
+    \label{fig:feature_graph}
+\end{wrapfigure}
+
+As shown in Figure~\ref{fig:feature_graph}, \graph{} provides a unified representation for repository planning by encoding functionality and implementation in a structured graph, rather than unstable natural language descriptions. Its nodes carry dual semantics. At the functional level, they represent progressively refined capabilities: high-level modules (e.g., \texttt{algorithms}, \texttt{evaluation}) decompose into mid-level components and ultimately into leaf nodes corresponding to concrete algorithms. At the structural level, this hierarchy naturally mirrors repository organization: root nodes typically align with file regions, intermediate nodes with files, and leaf nodes with functions or classes, thereby unifying functional decomposition with code structure.
+
+Beyond the hierarchical nodes, edges in \graph{} capture execution dependencies across granularity. Inter-module edges (black arrows in Figure~\ref{fig:feature_graph}) encode data flows between modules, such as outputs from \texttt{Data Loading} feeding into \texttt{ML Algorithms} and then into \texttt{Evaluation}. Intra-module edges (gray dashed arrows) capture file-level orderings; for instance, \texttt{load\_data.py} precedes \texttt{preprocess.py}, with outputs propagated to preprocessing. Collectively, these edges impose a topological order that aligns functional decomposition with code organization, ensuring coherence between global execution semantics and local implementation.
+
+\subsection{Proposal-Level Construction}
+\label{sec:proposal}
+At the proposal level, the aim is to translate high-level user specifications into a coherent functionality graph. This involves three steps: grounding functionalities in a large-scale Feature Tree, selecting a repository-aligned subtree via explore–exploit search, and refactoring it into the graph. The full algorithm is detailed in Appendix~\ref{app:algo-proposal}.
+\vspace*{-5pt}
+\paragraph{A Global Tree as Knowledge Base} LLMs alone provide unstable and biased capability enumeration, often yielding incomplete coverage~\citep{valmeekam2023planning, armony2025far}. To stabilize planning, we ground functionality selection in the EpiCoder Feature Tree~\citep{wang2025epicoder}, a large-scale ontology of over 1.5M software capabilities. Its broad coverage and hierarchy serve as a structured prior, mitigating randomness and bias while ensuring repository functionalities are systematically captured and diverse. For efficient retrieval, each feature node is embedded into a vector representation, with its full hierarchical path stored as metadata in a vector database. This design preserves both semantic similarity and structural context, enabling precise and scalable functionality grounding. Detailed statistics of the Feature Tree are provided in Appendix~\ref{ref:construction_process}.
+\vspace*{-5pt}
+\paragraph{Explore–Exploit Subtree Selection}
+Using the Feature Tree as a structured knowledge base, the first step is to construct a \textbf{repo-aligned subtree} tailored to the user’s goal. Exhaustive enumeration is infeasible at the 1.5M scale, so \ours{} incrementally expands the subtree via an explore–exploit strategy. (1) \textbf{Exploitation} ensures precision: we retrieve top-$k$ feature paths most aligned with the user goal and augment them with keywords suggested by LLM queries. (2) \textbf{Exploration} ensures diversity: we deliberately expand into unvisited regions of the ontology to capture less obvious but relevant functionalities. Candidates from both strategies are filtered by the LLM and integrated into the evolving subtree, yielding a balanced and comprehensive foundation for downstream planning.
+\vspace*{-5pt}
+\paragraph{Refactoring by Goal Alignment}
+The repo-aligned subtree, though capturing relevant functionalities, still inherits the generic organization of the global ontology. To align it with the user's repository goal, we refactor feature placements into a modular \textbf{functionality graph}. The LLM partitions functionalities into cohesive modules following software engineering principles of cohesion and coupling. For instance, in a machine learning library, metrics such as \texttt{silhouette\_score} are reorganized under an evaluation module rather than within clustering algorithms. The resulting graph establishes clear functional boundaries, encoding proposal-level planning directly into the representation.
+\vspace*{-15pt}
+\subsection{Implementation-Level Construction}
+\label{sec:implement}
+After proposal-level construction establishes the multi-level functional plan, the graph is further enriched with implementation details, culminating in the complete Repository Planning Graph (\graph{}) at this stage. The process includes encoding the repository’s file structure, modeling inter-module data flows and intra-module orderings, and specifying concrete functions and interfaces.
+\vspace*{-10pt}
+\subsubsection{File Structure Encoding}
+While proposal-level planning defines modular functionalities, it remains abstract and detached from implementation. To bridge this gap, the graph is extended with folder and file layouts, instantiating a repository skeleton that maps functional modules into executable structures, resulting in a file-augmented graph.
+\vspace*{-5pt}
+\paragraph{Folder-Level Encoding} Proposal-level planning partitions functionalities into modular subgraphs, but this abstraction does not yet define the repository’s structural layout. To bridge the gap, we enrich root nodes with folder-level specifications, assigning each subgraph a dedicated directory namespace (e.g., \texttt{algoritms/}, \texttt{evaluation/}). This encoding couples semantic modularity with explicit structural separation, ensuring that descendant functionalities inherit a consistent namespace and that the repository skeleton align with high-level capability decomposition.  
+\vspace*{-5pt}
+\paragraph{File-Level Encoding} Once folder regions are encoded at the root nodes, the graph is enriched by assigning files to intermediate nodes. This step specifies how functionalities within a module are grouped into executable files. For example, preprocessing utilities are consolidated into \texttt{preprocess.py}, while models such as linear regression and its variants are grouped into \texttt{linear\_models.py}. By embedding file structure in the graph, we preserve semantic cohesion, reduce cross-file coupling, and obtain a file-augmented graph that anchors downstream design.
+\vspace*{-5pt}
+\subsubsection{Data Flow and Functions Encoding}
+After obtaining the file-augmented graph, this stage finalizes the full Repository Planning Graph (\graph{}) by assigning executable roles to leaf nodes. To ensure coherence across modules and functions, we first incorporate inter- and intra-module data flows as input–output constraints, then abstract shared structures as design anchors, and finally refine leaf nodes into concrete functions or classes.
+\vspace*{-5pt}
+\paragraph{Data-Flow Encoding}
+To ground interface design in execution semantics, the graph is augmented with data-flow edges that capture inter- and intra-module relations. At the global level, as shown in Figure~\ref{fig:feature_graph}, typed input–output flows connect subgraph roots; for example, a data-loading module may provide an \texttt{array} of training data to downstream algorithms. At the local level, files within a module are planned in a specific order, ensuring coherent and dependency-aware implementation. These flows impose a hierarchical topological order that constrains and organizes interface design.
+\vspace*{-5pt}
+\paragraph{Abstracting Global Interfaces}
+To improve scalability and maintainability, recurring input–output patterns across modules are abstracted into common data structures or base classes, providing design anchors that enforce interface consistency and reduce redundancy. For example, algorithms can be unified under a \texttt{BaseEstimator} class to ensure standardized interaction with preprocessing and evaluation modules.
+\vspace*{-5pt}
+\paragraph{Adaptive Interface Design}
+Within each file-level subgraph, leaf features are clustered into executable interfaces according to semantic relatedness. Independent features are implemented as standalone functions, while interdependent features are consolidated into shared classes with individual methods. For example, in Figure~\ref{fig:feature_graph}, \texttt{load\_json} and \texttt{load\_csv} are grouped into a \texttt{DataLoader} class, while regression variants are unified under \texttt{LinearModels}. This adaptive mapping balances granularity with cohesion, yielding a complete Repository Planning Graph (\graph{}) that preserves modularity and semantic consistency at the repository scale.
+
+
+
+

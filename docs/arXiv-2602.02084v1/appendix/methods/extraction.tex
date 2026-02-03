@@ -1,0 +1,155 @@
+% =========================
+% A.1 RPG Extraction
+% =========================
+\subsection{RPG Extraction: Semantic Lifting and Hierarchical Encoding}
+\label{app:extraction}
+
+This subsection details the construction stage of RPG-Encoder, which transforms a raw repository into a
+hierarchically organized \emph{feature space} (the semantic backbone of RPG) together with a \emph{grounded}
+mapping that links abstract functional nodes to concrete directory scopes.
+Concretely, the extraction stage proceeds in three steps:
+(1) \textbf{Semantic lifting} that converts low-level code entities into atomic functional features;
+(2) \textbf{Latent architecture recovery} that reorganizes these features into a consistent three-level hierarchy;
+and (3) \textbf{Artifact grounding} that anchors each abstract subtree to a compact set of physical directory paths.
+The resulting hierarchy serves as the \emph{Functionality SubGraph} used by downstream agentic tools (Appendix~\ref{app:operation}).
+
+% -------------------------
+% A.1.1 Semantic Lifting
+% -------------------------
+\subsubsection{Semantic Lifting via Prompted Semantic Parsing}
+\label{app:extraction_semantic}
+
+\paragraph{Global parsing strategy.}
+Given a repository $\mathcal{R}$, semantic lifting is performed from a \emph{global perspective} rather than on
+individual files in isolation. We first identify all code entities of interest, including classes, methods and functions, and treat them as the fundamental semantic units to be analyzed.
+This global view allows the model to maintain consistent semantic granularity across the repository and reduces
+local biases introduced by file boundaries.
+
+\paragraph{Semantic units and batching.}
+To accommodate repositories of varying scales while respecting model context limits, code entities are abstracted into \emph{semantic units} and analyzed in batches under a controlled token budget. Each semantic unit represents a coherent functional entity,
+ensuring that semantically coupled components are interpreted in context.
+Batches are constructed to balance completeness and efficiency, such that every semantic unit is analyzed exactly once while enabling scalable processing of large repositories.
+
+\paragraph{Semantic feature representation.}
+For each code entity $u$, the parser produces a set of \emph{atomic semantic features}
+$f(u)=\{a_1, a_2, \dots\}$, where each $a_i$ is a short verb--object phrase describing \emph{what} the entity does rather than \emph{how} it is implemented. These atomic features are intentionally constrained to be:
+(i) \textbf{single-responsibility}, (ii) \textbf{implementation-agnostic}, and (iii) \textbf{lexically normalized}
+(lowercase English, concise phrasing). This normalization is critical for subsequent routing and hierarchical encoding,
+since it provides stable semantic anchors for grouping and comparison across the repository.
+
+\paragraph{Prompt template (semantic parsing).}
+We implement semantic lifting using the following prompt template, which enforces: (1) complete coverage of all
+functions in the chunk, (2) strict output schema, and (3) feature naming rules that avoid vague verbs and
+implementation details. The prompt returns a JSON object mapping each function name to a list of semantic features.
+
+\input{prompts/semantic_parsing}
+
+\paragraph{Post-processing and validation.}
+We apply lightweight validation to guarantee the output is machine-consumable:
+(i) JSON parsing and schema checking (every function in the input must appear as a key);
+(ii) feature list normalization (whitespace, casing, deduplication);
+and (iii) optional merging for decorator variants (e.g., property getter/setter) when they share the same method name,
+as allowed by the prompt. If the model returns malformed output, we retry with a minimal format correction instruction
+without changing semantic constraints.
+
+\paragraph{Illustrative example.}
+Figure~\ref{fig:parsing_process} shows an end-to-end example of semantic lifting, where raw code snippets are mapped
+to their corresponding atomic semantic features.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\linewidth]{figs/parsing_example.pdf}
+    \caption{Illustration of raw code snippets and their corresponding semantic features extracted via semantic parsing.}
+    \label{fig:parsing_process}
+\end{figure}
+
+% -------------------------
+% A.1.2 Latent Architecture Recovery
+% -------------------------
+\subsubsection{Latent Architecture Recovery for Hierarchical Encoding}
+\label{app:extraction_latent}
+
+\paragraph{Motivation.}
+Semantic lifting yields a set of fine-grained features distributed across many files, which is insufficient as a
+planning substrate: flat features are hard to navigate, while directory-only grouping often overlooks logical roles.
+We therefore recover a \emph{latent functional architecture} that reorganizes the repository into a consistent,
+interpretable, and searchable hierarchy. We enforce a strict \textbf{three-level} feature path format:
+\[
+\texttt{<functional area>/<category>/<subcategory>},
+\]
+which balances abstraction (top-level intent) and specificity (fine-grained specialization), while keeping routing and
+tool-based navigation tractable.
+
+\paragraph{Step 1: Domain discovery (functional areas).}
+We first discover a small set of high-level functional areas that act as architectural centroids. The model is guided
+to propose meaningful areas (e.g., \texttt{DataProcessing}, \texttt{ModelTraining}, \texttt{EvaluationMetrics}) while
+avoiding low-signal directories such as vendor code, tests, or documentation.
+
+\input{prompts/domain_discovery}
+
+\paragraph{Step 2: Hierarchical construction (three-level paths).}
+Given the discovered functional areas and the parsed feature groups, we perform hierarchical construction by assigning
+each top-level feature group to a unique three-level target path. This step is formulated as a constrained semantic
+assignment problem: the model must use only the provided functional areas for the first level, and it must generate
+intent-focused category/subcategory labels following the same semantic naming rules used in semantic lifting.
+
+\input{prompts/hierarchical_construction}
+
+\paragraph{Outputs and usage.}
+The output of hierarchical construction is a mapping from feature paths to sets of feature groups, which induces a
+topological feature tree $\mathcal{T}_{\text{feature}}$. This tree serves two purposes:
+(i) it provides high-signal \emph{search scopes} for intent-to-code mapping, and
+(ii) it supports routing and traversal by ensuring semantically coherent boundaries at each level.
+
+\paragraph{Illustrative examples.}
+Figures~\ref{fig:domain_discovery_example} and~\ref{fig:hierarchical_construction} provide examples of domain discovery
+and hierarchical construction, respectively.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\linewidth]{figs/domain_example.pdf}
+    \caption{Illustrative example of the Domain Discovery phase.}
+    \label{fig:domain_discovery_example}
+\end{figure}
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\linewidth]{figs/recovery_example.pdf}
+    \caption{Example of the Hierarchical Construction phase.}
+    \label{fig:hierarchical_construction}
+\end{figure}
+
+% -------------------------
+% A.1.3 Artifact Grounding
+% -------------------------
+\subsubsection{Artifact Grounding: Anchoring Abstract Subtrees to Directory Scopes}
+\label{app:extraction_grounding}
+
+\paragraph{Problem formulation.}
+To bridge the semantic hierarchy $\mathcal{T}_{\text{feature}}$ with physical repository artifacts, we ground each
+abstract node $v$ to a compact set of directory scopes.
+Let $\mathcal{L}(v)$ denote the set of leaf nodes in the subtree rooted at $v$.
+For each leaf node $l \in \mathcal{L}(v)$, let $\text{path}(l)$ be its physical file path.
+We define the \textbf{File Coverage} $\mathcal{C}(v)$ as the collection of parent directories for all leaves under $v$:
+\begin{equation}
+\mathcal{C}(v) = \{ \text{dir}(\text{path}(l)) \mid l \in \mathcal{L}(v) \},
+\end{equation}
+where $\text{dir}(\cdot)$ extracts the directory component of a file path.
+We seek a compact representation $\hat{\pi}(v)$ that succinctly covers $\mathcal{C}(v)$ while preserving functional
+boundaries across distinct modules.
+
+\paragraph{Bottom-up propagation with Trie-based branching analysis.}
+A naive common-prefix (LCA) computation may over-collapse unrelated modules into overly general roots (e.g., \texttt{/}).
+To avoid this, we compute $\hat{\pi}(v)$ via a bottom-up propagation strategy that aggregates coverage and then
+simplifies it using a Trie-based branching analysis: all paths in $\mathcal{C}(v)$ are inserted into a Prefix Tree,
+and only \textbf{branching nodes} (multiple children or path termination) are retained as grounded scopes.
+This yields a minimal set of directory LCAs that dominate disjoint coverage regions while respecting module boundaries.
+Algorithm~\ref{alg:metadata-propagation} provides the full procedure.
+
+\input{algos/meta_prog}
+
+\paragraph{Complexity analysis.}
+Let $N$ be the number of paths and $L$ the maximum directory depth.
+Trie construction and branching-node extraction take $O(N\cdot L)$ time, bounded by total path characters.
+Since propagation visits each feature node once in a bottom-up pass, the total grounding overhead scales linearly with
+repository size and is negligible compared with LLM inference.

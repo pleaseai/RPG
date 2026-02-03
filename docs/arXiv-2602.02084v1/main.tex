@@ -1,0 +1,153 @@
+\documentclass[]{assets/template}
+\geometry{margin=1in}
+
+% 基础功能与字体
+\usepackage[utf8]{inputenc}
+\usepackage{setspace}
+\usepackage[dvipsnames]{xcolor} % 只加载一次
+\usepackage{amssymb, amsmath, amsthm, mathrsfs, mathtools, bbm, dsfont, mathabx}
+
+% 图形与表格
+\usepackage{float}
+\usepackage{ragged2e}
+\usepackage{array}
+\usepackage[section]{placeins}
+\usepackage{graphicx}
+\usepackage{wrapfig}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{booktabs}
+\usepackage{threeparttable}
+\usepackage{multirow}
+\usepackage{makecell}
+\usepackage{tabularx}
+\usepackage{colortbl}
+\usepackage{arydshln}
+\usepackage{float}
+\usepackage{adjustbox}
+
+% 算法与伪代码
+\usepackage{algorithm}
+\usepackage{algpseudocode} % 这会加载 algorithmicx
+
+% 文本与排版
+\usepackage{enumitem}
+\usepackage{markdown}
+\usepackage{pifont}
+\usepackage{fontawesome5}
+\usepackage{listings}
+\usepackage{siunitx}
+
+% tcolorbox（只加载一次）
+\PassOptionsToPackage{most,breakable}{tcolorbox}
+\tcbuselibrary{listings,skins,breakable}
+\tcbset{listing engine=listings}
+
+% TikZ 绘图
+\usepackage{tikz}
+\usetikzlibrary{fit, calc}
+
+% 引用与超链接
+\usepackage{natbib}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{cleveref}
+
+\definecolor{lightgray}{gray}{0.9}
+
+\sisetup{
+  detect-weight=true,
+  detect-inline-weight=math,
+  table-number-alignment=center,
+  round-mode=places,
+  round-precision=2
+}
+
+% Emoji 支持
+\usepackage{bxcoloremoji}
+
+\setlength{\parindent}{0pt}
+\addtocontents{toc}{\protect\setcounter{tocdepth}{0}}
+
+\newcommand{\best}[1]{\textbf{#1}}
+% \newcommand{\second}[1]{\underline{#1}}
+\newcommand{\hc}[1]{green!\fpeval{((#1-50)/50)^2*100}!white!0}
+\newcommand{\heat}[1]{\cellcolor{\hc{#1}}#1}
+\newcommand{\heatul}[1]{\cellcolor{\hc{#1}}\underline{#1}}
+\newcommand{\heatbf}[1]{\cellcolor{\hc{#1}}\textbf{#1}}
+
+\newcommand{\gain}[1]{\color{black!60!green}\textsuperscript{+#1}}
+
+\definecolor{modelbg}{rgb}{0.9, 0.95, 1.0}
+\definecolor{metagreen}{HTML}{2E8B57} % SeaGreen
+\definecolor{lightblue}{RGB}{210, 220, 250}
+\definecolor{midblue}{RGB}{86, 108, 184}
+\definecolor{msblue}{RGB}{0,102,204}
+\definecolor{GREEN}{RGB}{69,138,0}
+\definecolor{RED}{RGB}{200,0,0}
+\definecolor{mypink}{HTML}{FF3366}
+\newcommand{\hla}[1]{\textcolor{purple}{#1}}
+\newcommand{\hlb}[1]{\textcolor{doderblue}{#1}}
+\newcommand{\cellblue}{\cellcolor{lightblue}}
+\newcommand{\red}[1]{\textcolor{red}{#1}}
+\newcommand{\blue}[1]{\textcolor{blue}{#1}}
+\newcommand{\todo}[1]{\textcolor{red}{\newline TODO: #1}}
+\newcommand{\ours}{RPG-Encoder}
+\addtocontents{toc}{\protect\setcounter{tocdepth}{0}}
+\newdateformat{usvardate}{\monthname[\THEMONTH] \space \THEDAY, \space \THEYEAR}
+
+\newcommand{\+}{\mathbin{\vcenter{\hbox{\scalebox{1.6}{$\cdot$}}}}}
+
+\lstset{
+  basicstyle=\ttfamily\scriptsize,
+  breaklines=true,
+  postbreak={},
+  breakindent=0pt,
+  frame=single,
+  backgroundcolor=\color{gray!5},
+  showstringspaces=false,
+  keepspaces=false,
+  columns=fullflexible,
+  xleftmargin=0pt,
+  framexleftmargin=0pt,
+}
+
+
+\title{Closing the Loop: Universal Repository Representation with RPG-Encoder}
+
+\author{
+Jane Luo$^{1, \ddagger,\,*}$,
+Chengyu yin$^{1\,\ddagger,*}$, 
+Xin Zhang$^{1\, *,\dagger}$, 
+Qingtao Li$^{1}$, 
+Steven Liu$^{1,\ddagger}$,
+Yiming Huang$^{2}$,\\
+\textbf{Jie Wu}$^{3,\ddagger}$, 
+\textbf{Hao Liu}$^{1,\ddagger}$, 
+\textbf{Yangyu Huang}$^{1}$, 
+\textbf{Yu Kang}$^{1}$,
+\textbf{Fangkai Yang}$^{1}$, 
+\textbf{Ying Xin}$^{1}$,
+\textbf{Scarlett Li}$^{1}$, \\ 
+$^1$Microsoft Research Asia \quad $^2$UCSD \quad $^3$Tsinghua University \\
+$^{*}$ Equal contribution ~$^{\dagger}$ Corresponding author
+$^{\ddagger}$ Work done during internships at Microsoft
+}
+
+
+\begin{document}
+\input{sections/0_abstract}
+\maketitle
+\input{sections/1_introduction}
+\input{sections/related_work}
+\input{sections/2_method}
+\input{sections/3_experiments}
+\input{sections/4_ablation}
+\input{sections/4_analysis}
+\input{sections/5_conclusion}
+\bibliographystyle{assets/plainnat}
+\bibliography{reference}
+
+\clearpage
+\input{sections/appendix}
+\end{document}

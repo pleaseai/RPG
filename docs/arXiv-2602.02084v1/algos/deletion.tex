@@ -1,0 +1,32 @@
+\begin{algorithm}[h]
+\caption{Incremental Deletion (Recursive Pruning)}
+\label{alg:deletion}
+\begin{algorithmic}[1]
+\Require Current graph $G$, target node id $id$
+\Ensure Updated graph $G$
+
+\Function{DeleteNode}{$G, id$}
+    \State $v \gets \Call{GetNode}{G, id}$
+    \If{$v = \bot$}
+        \State \Return $G$
+    \EndIf
+
+    \State $parent \gets v.\text{parent}$
+    \State \Call{RemoveNode}{G, v} \Comment{Remove node and incident edges}
+    \State \Call{PruneOrphans}{G, parent} \Comment{Structural hygiene}
+    \State \Return $G$
+\EndFunction
+
+\Function{PruneOrphans}{$G, v$}
+    \If{$v = \bot \ \lor\  \Call{IsRoot}{v}$}
+        \State \Return
+    \EndIf
+
+    \If{$\Call{IsEmpty}{v.\text{children}}$}
+        \State $gp \gets v.\text{parent}$
+        \State \Call{RemoveNode}{G, v} \Comment{Prune empty abstract category}
+        \State \Call{PruneOrphans}{G, gp} \Comment{Recurse upwards}
+    \EndIf
+\EndFunction
+\end{algorithmic}
+\end{algorithm}

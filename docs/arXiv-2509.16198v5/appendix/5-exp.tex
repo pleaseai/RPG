@@ -1,0 +1,411 @@
+\section{Experiment Results}
+\label{app:exp_results}
+
+\subsection{Baseline Configurations}
+To ensure fair comparison, we evaluate three representative systems for repository synthesis: \textbf{MetaGPT}, \textbf{ChatDev}, and \textbf{Paper2Code}, together with several single-agent LLM baselines. All methods are run with their official or default configurations.
+
+\paragraph{MetaGPT.}  
+MetaGPT is a multi-agent framework that simulates a software company by assigning roles such as Product Manager, Architect, Project Manager, Engineer, and Tester. The agents collaborate following predefined Standard Operating Procedures to complete planning, design, implementation, and debugging.
+
+\paragraph{ChatDev.}  
+ChatDev also follows a company-style organization, where agents take charge of requirement analysis, coding, testing, and review. It uses a chat-based interaction mechanism to coordinate between stages. We run ChatDev with its default settings.
+
+\paragraph{Paper2Code.}  
+Paper2Code is a fixed workflow system designed to convert machine learning papers into executable repositories. It follows a three-stage pipeline of planning, analysis, and generation, which we execute sequentially using the default setup.
+
+\paragraph{Vibe-Coding Agent (OpenHands, Codex, Claude Code, Gemini CLI).}  
+For comparison with standalone LLM systems, we configure each model with a maximum of 30 iterations. The first round is initialized with the repository description. In each subsequent round, the model receives a fixed self-reflection prompt:  
+
+\begin{lstlisting}[basicstyle=\ttfamily\scriptsize, breaklines=true]
+Please check whether the current repository still has any features that could be enhanced or any missing functionality that needs to be added. If there are no further improvements, or if you consider the task complete, please reply with "yes" only. If there are still potential enhancements or improvements to be made, please continue working on them, and do not reply with "yes" just because you are concerned about complexity.
+\end{lstlisting}
+
+\subsection{Detailed Experiment Results}
+\label{app:detailed_result}
+We report the results of different methods on six repositories. For each repository, the methods are evaluated under the same settings to enable direct comparison.
+
+\begin{table*}[ht]
+\centering
+\caption{Performance on the \textbf{MLKit-Py} "Nov." denotes the novelty rate; the number in parentheses is Novel/Total, where Novel is the number of novel functionalities and Total is the total number of planned functionalities.}
+\label{tab:mlkit_results}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{llcccccc}
+\toprule
+\textbf{Agent} & \textbf{Model} & \textbf{Cov.} (\%) $\uparrow$ & \textbf{Nov.} (\%) (Novel/Total) $\uparrow$ & \textbf{Pass. / Vot.} (\%) $\uparrow$ & \textbf{Files} $\uparrow$ & \textbf{LOC} $\uparrow$ & \textbf{Tokens} $\uparrow$ \\
+\midrule
+\multirow{2}{*}{MetaGPT}
+  & o3-mini     & 14.9 & 0.0 (0.0/13.0)   & 6.3 / 7.3  & 3.0   & 95.0    & 928.0 \\
+  & Qwen3-Coder & 19.2 & 0.0 (0.0/23.0)   & 9.9 / 12.0 & 8.0  & 170.0   & 1718 \\
+\midrule
+\multirow{2}{*}{ChatDev}
+  & o3-mini     & 8.5  & 14.3 (2/14)  & 6.3 / 7.3  & 6   & 163   & 2064 \\
+  & Qwen3-Coder & 12.8 & 0.0 (0/49)   & 10.5 / 11.5& 7   & 280   & 3100 \\
+\midrule
+\multirow{2}{*}{OpenHands}
+  & o3-mini     & 31.9 & 0.0 (0/39)   & 11.5 / 13.6& 14  & 272   & 2499 \\
+  & Qwen3-Coder & 34.0 & 0.0 (0/48)   & 11.0 / 14.0& 26  & 1020  & 10213 \\
+\midrule
+\multirow{2}{*}{Paper2Code}
+  & o3-mini     & 25.5 & 0.0 (0/41)   & 17.8 / 19.9& 5   & 564   & 6346 \\
+  & Qwen3-Coder & 31.9 & 0.0 (0/118)  & 18.8 / 24.6& 12  & 1710  & 20821 \\
+\midrule
+Codex CLI       & o3 pro          & 31.9 & 0.0 (0/59)  & 11.0 / 16.9& 14  & 829    & 8344 \\
+Gemini CLI      & gemini 2.5 pro  & 59.6 & 0.0 (0/141) & 0.0 / 33.5 & 19  & 2316   & 24782 \\
+Claude Code CLI & claude 4 sonnet & 59.6 & 0.0 (0/163) & 27.5 / 42.4& 31  & 3559   & 37056 \\
+\midrule
+\rowcolor{gray!20}
+Gold Projects   & Human Developers & -   & -           & 85.1 / 98.3 & 185 & 65972  & 592187 \\
+\midrule
+\multirow{2}{*}{\textbf{\ours}}
+  & o3-mini     & \textbf{97.9} & 4.7 (54/1258)   & 73.5 / 78.7 & 266  & 31596  & 351554 \\
+  & Qwen3-Coder & 85.1          & 15.0 (176/1233) & 63.6 / 74.6 & 642  & 60553  & 741634 \\
+\bottomrule
+\end{tabular}%
+}
+\end{table*}
+\vspace{5pt}
+\begin{table*}[t]
+\centering
+\caption{Performance on the \textbf{HttpEasy} repo. "Nov." denotes the novelty rate; the number in parentheses is Novel/Total, where Novel is the number of novel functionalities and Total is the total number of planned functionalities.}
+\label{tab:httpeasy_results}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{llcccccc}
+\toprule
+\textbf{Agent} & \textbf{Model} & \textbf{Cov.} (\%) $\uparrow$ & \textbf{Nov.} (\%) (Novel/Total) $\uparrow$ & \textbf{Pass. / Vot.} (\%) $\uparrow$ & \textbf{Files} $\uparrow$ & \textbf{LOC} $\uparrow$ & \textbf{Tokens} $\uparrow$ \\
+\midrule
+\multirow{2}{*}{MetaGPT}
+  & o3-mini     & 22.7 & 0.0 (0/12)  & 5.0 / 15.0  & 1   & 167   & 1802 \\
+  & Qwen3-Coder & 31.8 & 0.0 (0/17)  & 20.0 / 25.0 & 4   & 175   & 2023 \\
+\midrule
+\multirow{2}{*}{ChatDev}
+  & o3-mini     & 36.4 & 18.2 (2/11) & 15.0 / 15.0 & 3   & 177   & 2055 \\
+  & Qwen3-Coder & 40.9 & 3.5 (1/31)  & 20.0 / 30.0 & 2   & 323   & 3151 \\
+\midrule
+\multirow{2}{*}{OpenHands}
+  & o3-mini     & 22.7 & 0.0 (0/5)   & 20.5 / 28.2 & 3   & 72    & 669 \\
+  & Qwen3-Coder & 31.8 & 0.0 (0/20)  & 20.0 / 30.0 & 2   & 214   & 1960 \\
+\midrule
+\multirow{2}{*}{Paper2Code}
+  & o3-mini     & 27.3 & 0.0 (0/18)  & 0.0 / 24.2  & 5   & 192   & 1856 \\
+  & Qwen3-Coder & 50.0 & 2.7 (1/39)  & 0.0 / 45.5  & 5   & 377   & 3965 \\
+\midrule
+Codex CLI       & o3 pro          & 45.5 & 0.0 (0/19) & 14.0 / 28.0 & 1   & 197   & 1879 \\
+Gemini CLI      & gemini 2.5 pro  & 59.1 & 3.1 (1/33) & 40.0 / 56.0 & 1   & 420   & 5407 \\
+Claude Code CLI & claude 4 sonnet & 50.0 & 0.0 (0/21) & 36.0 / 42.0 & 2   & 436   & 4931 \\
+\midrule
+\rowcolor{gray!20}
+Gold Projects   & Human Developers & -   & -          & 72.3 / 87.2 & 17  & 2793  & 22297 \\
+\midrule
+\multirow{2}{*}{\textbf{\ours}}
+  & o3-mini     & \textbf{100.0} & 2.05 (7/433)  & 64.0 / 72.0 & 109 & 6192  & 61922 \\
+  & Qwen3-Coder & 95.5           & 0.3 (2/854)   & 54.0 / 64.0 & 245 & 15559 & 165051 \\
+\bottomrule
+\end{tabular}%
+}
+\end{table*}
+
+\begin{table*}[t]
+\centering
+\caption{Performance on the \textbf{PyWebEngine} repo. "Nov." denotes the novelty rate; the number in parentheses is Novel/Total, where Novel is the number of novel functionalities and Total is the total number of planned functionalities.}
+\label{tab:pywebengine_results}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{llcccccc}
+\toprule
+\textbf{Agent} & \textbf{Model} & \textbf{Cov.} (\%) $\uparrow$ & \textbf{Nov.} (\%) (Novel/Total) $\uparrow$ & \textbf{Pass. / Vot.} (\%) $\uparrow$ & \textbf{Files} $\uparrow$ & \textbf{LOC} $\uparrow$ & \textbf{Tokens} $\uparrow$ \\
+\midrule
+\multirow{2}{*}{MetaGPT}
+  & o3-mini     & 27.1 & 0.0 (0/52)  & 0.0 / 13.5 & 2  & 421  & 3733 \\
+  & Qwen3-Coder & 18.8 & 0.0 (0/52)  & 0.0 / 9.2  & 9  & 238  & 1928 \\
+\midrule
+\multirow{2}{*}{ChatDev}
+  & o3-mini     & 25.0 & 0.0 (0/40)  & 0.0 / 14.2 & 8  & 372  & 3185 \\
+  & Qwen3-Coder & 27.1 & 0.0 (0/49)  & 0.0 / 12.1 & 11 & 679  & 5950 \\
+\midrule
+\multirow{2}{*}{OpenHands}
+  & o3-mini     & 31.3 & 2.0 (1/55)  & 0.0 / 14.2 & 18 & 304  & 2628 \\
+  & Qwen3-Coder & 25.0 & 0.0 (0/52)  & 0.0 / 19.1 & 13 & 427  & 3996 \\
+\midrule
+\multirow{2}{*}{Paper2Code}
+  & o3-mini     & 27.1 & 0.0 (0/46)  & 0.0 / 15.6 & 11 & 619  & 6342 \\
+  & Qwen3-Coder & 43.8 & 0.0 (0/103) & 0.0 / 19.9 & 10 & 1761 & 16076 \\
+\midrule
+Codex CLI       & o3 pro          & 39.6 & 0.0 (0/88)  & 12.1 / 26.7 & 2  & 769   & 7751 \\
+Gemini CLI      & gemini 2.5 pro  & 45.8 & 0.3 (1/318) & 7.6 / 48.1  & 45 & 2975  & 27655 \\
+Claude Code CLI & claude 4 sonnet & 64.6 & 38.1 (669/2165) & 33.9 / 66.1 & 80 & 34302 & 317883 \\
+\midrule
+\rowcolor{gray!20}
+Gold Projects   & Human Developers & -   & -           & 81.6 / 86.5 & 681 & 109457 & 917622 \\
+\midrule
+\multirow{2}{*}{\textbf{\ours}}
+  & o3-mini     & \textbf{79.2} & 38.2 (566/1680) & 74.1 / 84.4 & 430 & 27647 & 275782 \\
+  & Qwen3-Coder & 68.8          & 18.1 (244/1561) & 56.4 / 64.8 & 521 & 48058 & 539052 \\
+\bottomrule
+\end{tabular}%
+}
+\end{table*}
+
+\begin{table*}[t]
+\centering
+\caption{Performance on the \textbf{TableKit} repo. "Nov." denotes the novelty rate; the number in parentheses is Novel/Total, where Novel is the number of novel functionalities and Total is the total number of planned functionalities.}
+\label{tab:tablekit_results}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{llcccccc}
+\toprule
+\textbf{Agent} & \textbf{Model} & \textbf{Cov.} (\%) $\uparrow$ & \textbf{Nov.} (\%) (Novel/Total) $\uparrow$ & \textbf{Pass. / Vot.} (\%) $\uparrow$ & \textbf{Files} $\uparrow$ & \textbf{LOC} $\uparrow$ & \textbf{Tokens} $\uparrow$ \\
+\midrule
+\multirow{2}{*}{MetaGPT}
+  & o3-mini     & 13.2 & 0.0 (0/21) & 0.0 / 11.5 & 1 & 186  & 1814 \\
+  & Qwen3-Coder & 6.6  & 0.0 (0/17) & 0.0 / 6.4  & 3 & 133  & 1453 \\
+\midrule
+\multirow{2}{*}{ChatDev}
+  & o3-mini     & 21.1 & 0.0 (0/36) & 0.0 / 15.0 & 2 & 332  & 3517 \\
+  & Qwen3-Coder & 19.7 & 0.0 (0/54) & 0.0 / 0.0  & 6 & 918  & 9168 \\
+\midrule
+\multirow{2}{*}{OpenHands}
+  & o3-mini     & 11.8 & 0.0 (0/26) & 0.0 / 18.1 & 6 & 193  & 1753 \\
+  & Qwen3-Coder & 11.8 & 0.0 (0/23) & 0.0 / 12.1 & 2 & 174  & 1914 \\
+\midrule
+\multirow{2}{*}{Paper2Code}
+  & o3-mini     & 17.1 & 9.4 (5/53) & 0.0 / 23.5 & 7 & 529  & 5325 \\
+  & Qwen3-Coder & 17.1 & 0.0 (0/61) & 6.2 / 20.4 & 9 & 1886 & 19337 \\
+\midrule
+Codex CLI       & o3 pro          & 11.8 & 0.0 (0/23)  & 21.1 / 30.9 & 2  & 552   & 6299 \\
+Gemini CLI      & gemini 2.5 pro  & 44.7 & 0.0 (0/117) & 38.6 / 48.5 & 15 & 1249  & 12242 \\
+Claude Code CLI & claude 4 sonnet & 52.6 & 0.0 (0/191) & 53.1 / 77.7 & 11 & 8509  & 83834 \\
+\midrule
+\rowcolor{gray!20}
+Gold Projects   & Human Developers & -   & -           & 90.6 / 94.0 & 217 & 106447 & 943873 \\
+\midrule
+\multirow{2}{*}{\textbf{\ours}}
+  & o3-mini     & \textbf{72.4} & 21.1 (306/1701) & 81.4 / 88.3 & 477 & 37331 & 395536 \\
+  & Qwen3-Coder & 65.8          & 13.9 (178/1500) & 48.0 / 64.8 & 347 & 32387 & 389886 \\
+\bottomrule
+\end{tabular}%
+}
+\end{table*}
+
+\begin{table*}[t]
+\centering
+\caption{Performance on the \textbf{StatModeler} repo. "Nov." denotes the novelty rate; the number in parentheses is Novel/Total, where Novel is the number of novel functionalities and Total is the total number of planned functionalities.}
+\label{tab:statmodeler_results}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{llcccccc}
+\toprule
+\textbf{Agent} & \textbf{Model} & \textbf{Cov.} (\%) $\uparrow$ & \textbf{Nov.} (\%) (Novel/Total) $\uparrow$ & \textbf{Pass. / Vot.} (\%) $\uparrow$ & \textbf{Files} $\uparrow$ & \textbf{LOC} $\uparrow$ & \textbf{Tokens} $\uparrow$ \\
+\midrule
+\multirow{2}{*}{MetaGPT}
+  & o3-mini     & 11.4 & 0.0 (0/19)  & 5.6 / 6.1  & 6  & 228  & 2330 \\
+  & Qwen3-Coder & 5.7  & 0.0 (0/10)  & 0.0 / 2.8  & 13 & 437  & 5435 \\
+\midrule
+\multirow{2}{*}{ChatDev}
+  & o3-mini     & 10.2 & 21.1 (8/38) & 1.1 / 9.5  & 9  & 726  & 9644 \\
+  & Qwen3-Coder & 11.4 & 0.0 (0/18)  & 3.2 / 7.7  & 6  & 320  & 3797 \\
+\midrule
+\multirow{2}{*}{OpenHands}
+  & o3-mini     & 13.6 & 0.0 (0/32)  & 7.9 / 9.0  & 9  & 335  & 3338 \\
+  & Qwen3-Coder & 14.8 & 0.0 (0/27)  & 9.5 / 12.8 & 5  & 670  & 8476 \\
+\midrule
+\multirow{2}{*}{Paper2Code}
+  & o3-mini     & 12.5 & 21.6 (8/29) & 0.0 / 10.7 & 9  & 813  & 9793 \\
+  & Qwen3-Coder & 13.6 & 30.0 (12/50) & 3.2 / 14.0 & 8  & 1179 & 13519 \\
+\midrule
+Codex CLI       & o3 pro          & 20.5 & 0.0 (0/23)  & 8.2 / 9.9   & 9  & 709   & 8473 \\
+Gemini CLI      & gemini 2.5 pro  & 23.7 & 0.0 (0/55)  & 13.5 / 23.2 & 6  & 736   & 8063 \\
+Claude Code CLI & claude 4 sonnet & 34.1 & 0.0 (0/191) & 18.4 / 27.8 & 28 & 4043  & 46182 \\
+\midrule
+\rowcolor{gray!20}
+Gold Projects   & Human Developers & -   & -           & 87.2 / 96.2 & 271 & 83325 & 893824 \\
+\midrule
+\multirow{2}{*}{\textbf{\ours}}
+  & o3-mini     & \textbf{77.3} & 15.6 (143/1021) & 76.4 / 81.1 & 220 & 24141 & 294292 \\
+  & Qwen3-Coder & 77.3          & 8.2 (83/1113)   & 66.2 / 73.9 & 436 & 47370 & 598058 \\
+\bottomrule
+\end{tabular}%
+}
+\end{table*}
+
+
+
+\subsection{Examples of Coverage Calculation and Novelty Assessment}
+\label{app:cov_novelty}
+In this subsection, we provide examples of how coverage and novelty are computed from the constructed \graph{}, illustrating category alignment for coverage and out-of-distribution detection for novelty.
+
+\paragraph{Analysis of Coverage Examples.}
+
+These examples demonstrate that our coverage metric provides a reasonable allocation of generated functionalities to reference categories. Core areas such as regression, classification, clustering, and preprocessing are consistently captured, while supporting utilities (e.g., normalization, imputation) are distributed into their respective modules without overlap or misplacement. This validates the soundness of our metric design for assessing functional completeness. Moreover, the \graph{} ensures that functionalities are not only well aligned with reference categories but also diversified across them, highlighting its effectiveness as a planning substrate for repository-level generation.
+
+
+\begin{jsonbox}[title=Partal Coverage Calculation Example using \ours{} on MLKit-Py with o3-mini]
+\begin{lstlisting}[basicstyle=\ttfamily\small]
+{
+  "SVR": [
+    "NuSVR"
+  ],
+  "Gaussian mixture models": [
+    "gmm expectation maximization",
+    "dp gaussian mixture"
+  ],
+  "Scaling and Normalization": [
+    "quantile scaling",
+    "scale to [0, 1]",
+    "z-score scaling",
+    "IQR scaling"
+  ],
+  "Missing Value Imputation": [
+    "mean imputation",
+    "matrix completion imputation",
+    "impute using K-nearest neighbors",
+    "impute with global median",
+    "impute missing data",
+  ],
+  "Ensembles": [
+    "light gradient boosting",
+    "HistGradientBoosting",
+    "bagging classification trees",
+    "random forest",
+    "LightGBM",
+    "CatBoost",
+    "XGBoost"
+  ],
+  "Clustering Metrics": [
+    "density peak clustering",
+    "gap statistic",
+    "silhouette score calculation",
+    "inertia calculation"
+  ],
+  "Naive Bayes": [
+    "multinomial naive bayes",
+    "bernoulli naive bayes",
+    "gaussian naive bayes"
+  ],
+  "Linear Models": [
+    "ridge regression",
+    "lasso regression",
+    "huber regression",
+    "ransac regression"
+  ],
+  "SVC": [
+    "soft margin SVM",
+    "hard margin SVM",
+    "SVM with precomputed kernel"
+  ]
+}
+\end{lstlisting}
+\end{jsonbox}
+
+\begin{jsonbox}[title=Partial Coverage Calculation Example using \ours{} on HttpEasy with o3-mini]
+\begin{lstlisting}[basicstyle=\ttfamily\small]
+{
+  "Proxy Support": [
+    "rotate proxy list",
+    "auto detect system proxy",
+    "custom dns resolver integration"
+  ],
+  "HTTP Method Support": [
+    "send POST request",
+    "GET request with cookies",
+    "send DELETE request",
+    "PUT with JSON payload"
+  ],
+  "URL and Query Handling": [
+    "encode path segments",
+    "parse query string",
+    "normalize request url"
+  ],
+  "Redirect Control": [
+    "auto follow redirects",
+    "limit redirect chain"
+  ],
+  "Authentication Support": [
+    "send basic auth",
+    "include oauth2 bearer token",
+    "refresh auth token"
+  ],
+  "Timeouts and Retries": [
+    "set request timeout",
+    "apply exponential backoff",
+    "custom retry hook"
+  ],
+  "JSON Processing": [
+    "auto deserialize json",
+    "validate json schema",
+    "serialize dict to JSON"
+  ],
+  "SSL Verification": [
+    "ssl hostname verification",
+    "load custom certificates"
+  ],
+  "Streaming and Chunking": [
+    "process chunked response",
+    "resume file download support"
+  ]
+}
+\end{lstlisting}
+\end{jsonbox}
+
+
+\paragraph{Analysis of Novelty Examples}
+The novelty cases illustrate two key observations. First, novelty captures meaningful extensions rather than random noise: in \texttt{MLKit-Py}, we see coherent additions such as \textit{Prophet forecasting}, \textit{STL decomposition}, and \textit{genetic programming feature synthesis}, while in \texttt{StatModeler} new capabilities include \textit{vector autoregression} and \textit{Cox proportional hazards models}. Second, the new functionalities proposed by the \graph{} remain reasonable within the target domain: they extend statistical modeling, optimization, or robustness analysis in ways that align with real-world software evolution. Together, these examples confirm that the \graph{} supports not only stable replication of reference repositories but also the introduction of coherent and domain-consistent innovations.
+
+\begin{jsonbox}[title=Partial Novelty Calculation Example using \ours{} on MLKit-Py with o3-mini]
+\begin{lstlisting}[basicstyle=\ttfamily\small]
+{
+  "new_features": [
+    "vector autoregression model",
+    "forecasting with Prophet",
+    "genetic programming feature synthesis",
+    "multi-objective bayesian optimization",
+    "online learning",
+    "apriori association mining",
+    "Cox proportional hazards model",
+    "STL decomposition",
+    "temporal drift detection",
+    "fuzz testing",
+    "interactive dashboards",
+    "NoSQL queries",
+    "pareto optimization",
+    "demographic parity test",
+    "secure argument parsing",
+    ...
+  ]
+}
+\end{lstlisting}
+\end{jsonbox}
+
+
+\begin{jsonbox}[title=Partial Novelty Calculation Example using \ours{} on StatModeler with o3-mini]
+\begin{lstlisting}[basicstyle=\ttfamily\small]
+{
+  "new_features": [
+    "vector autoregression model",
+    "forecasting with Prophet",
+    "genetic programming feature synthesis",
+    "multi-objective bayesian optimization",
+    "online learning",
+    "apriori association mining",
+    "Cox proportional hazards model",
+    "STL decomposition",
+    "temporal drift detection",
+    "fuzz testing",
+    "interactive dashboards",
+    "NoSQL queries",
+    "pareto optimization",
+    "demographic parity test",
+    "secure argument parsing",
+    ...
+  ]
+}
+\end{lstlisting}
+\end{jsonbox}
+
+\subsection{Examples of Localization Behavior}
+\begin{figure}[thbp]
+   \centering
+  % % --- 图 ---
+  \includegraphics[width=\linewidth]{figs/loc_actions_all_repos.png}
+  \caption{Aggregated function call frequency distribution across localization steps in all repositories using o3-mini.}
+  \label{fig:loc}
+\end{figure}
+
+\paragraph{Graph guidance structures localization into systematic search.}
+Figure~\ref{fig:loc} shows that with graph guidance, localization behavior follows a structured \textbf{CCG} pattern (Coarse Search $\rightarrow$ Content Inspection $\rightarrow$ Global Graph Exploration). The agent begins by traversing the \graph{} at a coarse level to identify high-level candidates, then inspects content-rich nodes for detailed signals, and finally explores semantically related structures across the graph. Termination calls rise as the search converges. This progression indicates that the \graph{} reshapes the agent’s behavior into a systematic, relation-aware search process, replacing ad hoc or repetitive probing.

@@ -1,0 +1,26 @@
+\begin{table}[ht]
+\centering
+\caption{%
+Localization results across six open-source repositories under three task categories: 
+\emph{Integration Testing}, \emph{Incremental Development}, and \emph{Debugging}. 
+Each entry reports the mean performance with standard deviation (mean$\pm$std) of the corresponding model–task pair.
+}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{llcccccc}
+\toprule
+   Model & Task & TableKit & MLKit-Py & HttpEasy & PyWebEngine & StatModeler & SymbolicMath \\
+\midrule
+\multirow{3}{*}{o3-mini} 
+  & Integration Testing     & 13.33$\pm$2.92 &  8.75$\pm$4.32 & 10.94$\pm$3.44 &    6.65$\pm$1.98 &   9.24$\pm$3.65 &   7.88$\pm$3.30  \\
+  & Incremental Development & 12.30$\pm$5.19 &  9.83$\pm$4.00 & 11.60$\pm$5.09 & 12.51$\pm$6.67 & 12.62$\pm$6.15 &  9.93$\pm$5.13 \\
+  & Debugging               & 11.59$\pm$5.74 &  8.24$\pm$4.40 &  9.15$\pm$5.55 & 10.28$\pm$8.50 & 13.02$\pm$7.01 &  8.90$\pm$6.21 \\
+\midrule
+\multirow{3}{*}{qwen3-coder} 
+  & Integration Testing     &  6.16$\pm$2.37 &  6.62$\pm$2.12 &  7.89$\pm$2.42 &  5.93$\pm$2.06 &  9.24$\pm$3.65 &  7.88$\pm$3.30 \\
+  & Incremental Development &  6.81$\pm$1.87 &  7.10$\pm$1.98 &  7.48$\pm$1.85 &  6.98$\pm$1.92 &  6.49$\pm$1.79 &  7.12$\pm$1.77 \\
+  & Debugging               &  6.75$\pm$2.21 &  6.01$\pm$2.16 &  6.25$\pm$1.82 &  6.62$\pm$2.47 &  5.94$\pm$2.19 &  6.42$\pm$1.94 \\
+\bottomrule
+\end{tabular}
+}
+\label{tab:localization-results}
+\end{table}

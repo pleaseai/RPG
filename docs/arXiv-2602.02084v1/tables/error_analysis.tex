@@ -1,0 +1,54 @@
+\begin{table*}[ht]
+\centering
+\caption{Error Taxonomy for Code Localization Agents (T1--T12)}
+\label{tab:error_taxonomy}
+\small
+\renewcommand{\arraystretch}{1.3}
+\newcolumntype{L}[1]{>{\RaggedRight\arraybackslash\hspace{0pt}}p{#1}}
+\newcolumntype{Y}{>{\RaggedRight\arraybackslash\hspace{0pt}}X}
+
+\begin{tabularx}{\textwidth}{@{} L{3.5cm} L{4.5cm} Y @{}}
+\toprule
+\textbf{Category} & \textbf{Error Type} & \textbf{Description} \\
+\midrule
+
+Tool \& Execution Errors
+& Wrong Tool Selection (T1)
+& Agent uses an inappropriate tool for the task; e.g., using \texttt{grep} when \texttt{find} is needed, or reading files when search is more suitable. \\
+& Tool Call Error (T2)
+& Malformed parameters, invalid paths/regex, or runtime failures (e.g., ``No such file'', syntax errors, timeouts). \\
+\midrule
+
+Search \& Exploration Errors
+& Insufficient Coverage (T3)
+& Agent fails to systematically explore relevant code areas; misses obvious entry points from the problem statement. \\
+& Query Formulation Error (T4)
+& Searches use wrong keywords, overly broad/narrow scope, or miss obvious terms from the problem statement. \\
+& Redundant Search (T5)
+& Agent makes repetitive tool calls; stuck in loops; repeats similar queries without progress. \\
+\midrule
+
+Reasoning \& Interpretation Errors
+& Evidence Misinterpretation (T6)
+& Agent misreads tool output; confuses similar symbols; incorrect understanding of code relationships. \\
+& Info Synthesis Failure (T7)
+& Agent fails to connect evidence across multiple steps; doesn't build a coherent picture from findings. \\
+& Hallucination (T8)
+& Agent invents non-existent files, functions, or paths; outputs fabricated information not grounded in evidence. \\
+\midrule
+
+Context \& Scope Errors
+& Problem Misunderstanding (T9)
+& Agent fundamentally misunderstands the task; focuses on the wrong aspect of the problem. \\
+& Granularity Mismatch (T10)
+& Output at the wrong specificity level (too coarse/fine); e.g., file-level when function-level is needed. \\
+& Codebase Context Failure (T11)
+& Agent fails to understand project structure, conventions, or architecture. \\
+\midrule
+
+Multi-Factor Errors
+& Cascading Errors (T12)
+& Multiple interacting errors where early mistakes propagate; recovery attempts fail. \\
+\bottomrule
+\end{tabularx}
+\end{table*}

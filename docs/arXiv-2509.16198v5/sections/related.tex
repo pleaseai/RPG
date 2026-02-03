@@ -1,0 +1,23 @@
+\vspace*{-10pt}
+\section{Related Work}\label{sec:related}
+% LLMs increasingly automate software-engineering tasks, from single-function completion to full project synthesis. We review two lines of related work: code generation and repository-level agent frameworks. In contrast, \ours{} introduces a graph-guided representation that couples explicit planning with dependency-aware generation and systematic validation.
+\vspace*{-5pt}
+\paragraph{LLM-based Code Generation}
+SOTA models (e.g., GPT-4o~\citep{openai2024gpt4o}, Claude 4~\citep{anthropic2025claude_sonnet4}, Gemini~\citep{google2025gemini25pro}, DeepSeek-R1~\citep{guo2025deepseek}) excel at diverse SWE tasks, including code completion, test generation~\citep{zafar2022evaluating, dakhel2024effective}, refactoring~\citep{gautam2025refactorbench}, and program repair~\citep{jimenez2023swe}. Instruction-tuned variants (e.g., Qwen-Coder~\citep{hui2024qwen2}, EpiCoder~\citep{wang2025epicoder}) further improve reliability. These advances establish strong function-level performance, laying the foundation for progress toward broader software engineering tasks.
+\vspace*{-8pt}
+\paragraph{Agents for Repository-Level Generation}
+Agent frameworks embed LLMs in planning–coding loops
+~\citep{luo2025gate,wu2024autogen}. Multi-agent systems (e.g., ChatDev~\citep{qian2023chatdev}, MetaGPT~\citep{hong2023metagpt}) assign roles under fixed procedures, while workflow systems (e.g., Paper2Code~\citep{seo2025paper2code}, AutoP2C~\citep{lin2025autop2c}) decompose synthesis into phases. Industrial systems (e.g., Codex~\citep{openai_codex_2025}, Gemini Cli~\citep{mullen_salva_2025_gemini_cli} Claude Code~\citep{anthropic_claude_code_2025}) extend these ideas to multi-file projects. However, most rely on ad-hoc natural language plans without persistent structural representations, often leading to fragmented implementations. By contrast, \ours{} employs a graph-guided abstraction that enforces structured planning and implementation guide.
+
+
+
+% \section{Related Work}\label{sec:related}
+% LLMs now automate diverse software-engineering tasks, from single-function completion to full project generation. We review two lines of related work: code generation with LLMs and repository-level synthesis with agent frameworks. In contrast, \ours{} introduces a graph-guided representation that couples explicit planning with dependency-aware generation and pervasive validation.
+% \vspace*{-5pt}
+% \paragraph{LLM-based Code Generation}
+% SOTA LLMs such as GPT-4o~\citep{openai2024gpt4o}, Claude 4~\citep{anthropic2025claude_sonnet4}, Gemini 2.5~\citep{google2025gemini2_5_pro}, and DeepSeek-R1~\citep{guo2025deepseekr1} demonstrate strong performance across a wide range of SWE tasks. Beyond basic code completion, these models support test generation~\citep{zafar2022evaluating, dakhel2024effective, yuan2024evaluating, steenhoek2025reinforcement}, semantic refactoring~\citep{depalma2024exploring, gautam2025refactorbench, pailoor2024semantic}, and automated program repair~\citep{olausson2023demystifying, sobania2023analysis, jimenez2023swe}. Instruction-tuned variants such as Qwen-Coder~\citep{hui2024qwen2} and EpiCoder~\citep{wang2025epicoder} further improve reliability through domain-aligned fine-tuning. However, most models operate over static code snapshots, limiting their ability to simulate real-world, iterative development workflows.
+% \vspace*{-5pt}
+% \paragraph{Agents for Repository-Level Generation}
+% Agent frameworks extend LLMs beyond isolated functions by embedding them in planning–coding loops. Multi-agent systems like ChatDev~\citep{qian2023chatdev} and MetaGPT~\citep{hong2023metagpt} assign specialized roles (e.g., manager, architect, engineer) under predefined procedures, while staged workflows such as Paper2Code~\citep{seo2025paper2code} and AutoP2C~\citep{lin2025autop2c} decompose synthesis into sequential phases. Industrial systems including Codex~\citep{openai_codex_2025}, Claude Code~\citep{anthropic_claude_code_2025}, and Gemini CLI~\citep{google_gemini_cli_2025} further scale these ideas to multi-file development. Yet, most rely on ad-hoc natural language plans and lack persistent structural representations, leading to unstable proposals and fragmented implementations. By contrast, \ours{} employs a graph-guided abstraction that enforces structured planning, deterministic scheduling, and systematic validation.
+
+

@@ -1,0 +1,125 @@
+% =========================
+% A.3 RPG Operation
+% =========================
+\subsection{RPG Operation: Agentic Tool-use and Navigation Logic}
+\label{app:operation}
+
+This subsection details how RPG is operationalized as an actionable substrate for repository understanding.
+Beyond serving as a semantic representation, RPG exposes a \emph{tool interface} that bridges high-level intents
+to concrete code entities and their dependency contexts. Concretely, we provide three complementary tools:
+\textbf{SearchNode} for intent-based discovery, \textbf{FetchNode} for precision context retrieval, and
+\textbf{ExploreRPG} for structural traversal on the RPG topology.
+
+% -------------------------
+% A.3.1 Tool Interfaces
+% -------------------------
+\subsubsection{Tool Interfaces and Prompt Specifications}
+\label{app:operation_interfaces}
+
+\paragraph{Design principles.}
+The tool suite is designed to support a common agent workflow in repository understanding:
+(i) start from vague or behavioral intents and obtain candidate code anchors;
+(ii) verify anchors with precise source context; and
+(iii) expand locally to cover call chains and related components.
+To ensure tool outputs are deterministic and machine-consumable, each tool prompt defines a strict parameter schema
+and return format.
+
+\paragraph{SearchNode: intent-based discovery.}
+\textbf{SearchNode} unifies \emph{semantic discovery} and \emph{textual retrieval}. It supports three modes:
+\texttt{features} (intent $\rightarrow$ feature nodes / mapped code entities),
+\texttt{snippets} (keyword/symbol search over the repository),
+and \texttt{auto} (feature mapping first, followed by snippet search when needed).
+Importantly, \texttt{search\_scopes} can restrict the search to selected feature subtrees, leveraging the grounded
+hierarchy constructed in Appendix~\ref{app:extraction} to improve precision.
+
+% Option A: move your existing tcblisting into separate files and input here
+\input{prompts/tool_searchnode}
+
+\paragraph{FetchNode: precision retrieval and verification.}
+\textbf{FetchNode} retrieves exact source context and metadata for known candidates (code entities or feature paths).
+It is used as a verification step after discovery to ensure the agent reasons on faithful code snippets rather than
+speculative guesses. FetchNode returns file paths, line ranges, entity types, mapped feature information, and a code preview.
+
+\input{prompts/tool_fetchnode}
+
+\paragraph{ExploreRPG: topological traversal.}
+\textbf{ExploreRPG} exposes the structural connectivity of RPG, enabling traversal along dependency edges
+(\texttt{imports}, \texttt{invokes}, \texttt{inherits}, etc.) and/or containment/composition relations.
+Starting from validated anchors, the agent can traverse upstream/downstream to uncover dependencies, impacted components,
+and semantically related regions.
+
+\input{prompts/tool_explorerpg}
+
+% -------------------------
+% A.3.2 Tool-use Policy
+% -------------------------
+\subsubsection{Tool-use Policy for Repository Understanding}
+\label{app:operation_policy}
+
+\paragraph{Canonical tool orchestration.}
+We adopt a simple and robust orchestration policy that prioritizes semantic grounding before reading large contexts.
+Given a natural-language intent $\mathcal{I}$, the agent executes:
+
+\begin{enumerate}
+    \item \textbf{Semantic discovery (SearchNode/features or auto):}
+    convert $\mathcal{I}$ into concrete behavioral terms and retrieve candidate feature nodes and mapped code entities.
+    If available, supply \texttt{search\_scopes} to restrict discovery to the most relevant functional subtrees.
+
+    \item \textbf{Precision verification (FetchNode):}
+    for top candidates, fetch exact code context (file path + line range + preview) and confirm semantic compatibility.
+    Candidates that cannot be verified are discarded.
+
+    \item \textbf{Local expansion (ExploreRPG):}
+    from verified anchors, traverse dependency edges (e.g., \texttt{invokes}, \texttt{imports}) to recover call chains,
+    utilities, and related modules. This step is used to (i) locate the root cause, (ii) map the impact surface, or
+    (iii) identify integration points.
+
+    \item \textbf{Pinpoint retrieval (optional SearchNode/snippets):}
+    if the target remains ambiguous, run snippet search with high-signal identifiers obtained from previous steps
+    (exact symbols, file paths, error strings), optionally extracting specific line ranges.
+\end{enumerate}
+
+\paragraph{Fallback rules.}
+When semantic discovery returns insufficient recall (e.g., missing/weak feature matches), the agent falls back to
+\texttt{snippets} mode to bootstrap concrete anchors, then returns to \textbf{FetchNode} and \textbf{ExploreRPG}.
+When snippet search yields too many matches, the agent tightens constraints by adding (i) feature scopes,
+(ii) file path patterns, or (iii) symbol-qualified queries.
+
+This policy minimizes wasted context and reduces hallucination risk:
+SearchNode provides intent-to-code grounding, FetchNode ensures the agent reasons on exact source, and ExploreRPG
+reveals topological structure that cannot be reliably inferred from local snippets alone.
+
+% -------------------------
+% A.3.3 Execution Traces / Examples
+% -------------------------
+\subsubsection{Execution Traces and Examples}
+\label{app:operation_examples}
+
+We illustrate the practical efficacy of these tools through the execution traces shown in
+Figure~\ref{fig:tool_execution_examples}. These traces demonstrate how the agent navigates from abstract intents to
+specific code implementations, leveraging both the semantic hierarchy and the dependency topology of RPG.
+
+\begin{figure}[htbp]
+    \centering
+    \includegraphics[width=\linewidth]{figs/tool_example.pdf}
+    \caption{Execution traces of the three primary agentic tools. \textbf{SearchNode} maps abstract intent to concrete code;
+    \textbf{FetchNode} retrieves precise source context; and \textbf{ExploreRPG} reveals topological connections and call relations.}
+    \label{fig:tool_execution_examples}
+\end{figure}
+
+As depicted in the figure, each tool provides distinct structural signals that support the agent's reasoning:
+
+\begin{itemize}
+    \item \textbf{SearchNode (Left):}
+    demonstrates intent-to-code grounding by mapping a behavioral query (e.g., ``expression serialization'') to a
+    concrete code entity and its associated feature description. This step transforms ambiguous intent into executable anchors.
+
+    \item \textbf{FetchNode (Center):}
+    retrieves precise source context for a candidate entity (e.g., \texttt{\_check\_vector}), including exact line ranges
+    and a preview snippet, enabling verification and preventing reasoning on speculative locations.
+
+    \item \textbf{ExploreRPG (Right):}
+    traverses the RPG topology from a verified anchor (e.g., \texttt{kernS}) to expose invocation and dependency relations.
+    By showing edges such as \texttt{invokes} and their connected nodes, the agent can recover call chains and impacted modules,
+    supporting systematic debugging and repository-level understanding.
+\end{itemize}

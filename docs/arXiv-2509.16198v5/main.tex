@@ -1,0 +1,278 @@
+\documentclass{article}
+
+
+\usepackage{arxiv}
+
+\usepackage[utf8]{inputenc} % allow utf-8 input
+\usepackage[T1]{fontenc}    % use 8-bit T1 fonts
+
+\usepackage{hyperref}       % hyperlinks
+\usepackage{url}            % simple URL typesetting
+\usepackage{authblk}
+
+\usepackage{graphicx}
+\graphicspath{{./images/}}
+
+\usepackage{booktabs}       % professional-quality tables
+\usepackage{amsfonts}       % blackboard math symbols
+\usepackage{amsmath}        % better math
+\usepackage{bbm}            % indicator function, etc.
+\usepackage[normalem]{ulem}
+\usepackage{ulem}
+\usepackage{nicefrac}       % compact symbols for 1/2, etc.
+\usepackage{microtype}      % microtypography
+
+\usepackage{xcolor}         % colors
+\usepackage[table]{xcolor}  % colors in tables
+
+\usepackage{wrapfig}        % wrapping figures
+\usepackage{enumitem}       % better lists
+\usepackage{multirow}       % multi-row cells in tables
+\usepackage{makecell}       % better table cells
+\usepackage{array,tabularx} % flexible tables
+\usepackage{adjustbox}      % resize boxes
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage[square,numbers,sort&compress]{natbib}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+
+\usepackage{setspace}       % line spacing
+\usepackage{lipsum}         % dummy text (可删除)
+
+
+\usepackage[most,breakable]{tcolorbox}
+
+\DeclareUnicodeCharacter{202F}{\,}
+
+\newtcolorbox{promptbox}[1][]{colback=blue!5!white,
+  colframe=blue!75!black,
+  fonttitle=\bfseries,
+  title=Prompt,
+  breakable,
+  #1}
+
+
+\newtcolorbox{skeletonbox}[1][]{
+    colback=gray!5!white,
+    colframe=gray!70!black,
+    fonttitle=\bfseries,
+    title=Repository Skeleton,
+    left=1em,
+    right=1em,
+    top=0.5em,
+    bottom=0.5em,
+    boxrule=0.5pt,
+    breakable
+}
+
+\newtcolorbox{jsonbox}[1][]{
+    listing only,
+    listing options={
+      language=json,
+      basicstyle=\ttfamily\small,
+      numbers=left,
+      numberstyle=\tiny,
+      stepnumber=1,
+      numbersep=5pt,
+      showstringspaces=false,
+      breaklines=true,
+      frame=single,
+      literate=
+       *{0}{{{\color{red}0}}}{1}
+        {1}{{{\color{red}1}}}{1}
+        {2}{{{\color{red}2}}}{1}
+        {3}{{{\color{red}3}}}{1}
+        {4}{{{\color{red}4}}}{1}
+        {5}{{{\color{red}5}}}{1}
+        {6}{{{\color{red}6}}}{1}
+        {7}{{{\color{red}7}}}{1}
+        {8}{{{\color{red}8}}}{1}
+        {9}{{{\color{red}9}}}{1}
+    },
+    colback=gray!5!white,
+    colframe=gray!70!black,
+    fonttitle=\bfseries,
+    left=1em,
+    right=1em,
+    top=0.5em,
+    bottom=0.5em,
+    boxrule=0.5pt,
+    breakable
+}
+
+
+\newtcolorbox{graphbox}[1][]{
+    colback=gray!5!white,
+    colframe=gray!70!black,
+    fonttitle=\bfseries,
+    title=SubGraph-to-Skeleton,
+    left=1em,
+    right=1em,
+    top=0.5em,
+    bottom=0.5em,
+    boxrule=0.5pt,
+    breakable
+}
+
+
+\newtcolorbox{baseclsbox}[1][]{
+    colback=gray!5!white,
+    colframe=gray!70!black,
+    fonttitle=\bfseries,
+    title=Base Classes Example,
+    left=1em,
+    right=1em,
+    top=0.5em,
+    bottom=0.5em,
+    boxrule=0.5pt,
+    breakable
+}
+
+
+
+\newtcolorbox{itfsbox}[1][]{
+    colback=gray!5!white,
+    colframe=gray!70!black,
+    fonttitle=\bfseries,
+    title=Designed Interfaces,
+    left=1em,
+    right=1em,
+    top=0.5em,
+    bottom=0.5em,
+    boxrule=0.5pt,
+    breakable
+}
+
+\newtcolorbox{locsbox}[1][]{
+    colback=gray!5!white,
+    colframe=gray!70!black,
+    fonttitle=\bfseries,
+    title=Localization Tools,
+    left=1em,
+    right=1em,
+    top=0.5em,
+    bottom=0.5em,
+    boxrule=0.5pt,
+    breakable
+}
+
+
+\newtcolorbox{editbox}[1][]{
+    colback=gray!5!white,
+    colframe=gray!70!black,
+    fonttitle=\bfseries,
+    title=Editing Coding Tools,
+    left=1em,
+    right=1em,
+    top=0.5em,
+    bottom=0.5em,
+    boxrule=0.5pt,
+    breakable
+}
+
+\newtcolorbox{taskbox}[1][]{
+    colback=gray!5!white,
+    colframe=gray!70!black,
+    fonttitle=\bfseries,
+    title=Task Example Trajectory,
+    left=1em,
+    right=1em,
+    top=0.5em,
+    bottom=0.5em,
+    boxrule=0.5pt,
+    breakable
+}
+
+
+
+\renewcommand\Authfont{\small}    % 作者字体
+\renewcommand\Affilfont{\footnotesize} % 单位字体
+\setlength{\affilsep}{0.6em}     % affiliation 间距
+%\renewcommand\Authsep{\\}
+\renewcommand\Authands{\\}
+
+\author{
+  Jane Luo$^{1\,*, \ddagger}$ \quad
+  Xin Zhang$^{1\,*\,\dagger}$ \quad
+  Steven Liu$^{1, \ddagger}$ \quad
+  Jie Wu$^{1\,2, \ddagger}$ \quad
+  Jianfeng Liu$^{1}$ \quad
+  Yiming Huang$^{3}$ \quad
+  Yangyu Huang$^{1}$  \\{}
+  \vspace*{-0.4em}
+  Chengyu Yin$^{1}$\quad
+  Ying Xin$^{1}$  \quad
+  Yuefeng Zhan$^{1}$ \quad
+  Hao Sun$^{1}$ \quad
+  Qi Chen$^{1}$ \quad
+  Scarlett Li$^{1}$ \quad
+  Mao Yang$^{1}$ \\
+  \vspace*{1em}
+{\normalfont\small
+  $^{1}$ Microsoft \quad
+  $^{2}$ Tsinghua University \quad
+  $^{3}$ University of California, San Diego}
+}
+
+\date{} % 去掉日期
+
+\newcommand{\ours}{ZeroRepo}
+\newcommand{\graph}{RPG}
+\title{\graph: A Repository Planning Graph for Unified and Scalable Codebase Generation}
+
+
+\begin{document}
+
+
+\maketitle
+
+\renewcommand\thefootnote{}
+\footnotetext{$^{*}$ Equal contribution, Contact: \href{mailto:janeluo1210@163.com}{janeluo1210@163.com}}
+\footnotetext{$^{\dagger}$ Corresponding author:  \href{mailto:xinzhang3@microsoft.com}{xinzhang3@microsoft.com}}
+\footnotetext{$^{\ddagger}$ This work is done during their internships at Microsoft.}
+
+\begin{abstract}
+Large language models excel at generating individual functions or single files of code, yet generating complete repositories from scratch remains a fundamental challenge. This capability is key to building coherent software systems from high-level specifications and realizing the full potential of automated code generation. The process requires planning at two levels: deciding what features and modules to build (proposal stage) and defining their implementation details (implementation stage). Current approaches rely on natural language planning, which often produces unclear specifications, misaligned components, and brittle designs due to its inherent ambiguity and lack of structure. To address these limitations, we introduce the Repository Planning Graph (\graph{}), a structured representation that encodes capabilities, file structures, data flows, and functions in a unified graph. By replacing free-form natural language with an explicit blueprint, \graph{} enables consistent long-horizon planning for repository generation. Building on \graph{}, we develop \ours{}, a graph-driven framework that operates in three stages: proposal-level planning, implementation-level construction, and graph-guided code generation with test validation To evaluate, we construct RepoCraft, a benchmark of six real-world projects with 1,052 tasks. On RepoCraft, \ours{} produces nearly 36K Code Lines and 445K Code Tokens, on average 3.9× larger than the strongest baseline (Claude Code), and 68× larger than other baselines. It achieves 81.5\% coverage and 69.7\% test accuracy, improving over Claude Code by 27.3 and 35.8 points. Further analysis shows that \graph{} models complex dependencies, enables more sophisticated planning through near-linear scaling, and improves agent understanding of repositories, thus accelerating localization.
+\end{abstract}
+
+
+\input{sections/intro}
+
+\input{sections/related}
+
+\input{sections/graph-planning}
+
+\input{sections/codegen}
+% \input{sections/method}
+
+
+\input{sections/exp_setup}
+
+\input{sections/result}
+
+\input{sections/analysis}
+
+% \input{sections/ablation}
+
+\input{sections/con}
+
+\bibliographystyle{unsrtnat} 
+\bibliography{ref}
+
+
+\clearpage
+
+\appendix
+
+\input{appendix/1-framework}
+\input{appendix/2-graph_mapping}
+\input{appendix/3-repo_gen}
+\input{appendix/4-bench}
+\input{appendix/5-exp}
+%\input{appendix/4-prompt}
+% \section{Appendix}
+% You may include other additional sections here.
+
+
+\end{document}

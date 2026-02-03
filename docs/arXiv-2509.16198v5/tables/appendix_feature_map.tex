@@ -1,0 +1,63 @@
+% \begin{table*}[ht]
+% \centering
+% \caption{Per-repository structural statistics across o3-mini, o4-mini, and qwen-coder. “Count” = number of entities (Files/Classes/Functions) per repository; “Avg Feat.” = mean number of features per entity (features per file/class/function).}
+% \label{tab:model-stats}
+% \resizebox{\textwidth}{!}{%
+% \begin{tabular}{lccccccccccccccccccc}
+% \toprule
+%  & \multicolumn{6}{c}{o3-mini} & \multicolumn{6}{c}{o4-mini} & \multicolumn{6}{c}{qwen-coder} \\
+% \cmidrule(lr){2-7} \cmidrule(lr){8-13} \cmidrule(lr){14-19}
+% Repo 
+% & \multicolumn{2}{c}{Files} & \multicolumn{2}{c}{Classes} & \multicolumn{2}{c}{Functions} 
+% & \multicolumn{2}{c}{Files} & \multicolumn{2}{c}{Classes} & \multicolumn{2}{c}{Functions} 
+% & \multicolumn{2}{c}{Files} & \multicolumn{2}{c}{Classes} & \multicolumn{2}{c}{Functions} \\
+%  & Count & Avg Feat. & Count & Avg Feat. & Count & Avg Feat.
+%  & Count & Avg Feat. & Count & Avg Feat. & Count & Avg Feat.
+%  & Count & Avg Feat. & Count & Avg Feat. & Count & Avg Feat. \\
+% \midrule
+% TableKit     & 475 & 3.64 & 252 & 2.28 & 1092 & 1.05 & 234 & 2.91 & 74  & 1.88 & 492 & 1.10 & 271 & 6.69 & 496 & 1.62 & 587 & 1.50 \\
+% MLKit-Py     & 266 & 4.74 & 321 & 1.64 & 708  & 1.04 & 342 & 2.27 & 449 & 1.11 & 256 & 1.08 & 566 & 2.44 & 815 & 1.30 & 281 & 1.13 \\
+% StatModeler  & 219 & 4.71 & 117 & 2.47 & 726  & 1.02 & 366 & 2.62 & 272 & 1.18 & 574 & 1.09 & 330 & 3.48 & 573 & 1.22 & 411 & 1.07 \\
+% SymbolicMath & 126 & 4.70 & 95  & 2.17 & 370  & 1.04 & 362 & 2.24 & 116 & 1.28 & 625 & 1.03 &  89 & 8.98 &  71 & 1.73 & 786 & 0.86 \\
+% PyWebEngine  & 440 & 3.89 & 576 & 1.74 & 689  & 1.02 & 430 & 2.35 & 484 & 1.22 & 411 & 1.02 & 482 & 3.52 & 890 & 1.26 & 501 & 1.13 \\
+% HttpEasy     & 104 & 4.17 & 79  & 2.43 & 235  & 1.03 & 180 & 2.29 & 157 & 1.13 & 235 & 1.00 & 178 & 4.28 & 239 & 1.52 & 366 & 1.06 \\
+% \midrule
+% \textbf{Average} 
+% & 271.7 & 4.31 & 240   & 2.12 & 636.7 & 1.03 
+% & 319   & 2.45 & 258.7 & 1.30 & 432.2 & 1.05
+% & 319.3 & 4.90 & 514   & 1.44 & 488.7 & 1.12 \\
+% \bottomrule
+% \end{tabular}%
+% }
+% \end{table*}
+
+\begin{table*}[ht]
+\vspace{5pt}
+\centering
+\caption{Per-repository structural statistics across o3-mini and qwen-coder. “Count” = number of entities (Files/Classes/Functions) per repository; “Avg Feat.” = mean number of features per entity (features per file/class/function).}
+\label{tab:model-stats}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lcccccccccccc}
+\toprule
+ & \multicolumn{6}{c}{o3-mini} & \multicolumn{6}{c}{qwen-coder} \\
+\cmidrule(lr){2-7} \cmidrule(lr){8-13}
+Repo 
+& \multicolumn{2}{c}{Files} & \multicolumn{2}{c}{Classes} & \multicolumn{2}{c}{Functions} 
+& \multicolumn{2}{c}{Files} & \multicolumn{2}{c}{Classes} & \multicolumn{2}{c}{Functions} \\
+ & Count & Avg Feat. & Count & Avg Feat. & Count & Avg Feat.
+ & Count & Avg Feat. & Count & Avg Feat. & Count & Avg Feat. \\
+\midrule
+TableKit     & 475 & 3.64 & 252 & 2.28 & 1092 & 1.05 & 271 & 6.69 & 496 & 1.62 & 587 & 1.50 \\
+MLKit-Py     & 266 & 4.74 & 321 & 1.64 & 708  & 1.04 & 566 & 2.44 & 815 & 1.30 & 281 & 1.13 \\
+StatModeler  & 219 & 4.71 & 117 & 2.47 & 726  & 1.02 & 330 & 3.48 & 573 & 1.22 & 411 & 1.07 \\
+SymbolicMath & 126 & 4.70 & 95  & 2.17 & 370  & 1.04 &  89 & 8.98 &  71 & 1.73 & 786 & 0.86 \\
+PyWebEngine  & 440 & 3.89 & 576 & 1.74 & 689  & 1.02 & 482 & 3.52 & 890 & 1.26 & 501 & 1.13 \\
+HttpEasy     & 104 & 4.17 & 79  & 2.43 & 235  & 1.03 & 178 & 4.28 & 239 & 1.52 & 366 & 1.06 \\
+\midrule
+\textbf{Average} 
+& 271.7 & 4.31 & 240   & 2.12 & 636.7 & 1.03 
+& 319.3 & 4.90 & 514   & 1.44 & 488.7 & 1.12 \\
+\bottomrule
+\end{tabular}%
+}
+\end{table*}

@@ -1,0 +1,55 @@
+\begin{table}[ht]
+\centering
+\caption{Efficiency analysis comparing the average number of agent interaction rounds and cost per instance.}
+\label{tab:full_efficiency_analysis}
+\small
+\renewcommand{\arraystretch}{1.15}
+\setlength{\tabcolsep}{0pt}
+
+\begin{tabular*}{\columnwidth}{@{\extracolsep{\fill}} l l c c c }
+\toprule
+\textbf{LLM} & \textbf{Method} & \textbf{Steps} & \textbf{Cost (\$)} & \textbf{Eff.} \\
+\midrule
+
+% ================= o3-mini =================
+\multirow{4}{*}{o3-mini}
+& OrcaLoca           & 10.13 & 0.10 & 4.86 \\
+& LocAgent           & \textbf{2.14}  & \textbf{0.04} & \textbf{21.75} \\
+& CoSIL              & 18.95 & 0.18 & 4.07 \\
+& \textbf{\ours{}}   & 6.53  & 0.11 & 7.07 \\
+\cmidrule{1-5}
+
+% ================= GPT-4o =================
+\multirow{4}{*}{GPT-4o}
+& OrcaLoca           & 29.26 & 0.98 & 0.54 \\
+& LocAgent           & 8.95  & 0.50 & 1.35 \\
+& CoSIL              & 20.65 & 0.30 & 2.21 \\
+& \textbf{\ours{}}   & \textbf{8.22}  & \textbf{0.20} & \textbf{3.84} \\
+\cmidrule{1-5}
+
+% ================= GPT-4.1 =================
+\multirow{4}{*}{GPT-4.1}
+& OrcaLoca           & 20.22 & 0.46 & 1.48 \\
+& LocAgent           & 11.94 & 0.86 & 0.76 \\
+& CoSIL              & 19.77 & 0.24 & 3.10 \\
+& \textbf{\ours{}}   & \textbf{6.75}  & \textbf{0.18} & \textbf{4.63} \\
+\cmidrule{1-5}
+
+% ================= GPT-5 =================
+\multirow{4}{*}{GPT-5}
+& OrcaLoca           & 36.93 & 0.75 & 1.16 \\
+& LocAgent           & 6.48  & 0.49 & 1.64 \\
+& CoSIL              & 19.52 & 0.31 & 2.64 \\
+& \textbf{\ours{}}   & \textbf{6.34}  & \textbf{0.22} & \textbf{4.25} \\
+\cmidrule{1-5}
+
+% ================= Claude-4.5 =================
+\multirow{4}{*}{Claude-4.5}
+& OrcaLoca           & 11.32 & 0.88 & 0.91 \\
+& LocAgent           & \textbf{7.54}  & 0.88 & 0.85 \\
+& CoSIL              & 12.60 & \textbf{0.48} & \textbf{1.64} \\
+& \textbf{\ours{}}   & 16.75 & 1.32 & 0.71 \\
+
+\bottomrule
+\end{tabular*}
+\end{table}

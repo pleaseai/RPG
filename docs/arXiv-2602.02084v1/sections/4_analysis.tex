@@ -1,0 +1,99 @@
+% \vspace*{-5pt}
+\section{Analysis}
+\label{sec:analysis}
+\subsection{Representational Efficiency}
+
+\input{tables/cost}
+\paragraph{RPG Facilitates Reasoning Efficiency.}
+Table~\ref{tab:efficiency_analysis} evaluates the efficiency of agents guided by different substrates. Across all backbones, \ours{} achieves fewer steps and lower expenditure, yielding the highest cost-effectiveness (Acc@5/Cost). On GPT-5, \ours{} reaches an efficiency of 4.15 at a cost of \$0.22, whereas baselines such as OrcaLoca and LocAgent require higher expenditures for lower efficiency gains. This trend is consistent with GPT-4.1 results, where \ours{} attains the peak efficiency of 4.63. These results indicate that RPG-guided navigation enables precise exploration, concentrating reasoning resources on relevant code regions and reducing redundant API calls throughout the localization process.
+% \vspace*{-5pt}
+\subsection{Structural Evolvability}
+
+\begin{figure}[htbp]
+\vspace{0pt}
+\centering
+
+\begin{minipage}[t]{0.49\linewidth}
+\vspace{0pt} 
+\centering
+\includegraphics[width=\linewidth]{figs/commit_cost.pdf}
+\caption{Cost Efficiency Comparison: RPG Rebuilding versus Incremental Updates across Commit History.}
+\label{fig:maintenance_cost}
+\end{minipage}
+\hfill
+\begin{minipage}[t]{0.49\linewidth}
+\vspace{15pt} 
+\centering
+\captionof{table}{Full vs. Incremental RPG Fidelity on SWE-bench Live. SWE-bench Live accuracy of RPGs across commits under full reconstruction (Full) and incremental maintenance (Incr.).}
+\label{tab:full_incr_fidelity}
+\footnotesize
+\renewcommand{\arraystretch}{1.02}
+\setlength{\tabcolsep}{3.0pt}
+
+\resizebox{\linewidth}{!}{%
+\begin{tabular}{@{}l l cccc cccc@{}}
+\toprule
+\multirow{2}{*}{Model} & \multirow{2}{*}{Strategy} &
+\multicolumn{4}{c}{File-level} &
+\multicolumn{4}{c}{Function-level} \\
+\cmidrule(lr){3-6}\cmidrule(lr){7-10}
+& & Acc@1 & Acc@5 & Pre & Rec & Acc@1 & Acc@5 & Pre & Rec \\
+\midrule
+\multirow{2}{*}{GPT-4o}
+& Full
+& \textbf{69.9} & \textbf{84.6} & \textbf{73.2} & 60.1
+& \textbf{53.8} & 68.5 & \textbf{60.6} & 41.1 \\
+& Incr.
+& 69.2 & 83.5 & \textbf{73.2} & \textbf{60.3}
+& 50.5 & \textbf{69.4} & 59.4 & \textbf{41.8} \\
+\midrule
+\multirow{2}{*}{GPT-4.1}
+& Full
+& \textbf{79.9} & 88.2 & \textbf{82.5} & \textbf{69.8}
+& \textbf{67.4} & 80.3 & \textbf{73.3} & \textbf{55.4}  \\
+& Incr.
+& 78.0 & \textbf{90.5} & 81.4 & 69.0
+& 64.7 & \textbf{81.9} & 72.1 & 52.6 \\
+\bottomrule
+\end{tabular}%
+}
+\end{minipage}
+
+
+\vspace{-10pt}
+\end{figure}
+
+
+\paragraph{Incremental Maintenance Ensures Sustainable Scalability.}
+To assess feasibility, we measure maintenance costs across a commit sequence. Figure~\ref{fig:maintenance_cost} shows that full reconstruction scales linearly and exceeds 14.7M tokens, whereas our incremental strategy uses only 633K tokens by isolating semantic deltas. This 95.7\% reduction confines heavy computation to a one-time initialization and effectively decouples ongoing maintenance costs from repository scale, enabling sustainable long-term operation.
+
+
+\begin{figure*}[t]
+    \centering
+    \includegraphics[width=\linewidth]{figs/error_distribution.pdf}
+    \caption{Distribution of Failure Modes on SWE-bench Verified. We analyze 100 failed trajectories per method with GPT-4o. Errors fall into four macro-groups: Tool \& Execution, Search \& Exploration, Reasoning \& Interpretation, and Context \& Scope, with 12 sub-types (T1–T12). See Appendix~\ref{app:err_analysis}.}
+    \label{fig:error_dist}
+    % \vspace*{-5pt}
+\end{figure*}
+
+
+% \input{tables/evolv}
+\paragraph{Evolution Balance between Fidelity and Efficiency.} To validate resilience against semantic drift during updates, we assessed representational fidelity by deploying agents on SWE-bench Live using RPGs from both strategies. Table~\ref{tab:full_incr_fidelity} indicates that the "Incr." strategy maintains statistical parity with the "Full" baseline. Specifically, while "Incr." achieves slightly higher retrieval accuracy (81.9\% Acc@5 compared to 80.3\% for GPT-4.1), "Full" reconstruction retains a marginal edge, surpassing "Incr." by approximately 2\% in Precision and Recall. This balance confirms that our sustainable evolution effectively preserves the repository's semantic integrity with negligible degradation.
+
+% \vspace*{-2pt}
+\subsection{Agentic Navigability}
+
+\begin{wraptable}[18]{r}{0.52\columnwidth}
+    \centering
+    \includegraphics[width=1.0\linewidth]{figs/agent_step.pdf}
+    \caption{Impact of RPG Tooling on Agent Behavior on SWE-bench Verified. Step-wise action distributions induced by the RPG interface across LLMs.}
+    \label{fig:agent_step}
+    \vspace*{-10pt}
+\end{wraptable}
+
+\paragraph{RPG Induces Structured Exploration.}
+To investigate whether RPG structures reasoning, we visualized tool usage distributions across LLMs. Figure~\ref{fig:agent_step} reveals a universal "Search-then-Zoom" pattern: agents prioritize broad topology traversal (ExploreRPG, SearchNode) to establish a global map before narrowing to fine-grained analysis (FetchNode). This trend is more pronounced in stronger reasoners (e.g., Claude-4.5), which leverage RPG's structural context to support extended interaction horizons. These results confirm that RPG effectively guides agents from global comprehension to localized implementation.
+
+\paragraph{Dual-View Search Mitigates Navigational Failures.}
+We manually analyzed 100 failed trajectories from GPT-4o to identify error patterns mitigated by the RPG structure. As shown in Figure~\ref{fig:error_dist}, RPG reduces Search \& Exploration failures compared to baselines. While systems like LocAgent and CoSIL utilize graph structures, they often suffer from Insufficient Coverage. \ours{} addresses this by providing dual-path access, where semantic features enable broad global retrieval to expand the search space, while the structured hierarchy guides the agent to reduce Redundant Search. This multi-view navigation ensures agents can accurately localize intent before traversing implementation-level dependencies. Improved localization also reduces downstream errors in Context \& Scope, keeping reasoning grounded in the correct implementation units.
+

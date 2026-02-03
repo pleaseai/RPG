@@ -1,0 +1,53 @@
+\vspace*{-5pt}
+\section{Experiment Setup}
+\label{sec:exp}
+\vspace*{-2pt}
+\input{tables/bench}
+
+\vspace*{-5pt}
+\subsection{RepoCraft Benchmark}
+A key challenge in evaluating repository-level generation is the absence of benchmarks that assess end-to-end reasoning and planning from scratch. Existing work either focuses on incremental development (editing, refactoring, or bug fixing in existing codebases~\citep{jimenez2023swe, gautam2025refactorbench, zhang2025swe, li2025fea, huang2024code}) or repo generation but provides detailed skeletons and specifications that reduce the need for autonomous planning~\citep{zhao2024commit0, starace2025paperbench}. RepoCraft addresses this gap by requiring agents to build complete repositories from high-level natural language descriptions and evaluating them against real-world projects in terms of scale, functionality, and correctness, with final statistics shown in Table~\ref{tab:repo_stats}.
+\vspace*{-5pt}
+\subsubsection{Reference Repository Selection}
+To provide a strong reference for evaluating reasoning and planning, RepoCraft grounds assessment in six widely used Python projects: \textit{scikit-learn}, \textit{pandas}, \textit{sympy}, \textit{statsmodels}, \textit{requests}, and \textit{django}. These repositories exemplify high-quality engineering practice as they have been developed by active communities, exhibit modular structures, and include comprehensive test suites. Their diversity across scientific computing, data analysis, symbolic reasoning, web services, and full-stack frameworks ensures that the benchmark captures breadth and realism. To mitigate pretraining leakage, we paraphrase their names and descriptions into lexically distinct forms before providing them to agents.
+\vspace*{-5pt}
+\subsubsection{Metrics}
+\label{sec:metrics}
+RepoCraft evaluates generated repositories along four complementary dimensions, with detailed definitions and formulas provided in Appendix~\ref{app:metrics}: 
+
+\paragraph{Functionality Coverage}
+Coverage is measured as the proportion of functional categories, drawn from official documentation, that are represented by the generated functionalities. A category is counted as covered if at least one generated functionality corresponds to it. This metric reflects only the breadth of functionality, without assessing correctness. Reference taxonomies are provided in Appendix~\ref{app:taxonomy}.
+\vspace*{-5pt}
+\paragraph{Functionality Novelty}  
+Novelty is defined as the proportion of generated functionalities that fall outside the reference taxonomy, i.e., those assigned to the new features category. It captures the system’s ability to propose coherent but unseen capabilities beyond the ground specification.
+
+\vspace*{-5pt}
+\paragraph{Functionality Accuracy}  
+Accuracy evaluates correctness at the task level using two metrics: (1) \textbf{Pass Rate}, the fraction of ground-truth tests passed; and (2) \textbf{Voting Rate}, the fraction validated by majority-vote semantic checks. Unlike coverage, accuracy measures whether implementations faithfully realize the intended algorithms.
+\vspace*{-5pt}
+\paragraph{Code-Level Statistics}  
+We sreport repository scale indicators, including file count, normalized Lines of Code (LOC), and token count, measured after excluding non-core code such as tests and examples.
+ \vspace*{-5pt}
+ 
+\subsubsection{Functional Task Construction and Evaluation}
+\begin{figure}[htbp]
+% \begin{wrapfigure}{r}{0.25\textwidth} % 图片靠右，宽度为0.25倍页面宽
+  % \vspace{-3pt}
+  \centering
+  \includegraphics[width=0.85\linewidth]{figs/task.pdf} % 这里用linewidth即可
+  \caption{Pipeline for Evaluation Task Collection. It comprises test file filtering, hierarchical parsing into test trees, sampling and filtering, and final task generation.}
+  \label{fig:task_collection}
+% \end{wrapfigure}
+\end{figure}
+\vspace*{-5pt}
+To assess models’ planning ability on constructed repositories, we evaluate whether they (i) implement the intended algorithms and (ii) realize them correctly. Simple measures of repository size or coverage are insufficient for this purpose, so RepoCraft introduces task-level evaluations that capture both functional fidelity and implementation accuracy (see Appendix~\ref{app:task_collect} for details).
+
+To enable such fine-grained evaluation, RepoCraft derives tasks from reference repositories. As shown in Figure~\ref{fig:task_collection}, we collect all available test functions and classes, organize them hierarchically following each project’s modular structure, and apply stratified sampling to ensure representative coverage. Trivial or non-algorithmic tests are filtered out, resulting in a diverse and computationally meaningful set of 1,052 tasks that closely mirror practical software evaluation.
+
+Each task includes a natural language description of the target algorithm, a ground-truth test, and auxiliary materials. Evaluation proceeds in three steps: (1) \textbf{Localization}, mapping requirements to candidate functions or classes in the generated repository; (2) \textbf{Semantic Validation}, applying majority-vote checks over two rounds to confirm fidelity to the specification; and (3) \textbf{Execution Testing}, adapting and running the ground-truth test to verify interface correctness under realistic inputs and outputs. This design mirrors real-world development while reducing sensitivity to spurious model errors. We use \texttt{o3-mini} as the base model for automated evaluation.
+\vspace*{-5pt}
+\subsection{Baselines}
+We compare three paradigms: (1) \textbf{Multi-agent} frameworks (MetaGPT~\citep{hong2023metagpt}, ChatDev~\citep{qian2023chatdev}) assigning specialized roles for end-to-end development; (2) \textbf{Workflow-based} system (Paper2Code~\citep{seo2025paper2code}) with a fixed three-stage pipeline; (3) \textbf{Terminal agents} (Codex CLI~\citep{openai2025codexcli}, Claude Code CLI~\citep{anthropic_claude_code_2025}, Gemini CLI~\citep{google2025geminicli}, OpenHands~\citep{wang2024openhands}) performing natural language editing, debugging, and multi-file reasoning. For comparability, MetaGPT, ChatDev, and Paper2Code are run with two backbones: o3-mini~\citep{openai_o3mini_2025} and Qwen3-Coder-480B-A35B-Instruct (Qwen3-Coder)~\citep{qwen3technicalreport}. Codex CLI, Claude Code CLI, and Gemini CLI are evaluated with their official strongest model. \textbf{We enable Terminal Agents to retrieve real-world knowledge via web search.} To ensure fairness, all runs extend to 30 iterations, with agents prompted at each step to propose or implement functionality.
+\vspace*{-5pt}
+\subsection{Implementation Details}
+We conduct 30 iterations for feature selection in Proposal-Level Graph Construction. Each function in the Code Generation Stage undergoes up to 8 debugging iterations, with 20 localization attempts per iteration. For test failures, we use 5-round majority voting to attribute and allow up to 20 remediation attempts for test or environment errors.

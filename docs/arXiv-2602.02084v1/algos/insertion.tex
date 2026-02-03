@@ -1,0 +1,37 @@
+
+\begin{algorithm}[h]
+\caption{Incremental Additions (LLM-Based Semantic Routing)}
+\label{alg:insertion}
+\begin{algorithmic}[1]
+\Require Current Graph $G$, New Unit $u$, Feature Summary $f_u$
+\Ensure Updated Graph $G$ with $u$ inserted
+
+\Function{InsertNode}{$G, u, f_u$}
+    \State $v_{\text{best}} \gets \Call{FindBestParent}{G.\text{root}, f_u}$
+    \State $v_{\text{new}} \gets \Call{CreateNode}{u, f_u}$
+    \State \Call{AddEdge}{$G, v_{\text{best}}, v_{\text{new}}, \mathcal{E}_{\text{feature}}$}
+        \Comment{Attach to semantically determined parent}
+    \State \Return $G$
+\EndFunction
+
+\Statex
+\Function{FindBestParent}{$v_{\text{curr}}, f_{\text{target}}$}
+    \State $Candidates \gets \{\,c \in \Call{Children}{v_{\text{curr}}} \mid \Call{IsAbstract}{c}\,\}$
+    
+    \If{$Candidates = \emptyset$}
+        \State \Return $v_{\text{curr}}$ \Comment{Base case: No deeper abstract categories}
+    \EndIf
+
+    \State \Comment{Prompt LLM to select the best functional fit among children}
+    \State $Context \gets \{ (c.\text{id}, c.f) \mid c \in Candidates \}$
+    \State $v_{\text{choice}} \gets \Call{LLM\_Route}{Context, f_{\text{target}}}$
+    
+    \If{$v_{\text{choice}} \neq \text{null}$}
+        \State \Return $\Call{FindBestParent}{v_{\text{choice}}, f_{\text{target}}}$
+            \Comment{LLM chose a branch, drill down recursively}
+    \Else
+        \State \Return $v_{\text{curr}}$ \Comment{LLM decided no child is a better fit}
+    \EndIf
+\EndFunction
+\end{algorithmic}
+\end{algorithm}

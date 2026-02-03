@@ -1,0 +1,29 @@
+\begin{table*}[h]
+\centering
+\caption{Main results on repository reconstruction tasks in RepoCraft. Gold Projects represent statistics of the original human-written repositories. More results are provided in Appendix~\ref{app:results_recon}.}
+\label{tab:reconstruction_results}
+\small
+%\renewcommand{\arraystretch}{0.88} 
+\setlength{\tabcolsep}{4pt}       
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{llccccc}
+\toprule
+Framework & Backbone & Coverage (\%) $\uparrow$ & Accuracy (Pass / Vote) (\%) $\uparrow$ & \#Files $\uparrow$ & nLOC $\uparrow$ & Code Tokens $\uparrow$ \\
+\midrule
+\rowcolor{modelbg}
+\multirow{1}{*}{Gold Projects (Reference)} 
+  & Human Developers 
+  & 100.0 & 94.8 / 98.8 
+  & 345 & 97,725 & 718,946 \\
+\midrule
+\multirow{2}{*}{ZeroRepo-Doc (Baseline)}
+  & GPT-4.1    & 64.6 & 50.0 / 63.4 & 209 & 6,079 & 158,948 \\
+  & GPT-5-mini & 74.2 & 52.6 / 71.4 & 143 & 13,414 & 125,625 \\
+\midrule
+\multirow{2}{*}{ZeroRepo-RPG (Ours)}
+  & GPT-4.1    & \textbf{93.5} & \textbf{85.8 / 93.4} & \textbf{206} & \textbf{35,190} & \textbf{346,865} \\
+  & GPT-5-mini & \textbf{98.5} & \textbf{86.0 / 97.7} & \textbf{226} & \textbf{60,871} & \textbf{550,432} \\
+\bottomrule
+\end{tabular}%
+}
+\end{table*}

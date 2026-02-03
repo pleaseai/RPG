@@ -1,0 +1,32 @@
+\begin{table*}[ht]
+\centering
+\caption{Overview of the six benchmark repositories in \textsc{RepoCraft}. Each repository is anonymized by renaming to prevent direct memorization or retrieval by models. We list both the anonymized names and their original counterparts, together with category, purpose, and scope.}
+\label{tab:benchmark-repos}
+\renewcommand{\arraystretch}{1.2} % 调整行距
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{p{0.12\textwidth} p{0.15\textwidth} p{0.12\textwidth} p{0.28\textwidth} p{0.28\textwidth}}
+\toprule
+\textbf{Original Name} & \textbf{Anonymized Name} & \textbf{Category} & \textbf{Purpose} & \textbf{Scope} \\
+\midrule
+\textbf{scikit-learn} & \textbf{MLKit-Py} & Machine Learning Framework & 
+Provides efficient tools for data mining and analysis, supporting classical supervised and unsupervised learning algorithms. & 
+Focuses on model training, evaluation, and selection for standard ML tasks; excludes deep learning and distributed systems. \\
+\textbf{sympy} & \textbf{SymbolicMath} & Symbolic Computation Library & 
+Enables symbolic mathematics including algebraic manipulation, calculus, simplification, and equation solving. & 
+Pure Python implementation of symbolic and algebraic computation, lightweight and extensible, without external dependencies. \\
+\textbf{pandas} & \textbf{TableKit} & Data Analysis Library & 
+Provides flexible data structures (e.g., DataFrame, Series) for manipulating and analyzing tabular data. & 
+Supports efficient single-machine structured data processing; excludes distributed data frameworks. \\
+\textbf{django} & \textbf{PyWebEngine} & Web Framework & 
+High-level framework for rapid development with ORM, routing, templating, and admin support. & 
+Offers an all-in-one toolkit for building web applications on small-scale/single-server deployments. \\
+\textbf{requests} & \textbf{HttpEasy} & HTTP Client Library & 
+Simple, human-friendly library for sending HTTP requests and handling responses. & 
+Covers API for requests, responses, cookies, sessions, headers; excludes advanced networking and async features. \\
+\textbf{statsmodels} & \textbf{StatModeler} & Statistical Modeling Library & 
+Provides econometric and statistical modeling tools, including regression, time series, and hypothesis testing. & 
+Focuses on classical statistical analysis and diagnostics; excludes modern machine learning and deep learning. \\
+\bottomrule
+\end{tabular}%
+}
+\end{table*}

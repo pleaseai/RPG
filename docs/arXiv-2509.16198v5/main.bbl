@@ -1,0 +1,305 @@
+\begin{thebibliography}{42}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Zhu et~al.(2024)Zhu, Guo, Shao, Yang, Wang, Xu, Wu, Li, Gao, Ma,
+  et~al.]{zhu2024deepseek}
+Qihao Zhu, Daya Guo, Zhihong Shao, Dejian Yang, Peiyi Wang, Runxin Xu, Y~Wu,
+  Yukun Li, Huazuo Gao, Shirong Ma, et~al.
+\newblock Deepseek-coder-v2: Breaking the barrier of closed-source models in
+  code intelligence.
+\newblock \emph{arXiv preprint arXiv:2406.11931}, 2024.
+
+\bibitem[Wang et~al.(2025)Wang, Li, Zhang, Wu, Liu, Hu, Guo, Huang, Xin, Yang,
+  et~al.]{wang2025epicoder}
+Yaoxiang Wang, Haoling Li, Xin Zhang, Jie Wu, Xiao Liu, Wenxiang Hu, Zhongxin
+  Guo, Yangyu Huang, Ying Xin, Yujiu Yang, et~al.
+\newblock Epicoder: Encompassing diversity and complexity in code generation.
+\newblock \emph{arXiv preprint arXiv:2501.04694}, 2025.
+
+\bibitem[Liu et~al.(2025)Liu, Zhang, Zhu, Dong, Zhou, Shang, Yang, and
+  Yang]{liu2025rstar}
+Yifei Liu, Li~Lyna Zhang, Yi~Zhu, Bingcheng Dong, Xudong Zhou, Ning Shang, Fan
+  Yang, and Mao Yang.
+\newblock rstar-coder: Scaling competitive code reasoning with a large-scale
+  verified dataset.
+\newblock \emph{arXiv preprint arXiv:2505.21297}, 2025.
+
+\bibitem[Zeng et~al.(2025)Zeng, Jiang, Wang, Nie, Chen, and
+  Chen]{zeng2025acecoder}
+Huaye Zeng, Dongfu Jiang, Haozhe Wang, Ping Nie, Xiaotong Chen, and Wenhu Chen.
+\newblock Acecoder: Acing coder rl via automated test-case synthesis.
+\newblock \emph{arXiv preprint arXiv:2502.01718}, 2025.
+
+\bibitem[Tao et~al.(2025)Tao, Zhang, Tang, Peng, Zhu, Liu, Yang, Zhang, Xu,
+  Zhang, et~al.]{tao2025code}
+Hongyuan Tao, Ying Zhang, Zhenhao Tang, Hongen Peng, Xukun Zhu, Bingchang Liu,
+  Yingguang Yang, Ziyin Zhang, Zhaogui Xu, Haipeng Zhang, et~al.
+\newblock Code graph model (cgm): A graph-integrated large language model for
+  repository-level software engineering tasks.
+\newblock \emph{arXiv preprint arXiv:2505.16901}, 2025.
+
+\bibitem[Li(2025)]{li2025mrg}
+Haiyang Li.
+\newblock Mrg-bench: Evaluating and exploring the requirements of context for
+  repository-level code generation.
+\newblock \emph{arXiv preprint arXiv:2508.02998}, 2025.
+
+\bibitem[Hong et~al.(2023)Hong, Zheng, Chen, Cheng, Wang, Zhang, Wang, Yau,
+  Lin, Zhou, et~al.]{hong2023metagpt}
+Sirui Hong, Xiawu Zheng, Jonathan Chen, Yuheng Cheng, Jinlin Wang, Ceyao Zhang,
+  Zili Wang, Steven Ka~Shing Yau, Zijuan Lin, Liyang Zhou, et~al.
+\newblock Metagpt: Meta programming for multi-agent collaborative framework.
+\newblock \emph{arXiv preprint arXiv:2308.00352}, 3\penalty0 (4):\penalty0 6,
+  2023.
+
+\bibitem[Qian et~al.(2023)Qian, Liu, Liu, Chen, Dang, Li, Yang, Chen, Su, Cong,
+  et~al.]{qian2023chatdev}
+Chen Qian, Wei Liu, Hongzhang Liu, Nuo Chen, Yufan Dang, Jiahao Li, Cheng Yang,
+  Weize Chen, Yusheng Su, Xin Cong, et~al.
+\newblock Chatdev: Communicative agents for software development.
+\newblock \emph{arXiv preprint arXiv:2307.07924}, 2023.
+
+\bibitem[Seo et~al.(2025)Seo, Baek, Lee, and Hwang]{seo2025paper2code}
+Minju Seo, Jinheon Baek, Seongyun Lee, and Sung~Ju Hwang.
+\newblock Paper2code: Automating code generation from scientific papers in
+  machine learning.
+\newblock \emph{arXiv preprint arXiv:2504.17192}, 2025.
+
+\bibitem[Lin et~al.(2025)Lin, Shen, Cai, Sun, Zhou, and Xiao]{lin2025autop2c}
+Zijie Lin, Yiqing Shen, Qilin Cai, He~Sun, Jinrui Zhou, and Mingjun Xiao.
+\newblock Autop2c: An llm-based agent framework for code repository generation
+  from multimodal content in academic papers.
+\newblock \emph{arXiv preprint arXiv:2504.20115}, 2025.
+
+\bibitem[Wang et~al.(2024{\natexlab{a}})Wang, Li, Song, Xu, Tang, Zhuge, Pan,
+  Song, Li, Singh, et~al.]{wang2024openhands}
+Xingyao Wang, Boxuan Li, Yufan Song, Frank~F Xu, Xiangru Tang, Mingchen Zhuge,
+  Jiayi Pan, Yueqi Song, Bowen Li, Jaskirat Singh, et~al.
+\newblock Openhands: An open platform for ai software developers as generalist
+  agents.
+\newblock \emph{arXiv preprint arXiv:2407.16741}, 2024{\natexlab{a}}.
+
+\bibitem[Anthropic(2025{\natexlab{a}})]{anthropic_claude_code_2025}
+Anthropic.
+\newblock Claude code: agentic coding command‑line tool, 2025{\natexlab{a}}.
+\newblock URL \url{https://www.anthropic.com/claude-code}.
+
+\bibitem[Google(2025{\natexlab{a}})]{google2025geminicli}
+Google.
+\newblock Gemini cli: Open-source ai agent for developer terminals, June
+  2025{\natexlab{a}}.
+\newblock Accessed: 2025-07-22.
+
+\bibitem[Wang et~al.(2024{\natexlab{b}})Wang, Cassano, Wu, Bai, Song, Nath,
+  Han, Hendryx, Yue, and Zhang]{wang2024planning}
+Evan Wang, Federico Cassano, Catherine Wu, Yunfeng Bai, Will Song, Vaskar Nath,
+  Ziwen Han, Sean Hendryx, Summer Yue, and Hugh Zhang.
+\newblock Planning in natural language improves llm search for code generation.
+\newblock \emph{arXiv preprint arXiv:2409.03733}, 2024{\natexlab{b}}.
+
+\bibitem[Besta et~al.(2024)Besta, Blach, Kubicek, Gerstenberger, Podstawski,
+  Gianinazzi, Gajda, Lehmann, Niewiadomski, Nyczyk, et~al.]{besta2024graph}
+Maciej Besta, Nils Blach, Ales Kubicek, Robert Gerstenberger, Michal
+  Podstawski, Lukas Gianinazzi, Joanna Gajda, Tomasz Lehmann, Hubert
+  Niewiadomski, Piotr Nyczyk, et~al.
+\newblock Graph of thoughts: Solving elaborate problems with large language
+  models.
+\newblock In \emph{Proceedings of the AAAI conference on artificial
+  intelligence}, volume~38, pages 17682--17690, 2024.
+
+\bibitem[Sun et~al.(2023)Sun, Zhuang, Kong, Dai, and Zhang]{sun2023adaplanner}
+Haotian Sun, Yuchen Zhuang, Lingkai Kong, Bo~Dai, and Chao Zhang.
+\newblock Adaplanner: Adaptive planning from feedback with language models.
+\newblock \emph{Advances in neural information processing systems},
+  36:\penalty0 58202--58245, 2023.
+
+\bibitem[Zhu et~al.(2025)Zhu, Liu, He, Ren, Liu, Pan, and
+  Zhang]{zhu2025adacoder}
+Yueheng Zhu, Chao Liu, Xuan He, Xiaoxue Ren, Zhongxin Liu, Ruwei Pan, and
+  Hongyu Zhang.
+\newblock Adacoder: An adaptive planning and multi-agent framework for
+  function-level code generation.
+\newblock \emph{arXiv preprint arXiv:2504.04220}, 2025.
+
+\bibitem[Almorsi et~al.(2024)Almorsi, Ahmed, and Gomaa]{almorsi2024guided}
+Amr Almorsi, Mohanned Ahmed, and Walid Gomaa.
+\newblock Guided code generation with llms: A multi-agent framework for complex
+  code tasks.
+\newblock In \emph{2024 12th International Japan-Africa Conference on
+  Electronics, Communications, and Computations (JAC-ECC)}, pages 215--218.
+  IEEE, 2024.
+
+\bibitem[Ashrafi et~al.(2025)Ashrafi, Bouktif, and
+  Mediani]{ashrafi2025enhancing}
+Nazmus Ashrafi, Salah Bouktif, and Mohammed Mediani.
+\newblock Enhancing llm code generation: A systematic evaluation of multi-agent
+  collaboration and runtime debugging for improved accuracy, reliability, and
+  latency.
+\newblock \emph{arXiv preprint arXiv:2505.02133}, 2025.
+
+\bibitem[OpenAI(2024)]{openai2024gpt4o}
+OpenAI.
+\newblock Gpt-4o system card.
+\newblock arXiv preprint arXiv:2410.21276, 2024.
+\newblock URL \url{https://arXiv.org/abs/2410.21276}.
+
+\bibitem[Anthropic(2025{\natexlab{b}})]{anthropic2025claude_sonnet4}
+Anthropic.
+\newblock Introducing claude 4, May 2025{\natexlab{b}}.
+\newblock URL \url{https://www.anthropic.com/news/claude-4}.
+
+\bibitem[Team(2025{\natexlab{a}})]{google2025gemini25pro}
+Gemini Team.
+\newblock Gemini 2.5: Pushing the frontier with advanced reasoning,
+  multimodality, long context, and next generation agentic capabilities, June
+  2025{\natexlab{a}}.
+\newblock URL
+  \url{https://storage.googleapis.com/deepmind-media/gemini/gemini_v2_5_report.pdf}.
+
+\bibitem[Guo et~al.(2025)Guo, Yang, Zhang, Song, Zhang, Xu, Zhu, Ma, Wang, Bi,
+  et~al.]{guo2025deepseek}
+Daya Guo, Dejian Yang, Haowei Zhang, Junxiao Song, Ruoyu Zhang, Runxin Xu,
+  Qihao Zhu, Shirong Ma, Peiyi Wang, Xiao Bi, et~al.
+\newblock Deepseek-r1: Incentivizing reasoning capability in llms via
+  reinforcement learning.
+\newblock \emph{arXiv preprint arXiv:2501.12948}, 2025.
+
+\bibitem[Zafar et~al.(2022)Zafar, Afzal, and Enoiu]{zafar2022evaluating}
+Muhammad~Nouman Zafar, Wasif Afzal, and Eduard Enoiu.
+\newblock Evaluating system-level test generation for industrial software: A
+  comparison between manual, combinatorial and model-based testing.
+\newblock In \emph{Proceedings of the 3rd ACM/IEEE international conference on
+  automation of software test}, pages 148--159, 2022.
+
+\bibitem[Dakhel et~al.(2024)Dakhel, Nikanjam, Majdinasab, Khomh, and
+  Desmarais]{dakhel2024effective}
+Arghavan~Moradi Dakhel, Amin Nikanjam, Vahid Majdinasab, Foutse Khomh, and
+  Michel~C Desmarais.
+\newblock Effective test generation using pre-trained large language models and
+  mutation testing.
+\newblock \emph{Information and Software Technology}, 171:\penalty0 107468,
+  2024.
+
+\bibitem[Gautam et~al.(2025)Gautam, Garg, Jang, Sundaresan, and
+  Moghaddam]{gautam2025refactorbench}
+Dhruv Gautam, Spandan Garg, Jinu Jang, Neel Sundaresan, and Roshanak~Zilouchian
+  Moghaddam.
+\newblock Refactorbench: Evaluating stateful reasoning in language agents
+  through code.
+\newblock \emph{arXiv preprint arXiv:2503.07832}, 2025.
+
+\bibitem[Jimenez et~al.(2023)Jimenez, Yang, Wettig, Yao, Pei, Press, and
+  Narasimhan]{jimenez2023swe}
+Carlos~E Jimenez, John Yang, Alexander Wettig, Shunyu Yao, Kexin Pei, Ofir
+  Press, and Karthik Narasimhan.
+\newblock Swe-bench: Can language models resolve real-world github issues?
+\newblock \emph{arXiv preprint arXiv:2310.06770}, 2023.
+
+\bibitem[Hui et~al.(2024)Hui, Yang, Cui, Yang, Liu, Zhang, Liu, Zhang, Yu, Lu,
+  et~al.]{hui2024qwen2}
+Binyuan Hui, Jian Yang, Zeyu Cui, Jiaxi Yang, Dayiheng Liu, Lei Zhang, Tianyu
+  Liu, Jiajun Zhang, Bowen Yu, Keming Lu, et~al.
+\newblock Qwen2. 5-coder technical report.
+\newblock \emph{arXiv preprint arXiv:2409.12186}, 2024.
+
+\bibitem[Luo et~al.(2025)Luo, Huang, Meng, Lei, He, Liu, Jiang, Dong, Zhao, and
+  Liu]{luo2025gate}
+Jianwen Luo, Yiming Huang, Jinxiang Meng, Fangyu Lei, Shizhu He, Xiao Liu,
+  Shanshan Jiang, Bin Dong, Jun Zhao, and Kang Liu.
+\newblock Gate: Graph-based adaptive tool evolution across diverse tasks.
+\newblock \emph{arXiv preprint arXiv:2502.14848}, 2025.
+
+\bibitem[Wu et~al.(2024)Wu, Bansal, Zhang, Wu, Li, Zhu, Jiang, Zhang, Zhang,
+  Liu, et~al.]{wu2024autogen}
+Qingyun Wu, Gagan Bansal, Jieyu Zhang, Yiran Wu, Beibin Li, Erkang Zhu,
+  Li~Jiang, Xiaoyun Zhang, Shaokun Zhang, Jiale Liu, et~al.
+\newblock Autogen: Enabling next-gen llm applications via multi-agent
+  conversations.
+\newblock In \emph{First Conference on Language Modeling}, 2024.
+
+\bibitem[OpenAI(2025)]{openai_codex_2025}
+OpenAI.
+\newblock Introducing codex: a cloud-based software engineering agent, 2025.
+\newblock URL \url{https://openai.com/index/introducing-codex/}.
+
+\bibitem[Google(2025{\natexlab{b}})]{mullen_salva_2025_gemini_cli}
+Google.
+\newblock Gemini cli: your open-source ai agent, 2025{\natexlab{b}}.
+\newblock URL
+  \url{https://blog.google/technology/developers/introducing-gemini-cli-open-source-ai-agent/}.
+
+\bibitem[Valmeekam et~al.(2023)Valmeekam, Sreedharan, Marquez, Olmo, and
+  Kambhampati]{valmeekam2023planning}
+Karthik Valmeekam, Sarath Sreedharan, Matthew Marquez, Alberto Olmo, and
+  Subbarao Kambhampati.
+\newblock On the planning abilities of large language models (a critical
+  investigation with a proposed benchmark).
+\newblock \emph{arXiv preprint arXiv:2302.06706}, 2023.
+
+\bibitem[Armony et~al.(2025)Armony, Mero{\~n}o-Pe{\~n}uela, and
+  Canal]{armony2025far}
+Ma'ayan Armony, Albert Mero{\~n}o-Pe{\~n}uela, and Gerard Canal.
+\newblock How far are llms from symbolic planners? an nlp-based perspective.
+\newblock \emph{arXiv preprint arXiv:2508.01300}, 2025.
+
+\bibitem[Zhang et~al.(2025)Zhang, He, Zhang, Kang, Li, Xie, Wang, Wang, Huang,
+  Fu, et~al.]{zhang2025swe}
+Linghao Zhang, Shilin He, Chaoyun Zhang, Yu~Kang, Bowen Li, Chengxing Xie,
+  Junhao Wang, Maoquan Wang, Yufan Huang, Shengyu Fu, et~al.
+\newblock Swe-bench goes live!
+\newblock \emph{arXiv preprint arXiv:2505.23419}, 2025.
+
+\bibitem[Li et~al.(2025)Li, Zhang, Guo, Mao, Luo, Peng, Huang, Wang, and
+  Li]{li2025fea}
+Wei Li, Xin Zhang, Zhongxin Guo, Shaoguang Mao, Wen Luo, Guangyue Peng, Yangyu
+  Huang, Houfeng Wang, and Scarlett Li.
+\newblock Fea-bench: A benchmark for evaluating repository-level code
+  generation for feature implementation.
+\newblock \emph{arXiv preprint arXiv:2503.06680}, 2025.
+
+\bibitem[Huang et~al.(2024)Huang, Luo, Yu, Zhang, Lei, Wei, He, Huang, Liu,
+  Zhao, et~al.]{huang2024code}
+Yiming Huang, Jianwen Luo, Yan Yu, Yitong Zhang, Fangyu Lei, Yifan Wei, Shizhu
+  He, Lifu Huang, Xiao Liu, Jun Zhao, et~al.
+\newblock Da-code: Agent data science code generation benchmark for large
+  language models.
+\newblock \emph{arXiv preprint arXiv:2410.07331}, 2024.
+
+\bibitem[Zhao et~al.(2024)Zhao, Jiang, Lee, Chiu, Cardie, Gall{\'e}, and
+  Rush]{zhao2024commit0}
+Wenting Zhao, Nan Jiang, Celine Lee, Justin~T Chiu, Claire Cardie, Matthias
+  Gall{\'e}, and Alexander~M Rush.
+\newblock Commit0: Library generation from scratch.
+\newblock \emph{arXiv preprint arXiv:2412.01769}, 2024.
+
+\bibitem[Starace et~al.(2025)Starace, Jaffe, Sherburn, Aung, Chan, Maksin,
+  Dias, Mays, Kinsella, Thompson, et~al.]{starace2025paperbench}
+Giulio Starace, Oliver Jaffe, Dane Sherburn, James Aung, Jun~Shern Chan, Leon
+  Maksin, Rachel Dias, Evan Mays, Benjamin Kinsella, Wyatt Thompson, et~al.
+\newblock Paperbench: Evaluating ai's ability to replicate ai research.
+\newblock \emph{arXiv preprint arXiv:2504.01848}, 2025.
+
+\bibitem[{OpenAI}(2025)]{openai2025codexcli}
+{OpenAI}.
+\newblock Codex cli: Local‑first terminal ai coding agent.
+\newblock \url{https://openai.com/introducing-codex}, April 2025.
+\newblock Launched April 15, 2025 as an open‑source CLI coding agent that
+  executes commands locally :contentReference[oaicite:1]{index=1}.
+
+\bibitem[OpenAI(2025)]{openai_o3mini_2025}
+OpenAI.
+\newblock Openai o3‑mini reasoning model.
+\newblock System Card and official release (OpenAI), 2025.
+\newblock URL \url{https://openai.com/index/openai-o3-mini/}.
+\newblock Released January 31, 2025. Accessed: 2025‑07‑28.
+
+\bibitem[Team(2025{\natexlab{b}})]{qwen3technicalreport}
+Qwen Team.
+\newblock Qwen3 technical report, 2025{\natexlab{b}}.
+\newblock URL \url{https://arxiv.org/abs/2505.09388}.
+
+\end{thebibliography}

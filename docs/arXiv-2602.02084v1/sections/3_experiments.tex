@@ -1,0 +1,43 @@
+\vspace*{-5pt}
+\section{Experiments Setup}
+\label{sec:exp_setup}
+We evaluate RPG on two tasks to assess its semantic grasp and structural completeness: (1) Repository Understanding, testing navigation and localization capabilities; and (2) Repository Reconstruction, verifying the fidelity and losslessness of the encoded information.
+\vspace*{-5pt}
+\subsection{Repository Understanding}
+We assess RPG as a navigational substrate through rigorous localization tasks. More details are in Appendix~\ref{app:under_detail}. 
+\vspace*{-20pt}
+\paragraph{Benchmark.}
+We evaluate on two benchmarks: SWE-bench Verified~\citep{jimenez2023swe}, a human-validated subset ensuring solvability with 500 examples from 12 repositories; and SWE-bench-Live Lite~\citep{zhang2025swe}, mitigating contamination using recent issues, comprising 300 examples across 70 repositories.
+\vspace*{-5pt}
+\paragraph{Baselines.}We compare against baselines leveraging diverse structural priors: Agentless~\citep{xia2024agentless} operates via hierarchical text-based narrowing without graph priors; LocAgent~\citep{chen2025locagent} leverages explicit dependency graphs for guided traversal; CoSIL~\citep{jiang2025cosil} performs iterative search over static code structures; and OrcaLoca~\citep{yu2025orcaloca} integrates dynamic execution signals with agentic planning.
+\vspace*{-5pt}
+\paragraph{Evaluation Metrics.}
+We adopt standard metrics: Acc@k ($k\!\in\!\{1,5\}$) checks if a ground-truth target is in top-$k$ predictions~\citep{jiang2025cosil}; and Precision/Recall quantify overlap. Given predicted set $P$ and ground-truth $G$, we define $\mathrm{Precision}=|P\cap G|/|P|$ and $\mathrm{Recall}=|P\cap G|/|G|$.
+\vspace*{-5pt}
+\paragraph{Implementation Details.}
+We use GPT-4o~\citep{gpt4o-system-card} to parse and incrementally update the RPG. Backbone models include o3-mini~\citep{o3-mini}, GPT-4o~\citep{gpt4o-system-card}, GPT-4.1~\citep{gpt4.1}, GPT-5~\citep{gpt5-system-card}, DeepSeek-V3.1~\citep{deepseek-v3.1}, and Claude-4.5-sonnet~\citep{anthropic_claude_sonnet_4_5}. \ours{} operates with a 40-step limit. Baselines follow configurations (detailed in Appendix~\ref{app:under_params_baselines}). All runs are averaged over 3 times.
+\vspace*{-5pt}
+\subsection{Repository Reconstruction}
+We use reconstruction to verify lossless, topologically ordered RPG information. Details are in Appendix~\ref{app:recon_detail}.
+\vspace*{-5pt}
+\paragraph{Benchmark.} We adapt RepoCraft~\citep{luo2025rpg_zerorepo} for controlled reconstruction, aiming to rebuild target repositories (e.g., \texttt{Requests}) with ground-truth functionality. To isolate representational fidelity, we compare Official API Documentation with RPG. We focus on representation sources rather than search-based agents (e.g., LocAgent), since reconstruction requires a comprehensive blueprint instead of iterative localization.
+\vspace*{-5pt}
+\paragraph{Baselines.} We configure ZeroRepo~\citep{luo2025rpg_zerorepo} in two modes: (1) \textbf{ZeroRepo-Doc (Baseline):} The agent references API documentation, autonomously managing progress and objectives via Test-Driven Development. (2) \textbf{ZeroRepo-RPG (Ours):} We utilize the extracted RPG for direct repository generation, where it serves as the exclusive knowledge source and scheduler. Nodes are processed in topological order, batching semantically similar nodes to accelerate inference. More details are in Appendix~\ref{app:recon_baseline}.
+\vspace*{-5pt}
+\paragraph{Evaluation Metrics.} Following RepoCraft, we report: (1) Coverage, the proportion of implemented functional categories; (2) Accuracy (Pass / Vote), unit-test pass accuracy and vote-based check accuracy; and (3) Code Statistics (\#Files, nLOC, Code Tokens) to measure structural similarity and recovered code volume.
+\vspace*{-5pt}
+\paragraph{Implementation Details.}
+We employ GPT-4o~\citep{gpt4o-system-card} for RPG extraction and evaluate reconstruction using GPT-5-mini~\citep{gpt5mini} and GPT-4.1~\citep{gpt4.1}. Following RepoCraft, we also use o3-mini~\citep{o3-mini} for automated evaluation. ZeroRepo-Doc runs without a hard turn limit and stops when the agent judges the documentation to be fully implemented. ZeroRepo-RPG is bounded by the graph and terminates once all RPG-derived nodes are executed. More details are in Appendix~\ref{app:recon_impl}.
+\input{tables/loc}
+
+\vspace*{-30pt}
+\section{Main Result}
+\label{sec:result}
+\paragraph{RPG Enhances Fine-Grained Repository Understanding.} Table~\ref{tab:loc_result} demonstrates that RPG consistently improves file-level and function-level localization. On SWE-bench Verified, \ours{} with Claude-4.5 achieves 93.7\% Acc@5 on function level, surpassing the best baseline (OrcaLoca) by 14.4 points, while simultaneously improving Precision by 6.9\% and Recall by 10.7\%. Furthermore, on SWE-bench Live, \ours{} with GPT-5 elevates performance to 87.8\% Acc@5 on function level, outperforming CoSIL by 11.6 points. These results confirm that coupling semantic features with topological constraints enables agents to map high-level intent to specific implementation units. Crucially, this dual-view structure filters irrelevant noise while ensuring comprehensive coverage of target functionalities.
+
+\input{tables/reconstruction}
+
+
+% \vspace*{-5pt}
+\paragraph{RPG Functioning as a Complete Representational Substrate.}
+Table~\ref{tab:reconstruction_results} demonstrates RPG's superior fidelity in reproducing complex repository structures. With GPT-5-mini, \ours{} attains 98.5\% Coverage and an 86.0\% Pass Rate, exceeding the documentation-based baseline by over 33 points. Regarding code scale, the baseline generates severely fragmented outputs, capturing only $\sim$17\% of the original volume due to a lack of structural guidance. In contrast, \ours{} reconstructs 550k tokens, a scale comparable to the gold project written by human. This high fidelity proves that RPG serves as a sufficient substrate to ground architectural intent within a valid structural topology, guiding the agent to expand the blueprint into concrete implementation unlike linear API documentation.

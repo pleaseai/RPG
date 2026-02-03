@@ -1,0 +1,42 @@
+\begin{tcblisting}{
+  title={SearchNode Tool Prompt},
+  colback=lightgray,
+  colframe=black,
+  arc=1mm,
+  boxrule=1pt,
+  left=1mm,right=1mm,top=1mm,bottom=1mm,
+  breakable,
+  fontupper=\scriptsize\ttfamily,
+  listing only,
+  listing engine=listings,
+  listing options={
+    breaklines=true,
+    breakatwhitespace=false,
+    breakindent=0pt,
+    prebreak=\mbox{},
+    postbreak=\mbox{},
+    keepspaces=true,
+    columns=fullflexible,
+    tabsize=4
+  }
+}
+## Tool Name: SearchNode
+### Description
+Unified search tool for repository navigation. Use it to (1) map high-level functional/behavioral descriptions to concrete code entities via RPG mapping, and/or (2) retrieve concrete code snippets via symbol/file/keyword search. Prefer behavior-to-code mapping when you don't know the exact file/class/function name; then narrow down with snippet search.
+Tip: Avoid vague terms; use concrete behavior phrases or high-signal identifiers.
+### Parameters
+{
+  "tool_name": "SearchNode",
+  "parameters": {
+    "mode": "<'features' | 'snippets' | 'auto'. Required. 'auto' may run both: feature-mapping first, then snippet search.>",
+    "feature_terms": "<List of concrete behavioral/functionality phrases. Required when mode is 'features' or 'auto'.>",
+    "search_scopes": "<List of valid feature entity paths to restrict the Functionality SubGraph. Optional.>",
+    "search_terms": "<List of file paths, qualified entities (file:Class.method), or high-signal text keywords. Required when mode is 'snippets' or when 'auto' proceeds to snippet search.>",
+    "line_nums": "<Two integers [start, end] to extract lines from a specific file. Requires an exact file path. Optional.>",
+    "file_path_or_pattern": "<File path or glob pattern to restrict snippet search. Default: '**/*.py'>",
+  }
+}
+### Returns
+- If feature search runs: matched feature nodes mapped to code entities (feature name, code entity, file path, line range when available)
+- If snippet search runs: matched code snippets, complete files, or located entities based on search terms / line ranges
+\end{tcblisting}

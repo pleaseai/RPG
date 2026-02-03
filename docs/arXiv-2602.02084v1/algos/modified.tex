@@ -1,0 +1,31 @@
+\begin{algorithm}[htbp]
+\caption{Differential Modification Handling}
+\label{alg:modification}
+\begin{algorithmic}[1]
+\Require Graph $G$, file $f$, diff $\Delta$
+\Ensure Updated graph $G$
+
+\Function{ProcessModification}{$G, f, \Delta$}
+    \State $\langle \mathcal{U}^+, \mathcal{U}^-, \mathcal{U}^{\sim} \rangle \gets \Call{ParseUnitDiff}{\Delta}$
+
+    \Statex \textbf{1) Delete / Insert}
+    \ForAll{$u \in \mathcal{U}^-$}
+        \State $G \gets \Call{DeleteNode}{G, u.\text{id}}$
+    \EndFor
+    \ForAll{$u \in \mathcal{U}^+$}
+      \State $G \gets \Call{InsertNode}{G, u, \textsc{LLMExtract}(u)}$
+    \EndFor
+
+    \Statex \textbf{2) Update / Re-route}
+    \ForAll{$u \in \mathcal{U}^{\sim}$}
+        \State $v \gets \Call{GetNode}{G, u.\text{id}};\; v.f \gets \Call{LLMUpdate}{u}$
+        \If{$\Call{SemanticShift}{v} > \tau_{\text{drift}}$}
+            \State $G \gets \Call{DeleteNode}{G, u.\text{id}}$ \Comment{logic drift}
+           \State $G \gets \Call{InsertNode}{G, u, \textsc{LLMExtract}(u)}$
+        \EndIf
+    \EndFor
+
+    \State \Return $G$
+\EndFunction
+\end{algorithmic}
+\end{algorithm}

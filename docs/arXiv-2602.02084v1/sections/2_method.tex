@@ -1,0 +1,61 @@
+\section{Method}
+\label{sec:method}
+To establish RPG as a unified and high-fidelity Intermediate Representation, we introduce the \ours{}. By mapping implementation back to semantic space (Code $\to$ RPG), it completes the representation loop. As illustrated in Figure~\ref{fig:pipeline}, our methodology comprises: (1) Encoding for RPG extraction; (2) Evolution for incremental maintenance; and (3) Operation as a unified reasoning substrate.
+
+
+
+\subsection{RPG Encoding: Extracting RPG from Codebases}
+To transform a raw codebase into an actionable substrate, we model extraction as a pipeline that converts implementation details into a compact, structured semantic index for high-level reasoning. This process reconstructs the system topology in three phases. More details are in Appendix~\ref{app:extraction}. 
+
+\paragraph{RPG Structure} Refining prior definitions \citep{luo2025rpg_zerorepo}, we define RPG as a hierarchical, dual-view graph $\mathcal{G} = (\mathcal{V}, \mathcal{E})$. The node set $\mathcal{V} = \mathcal{V}_{H} \cup \mathcal{V}_{L}$ distinguishes High-level Nodes representing architectural directories from Low-level Nodes comprising atomic implementations such as files, classes, and functions. Each node $v = (f, \mathbf{m}) \in \mathcal{V}$ pairs a semantic feature $f$ describing functionality (e.g., \textit{handles authentication}) with structural metadata $\mathbf{m}$ encoding code entity attributes like type and path. The edge set $\mathcal{E}$ integrates two perspectives: (1) Functional edges $\mathcal{E}_{\text{feature}}$ establishing teleological hierarchy; and (2) Dependency edges $\mathcal{E}_{\text{dep}}$ mapping logical interactions including imports and calls. This duality enables the agent to perceive the repository as both a functional and executable network.
+
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=\linewidth]{figs/encoder_pipeline.pdf}
+    \caption{Overview of the RPG-Encoder. The pipeline bridges Code and RPG via three stages: \textbf{Encoding} lifts code into a semantic topology; \textbf{Evolution} handles incremental updates via commits; and \textbf{Operation} provides a unified interface for agentic reasoning.\protect\footnotemark}
+    \label{fig:pipeline}
+\end{figure}
+\footnotetext{The Python icon is the official Python logo; see \url{https://www.python.org/community/logos/}.}
+
+
+
+\vspace*{-15pt}
+\paragraph{Phase 1: Semantic Lifting}
+To bridge the granularity mismatch between verbose implementation and functional intent, the extraction process first lifts the codebase into a discrete registry of Low-level Nodes ($\mathcal{V}_L$). For each file, the system extracts semantic features $f$ for individual functions and classes, mapping them to behavioral signatures while retaining their code-level attributes as metadata $\mathbf{m}$. Subsequently, these fine-grained features are synthesized into a holistic summary representing the file's overall functionality. This summarization process naturally establishes functional edges $\mathcal{E}_{\text{feature}}$ between the file-level node and its constituent function-level node. This phase concludes by producing a semantically grounded implementation index, serving as a robust representation for higher-level reasoning.
+ 
+\paragraph{Phase 2: Semantic Structure Reorganization}
+Physical folder-file organization is often dictated by technical constraints rather than functional boundaries, inducing structural entanglement. To mitigate this, we construct the High-level Node set $\mathcal{V}_H$ by recovering the latent functional topology from implementation units ($\mathcal{V}_L$). (1) \textbf{Functional Abstraction:} To ensure the global repository state fits within the LLM context window, we perform granularity-based input compression. Instead of raw implementation, the LLM only consumes concise semantic features $f$ of file-level nodes, excluding function-level details. This condensed view allows the model to analyze the complete repository-wide semantic manifold to induce abstract functional centroids (e.g., \textit{Data Preprocessing}) that define the root pillars of the hierarchy. (2) \textbf{Hierarchical Aggregation:} We recursively link nodes from $\mathcal{V}_L$ to these centroids. To ensure structural stability, each node’s placement is determined by a semantic compatibility check: the LLM evaluates the fit between a node’s $f$ and the centroid’s definition, instantiating intermediate nodes (e.g., routing \textit{StandardScaler} via \textit{Normalization} to \textit{Preprocessing}) to bridge the hierarchy when a direct link lacks granularity. Together, these nodes constitute the High-level Node set $\mathcal{V}_H$, establishing explicit parent-child functional edges. This yields a complete functional graph where each $v \in \mathcal{V}_H$ possesses semantic feature $f$ but lacks structural metadata $\mathbf{m}$ required to link it to physical code entities.
+
+\paragraph{Phase 3: Artifact Grounding}
+To transform the abstract hierarchy into a substrate, this phase anchors the functional manifold to physical artifacts and execution logic. We first populate the missing metadata $\mathbf{m}$ for nodes in $\mathcal{V}_H$ through bottom-up propagation, utilizing a Lowest Common Ancestor (LCA) mechanism (detailed in Appendix \ref{app:extraction_grounding}) to compute the minimal directory scope shared by each cluster's descendants. This mapping ensures that abstract features such as \textit{Data Preprocessing} are tied to code paths like \texttt{sklearn/preprocessing}. Subsequently, to transition from a semantic hierarchy to an implementation map, we inject dependency edges $\mathcal{E}_{\text{dep}}$ (e.g., imports, calls) via AST analysis. This integration completes the RPG, yielding a unified representation that enables traceability between high-level functional intent and the executable code.
+
+\subsection{RPG Evolution: Incremental Maintenance}
+To reduce the cost of full re-generation, we maintain $\mathcal{G}$ incrementally and reserve global reconstruction for major refactoring. For routine updates, we perform online graph editing to keep the RPG synchronized, as illustrated in Figure~\ref{fig:pipeline} (top-right) and detailed in Appendix~\ref{app:evolution}.
+
+\paragraph{Commit-Level Feature Extraction}
+We parse raw commit data to extract semantic features strictly for affected code fragments, avoiding full reprocessing. This yields a set of discrete Feature Nodes representing the delta state, which serves as the direct input for graph operations.
+
+\paragraph{RPG Updates}
+Based on the diff type, we execute three atomic update protocols to maintain the RPG structure:
+(1) \textbf{Deletions}: We remove nodes for deleted files or functions and recursively prune empty parent categories in $\mathcal{V}H$ to maintain hierarchical integrity.
+(2) \textbf{Modifications}: We re-generate the semantic description $f$ for modified entities. To avoid structural instability, a node’s position is updated only if the LLM detects a functional intent shift that violates its parent’s semantic scope (e.g., a utility function evolving into a core algorithm). This check serves as a semantic threshold to prevent minor implementation changes from triggering costly structural migrations.
+(3) \textbf{Additions}: We create nodes for new entities and insert them into the hierarchy by matching their semantics against existing functional centroids. Finally, we perform a localized dependency update, re-parsing affected ASTs to refresh $\mathcal{E}{\text{dep}}$ and align connectivity with the execution flow.
+
+\subsection{RPG Operation: Unified Reasoning Substrate}
+We deploy RPG as a Unified Representation providing a queryable index of the codebase. Structurally, it functions as a heterogeneous graph where Functional and Dependency Views are partitioned by edge types ($\mathcal{E}_{\text{feature}}$ and $\mathcal{E}_{\text{dep}}$) but share a unified node set, enabling seamless context switching during retrieval. More details are in Appendix \ref{app:operation}
+\paragraph{Unified Agentic Tool}
+We define three core tools to operate on the RPG's nodes and edges:
+\begin{itemize}
+    
+    \item \textbf{SearchNode}: Performs global node-level retrieval by matching intent against semantic features $f$ or filtering metadata $\mathbf{m}$, allowing the agent to precisely localize entry points across both views.
+    
+    \item \textbf{FetchNode}: Executes node-level data retrieval. Given $v$, it extracts the attribute tuple $(f, \mathbf{m})$ and raw source code to provide the ground truth for inspection.
+    
+    \item \textbf{ExploreRPG}: Facilitates cross-view traversal along edges $\mathcal{E}$. While $\mathcal{E}_{\text{dep}}$ is strictly constructed via static AST analysis, its integration with the semantic hierarchy in $\mathcal{V}_H$ provides a robust topological skeleton that guides the agent through complex execution flows without the noise of unstructured search.
+\end{itemize}
+
+This toolset enables multi-dimensional navigation by integrating functional intent with physical implementation, facilitating precise context discovery through semantic and dependency structures.
+
+\paragraph{Efficient Structured Representation}
+RPG reduces information overload by representing the repository as a substrate with two roles: (1) Knowledge Source: RPG stores feature descriptions and metadata for each node, capturing \textit{what} the code does without parsing implementations. (2) Process Encoder: RPG induces a topological order via functional edges ($\mathcal{E}_{\text{feature}}$) and dependency edges ($\mathcal{E}_{\text{dep}}$), exposing causality and hierarchy essential for architectural comprehension.
