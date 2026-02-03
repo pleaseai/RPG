@@ -104,3 +104,9 @@ bun run src/cli.ts encode ./my_project
 - RPG-ZeroRepo: https://arxiv.org/abs/2509.16198
 - RPG-Encoder: https://arxiv.org/abs/2602.02084
 - Paper source files in `docs/arXiv-*/` for implementation details
+
+## Design Decisions
+
+- **Vitest over Bun Test**: Jest compatibility for planned MCP server development
+- **LanceDB over ChromaDB**: No external server required, Bun-native, disk-based persistence
+- **Paper-based implementation**: Original implementation based on research papers, not forked from Microsoft code
