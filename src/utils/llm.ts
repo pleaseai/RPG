@@ -1,13 +1,18 @@
+import { generateText } from 'ai'
+import { createOpenAI } from '@ai-sdk/openai'
+import { createAnthropic } from '@ai-sdk/anthropic'
+import { createGoogleGenerativeAI } from '@ai-sdk/google'
+
 /**
  * LLM provider type
  */
-export type LLMProvider = 'openai' | 'anthropic'
+export type LLMProvider = 'openai' | 'anthropic' | 'google'
 
 /**
  * LLM client options
  */
 export interface LLMOptions {
-  /** Provider (openai or anthropic) */
+  /** Provider (openai, anthropic, or google) */
   provider: LLMProvider
   /** API key (defaults to environment variable) */
   apiKey?: string
@@ -36,33 +41,97 @@ export interface LLMResponse {
 }
 
 /**
- * LLM Client for semantic operations
+ * Default models for each provider
+ */
+const DEFAULT_MODELS: Record<LLMProvider, string> = {
+  openai: 'gpt-4o',
+  anthropic: 'claude-sonnet-4-20250514',
+  google: 'gemini-2.0-flash',
+}
+
+/**
+ * Create provider instance
+ */
+function createProvider(provider: LLMProvider, apiKey?: string) {
+  switch (provider) {
+    case 'openai':
+      return createOpenAI({
+        apiKey: apiKey ?? process.env.OPENAI_API_KEY,
+      })
+    case 'anthropic':
+      return createAnthropic({
+        apiKey: apiKey ?? process.env.ANTHROPIC_API_KEY,
+      })
+    case 'google':
+      return createGoogleGenerativeAI({
+        apiKey: apiKey ?? process.env.GOOGLE_API_KEY,
+      })
+  }
+}
+
+/**
+ * LLM Client for semantic operations using Vercel AI SDK
  *
  * Used for:
  * - Semantic feature extraction
  * - Functional hierarchy construction
  * - Code generation
+ *
+ * Supports OpenAI, Anthropic, and Google providers with unified interface.
+ *
+ * @example
+ * ```typescript
+ * // Use Gemini 3 Flash (recommended - free tier, best performance)
+ * const client = new LLMClient({ provider: 'google', model: 'gemini-2.0-flash' })
+ *
+ * // Use Claude Haiku (fast, cost-effective)
+ * const client = new LLMClient({ provider: 'anthropic', model: 'claude-3-5-haiku-latest' })
+ *
+ * // Use GPT-4o (paper baseline)
+ * const client = new LLMClient({ provider: 'openai', model: 'gpt-4o' })
+ * ```
  */
 export class LLMClient {
   private options: LLMOptions
+  private providerInstance: ReturnType<typeof createProvider>
 
   constructor(options: LLMOptions) {
     this.options = {
-      model: options.provider === 'anthropic' ? 'claude-sonnet-4-20250514' : 'gpt-4o',
+      model: DEFAULT_MODELS[options.provider],
       maxTokens: 4096,
       temperature: 0,
       ...options,
     }
+    this.providerInstance = createProvider(options.provider, options.apiKey)
   }
 
   /**
-   * Generate a completion
+   * Generate a completion using Vercel AI SDK
    */
   async complete(prompt: string, systemPrompt?: string): Promise<LLMResponse> {
-    if (this.options.provider === 'anthropic') {
-      return this.completeAnthropic(prompt, systemPrompt)
+    const modelId = this.options.model ?? DEFAULT_MODELS[this.options.provider]
+    const model = this.providerInstance(modelId)
+
+    const result = await generateText({
+      model,
+      system: systemPrompt,
+      prompt,
+      maxOutputTokens: this.options.maxTokens,
+      temperature: this.options.temperature,
+    })
+
+    const inputTokens = result.usage?.inputTokens ?? 0
+    const outputTokens = result.usage?.outputTokens ?? 0
+
+    return {
+      content: result.text,
+      usage: {
+        promptTokens: inputTokens,
+        completionTokens: outputTokens,
+        totalTokens: inputTokens + outputTokens,
+      },
+      model: modelId,
     }
-    return this.completeOpenAI(prompt, systemPrompt)
   }
 
   /**
@@ -82,59 +151,17 @@ export class LLMClient {
     return JSON.parse(jsonMatch[1] ?? jsonMatch[0]) as T
   }
 
-  private async completeAnthropic(prompt: string, systemPrompt?: string): Promise<LLMResponse> {
-    const Anthropic = await import('@anthropic-ai/sdk')
-    const client = new Anthropic.default({
-      apiKey: this.options.apiKey ?? process.env.ANTHROPIC_API_KEY,
-    })
-
-    const response = await client.messages.create({
-      model: this.options.model ?? 'claude-sonnet-4-20250514',
-      max_tokens: this.options.maxTokens ?? 4096,
-      temperature: this.options.temperature,
-      system: systemPrompt,
-      messages: [{ role: 'user', content: prompt }],
-    })
-
-    const textBlock = response.content.find((b) => b.type === 'text')
-    return {
-      content: textBlock?.type === 'text' ? textBlock.text : '',
-      usage: {
-        promptTokens: response.usage.input_tokens,
-        completionTokens: response.usage.output_tokens,
-        totalTokens: response.usage.input_tokens + response.usage.output_tokens,
-      },
-      model: response.model,
-    }
+  /**
+   * Get the current provider
+   */
+  getProvider(): LLMProvider {
+    return this.options.provider
   }
 
-  private async completeOpenAI(prompt: string, systemPrompt?: string): Promise<LLMResponse> {
-    const OpenAI = await import('openai')
-    const client = new OpenAI.default({
-      apiKey: this.options.apiKey ?? process.env.OPENAI_API_KEY,
-    })
-
-    const messages: Array<{ role: 'system' | 'user'; content: string }> = []
-    if (systemPrompt) {
-      messages.push({ role: 'system', content: systemPrompt })
-    }
-    messages.push({ role: 'user', content: prompt })
-
-    const response = await client.chat.completions.create({
-      model: this.options.model ?? 'gpt-4o',
-      max_tokens: this.options.maxTokens,
-      temperature: this.options.temperature,
-      messages,
-    })
-
-    return {
-      content: response.choices[0]?.message?.content ?? '',
-      usage: {
-        promptTokens: response.usage?.prompt_tokens ?? 0,
-        completionTokens: response.usage?.completion_tokens ?? 0,
-        totalTokens: response.usage?.total_tokens ?? 0,
-      },
-      model: response.model,
-    }
+  /**
+   * Get the current model
+   */
+  getModel(): string {
+    return this.options.model ?? DEFAULT_MODELS[this.options.provider]
   }
 }

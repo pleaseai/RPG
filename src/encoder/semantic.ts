@@ -73,8 +73,12 @@ export class SemanticExtractor {
 
   /**
    * Detect available LLM provider from environment
+   * Priority: Google (free tier) > Anthropic > OpenAI
    */
   private detectProvider(): LLMProvider | null {
+    if (process.env.GOOGLE_API_KEY) {
+      return 'google'
+    }
     if (process.env.ANTHROPIC_API_KEY) {
       return 'anthropic'
     }
