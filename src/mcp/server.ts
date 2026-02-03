@@ -1,19 +1,19 @@
+import { readFile } from 'node:fs/promises'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
-import { readFile } from 'node:fs/promises'
 import { RepositoryPlanningGraph } from '../graph'
 import { RPGError } from './errors'
 import {
+  EncodeInputSchema,
+  ExploreInputSchema,
+  FetchInputSchema,
   RPG_TOOLS,
   SearchInputSchema,
-  FetchInputSchema,
-  ExploreInputSchema,
-  EncodeInputSchema,
   StatsInputSchema,
-  executeSearch,
-  executeFetch,
-  executeExplore,
   executeEncode,
+  executeExplore,
+  executeFetch,
+  executeSearch,
   executeStats,
 } from './tools'
 

@@ -105,6 +105,59 @@ bun run src/cli.ts encode ./my_project
 - RPG-Encoder: https://arxiv.org/abs/2602.02084
 - Paper source files in `docs/arXiv-*/` for implementation details
 
+## MCP Server
+
+RPG provides an MCP (Model Context Protocol) server for Claude Code integration.
+
+### Running the MCP Server
+
+```bash
+# Development mode
+bun run mcp <rpg-file.json>
+
+# Example with sample fixture
+bun run mcp tests/fixtures/sample-rpg.json
+```
+
+### Available MCP Tools
+
+| Tool | Description |
+|------|-------------|
+| `rpg_search` | Semantic code search by features or file patterns |
+| `rpg_fetch` | Retrieve entity details, source code, and feature paths |
+| `rpg_explore` | Traverse the graph along functional/dependency edges |
+| `rpg_encode` | Convert a repository into an RPG |
+| `rpg_stats` | Get graph statistics (node/edge counts) |
+
+### Claude Code Configuration
+
+Add to your Claude Code settings (`.claude/settings.json` or `~/.config/claude/settings.json`):
+
+```json
+{
+  "mcpServers": {
+    "rpg": {
+      "command": "bun",
+      "args": ["run", "/path/to/rpg/src/mcp/server.ts", "/path/to/rpg-file.json"],
+      "env": {}
+    }
+  }
+}
+```
+
+Or with the installed package:
+
+```json
+{
+  "mcpServers": {
+    "rpg": {
+      "command": "rpg-mcp",
+      "args": ["/path/to/rpg-file.json"]
+    }
+  }
+}
+```
+
 ## Design Decisions
 
 - **Vitest over Bun Test**: Jest compatibility for planned MCP server development

@@ -6,10 +6,12 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "bin": {
-    "rpg": "dist/cli.js"
+    "rpg": "dist/cli.js",
+    "rpg-mcp": "dist/mcp/server.js"
   },
   "scripts": {
     "dev": "bun run --watch src/cli.ts",
+    "mcp": "bun run src/mcp/server.ts",
     "build": "bun build src/index.ts --outdir dist --target node",
     "test": "vitest run",
     "test:watch": "vitest",
