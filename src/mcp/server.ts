@@ -26,96 +26,57 @@ export function createMcpServer(rpg: RepositoryPlanningGraph | null): McpServer 
     version: '0.1.0',
   })
 
-  // Register rpg_search tool
+  // Register all RPG tools
   server.tool(
     RPG_TOOLS.rpg_search.name,
     RPG_TOOLS.rpg_search.description,
     SearchInputSchema.shape,
-    async (args) => {
-      try {
-        const input = SearchInputSchema.parse(args)
-        const result = await executeSearch(rpg, input)
-        return {
-          content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
-        }
-      } catch (error) {
-        return formatError(error)
-      }
-    }
+    async (args) => wrapHandler(() => executeSearch(rpg, SearchInputSchema.parse(args)))
   )
 
-  // Register rpg_fetch tool
   server.tool(
     RPG_TOOLS.rpg_fetch.name,
     RPG_TOOLS.rpg_fetch.description,
     FetchInputSchema.shape,
-    async (args) => {
-      try {
-        const input = FetchInputSchema.parse(args)
-        const result = await executeFetch(rpg, input)
-        return {
-          content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
-        }
-      } catch (error) {
-        return formatError(error)
-      }
-    }
+    async (args) => wrapHandler(() => executeFetch(rpg, FetchInputSchema.parse(args)))
   )
 
-  // Register rpg_explore tool
   server.tool(
     RPG_TOOLS.rpg_explore.name,
     RPG_TOOLS.rpg_explore.description,
     ExploreInputSchema.shape,
-    async (args) => {
-      try {
-        const input = ExploreInputSchema.parse(args)
-        const result = await executeExplore(rpg, input)
-        return {
-          content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
-        }
-      } catch (error) {
-        return formatError(error)
-      }
-    }
+    async (args) => wrapHandler(() => executeExplore(rpg, ExploreInputSchema.parse(args)))
   )
 
-  // Register rpg_encode tool
   server.tool(
     RPG_TOOLS.rpg_encode.name,
     RPG_TOOLS.rpg_encode.description,
     EncodeInputSchema.shape,
-    async (args) => {
-      try {
-        const input = EncodeInputSchema.parse(args)
-        const result = await executeEncode(input)
-        return {
-          content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
-        }
-      } catch (error) {
-        return formatError(error)
-      }
-    }
+    async (args) => wrapHandler(() => executeEncode(EncodeInputSchema.parse(args)))
   )
 
-  // Register rpg_stats tool
   server.tool(
     RPG_TOOLS.rpg_stats.name,
     RPG_TOOLS.rpg_stats.description,
     StatsInputSchema.shape,
-    async () => {
-      try {
-        const result = executeStats(rpg)
-        return {
-          content: [{ type: 'text', text: JSON.stringify(result, null, 2) }],
-        }
-      } catch (error) {
-        return formatError(error)
-      }
-    }
+    async () => wrapHandler(() => executeStats(rpg))
   )
 
   return server
+}
+
+/**
+ * Wrap a handler function with standard MCP response formatting
+ */
+async function wrapHandler<T>(
+  handler: () => T | Promise<T>
+): Promise<{ content: Array<{ type: 'text'; text: string }>; isError?: true }> {
+  try {
+    const result = await handler()
+    return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] }
+  } catch (error) {
+    return formatError(error)
+  }
 }
 
 /**
