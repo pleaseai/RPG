@@ -1,0 +1,123 @@
+{
+  "version": "1.0.0",
+  "config": {
+    "name": "sample-project",
+    "rootPath": "/tmp/sample-project",
+    "description": "A sample project for testing MCP tools"
+  },
+  "nodes": [
+    {
+      "id": "root",
+      "type": "high_level",
+      "feature": {
+        "description": "Sample project root",
+        "keywords": ["project", "root", "sample"]
+      },
+      "directoryPath": "/"
+    },
+    {
+      "id": "utils",
+      "type": "high_level",
+      "feature": {
+        "description": "Utility functions module",
+        "keywords": ["utils", "helpers", "utilities"]
+      },
+      "directoryPath": "/utils"
+    },
+    {
+      "id": "utils/math.ts",
+      "type": "low_level",
+      "feature": {
+        "description": "Mathematical utility functions",
+        "keywords": ["math", "calculation", "numbers"],
+        "subFeatures": ["add numbers", "multiply numbers"]
+      },
+      "metadata": {
+        "entityType": "file",
+        "path": "utils/math.ts",
+        "language": "typescript"
+      },
+      "sourceCode": "export function add(a: number, b: number): number {\n  return a + b;\n}\n\nexport function multiply(a: number, b: number): number {\n  return a * b;\n}"
+    },
+    {
+      "id": "utils/string.ts",
+      "type": "low_level",
+      "feature": {
+        "description": "String manipulation utilities",
+        "keywords": ["string", "text", "format"]
+      },
+      "metadata": {
+        "entityType": "file",
+        "path": "utils/string.ts",
+        "language": "typescript"
+      },
+      "sourceCode": "export function capitalize(str: string): string {\n  return str.charAt(0).toUpperCase() + str.slice(1);\n}"
+    },
+    {
+      "id": "services",
+      "type": "high_level",
+      "feature": {
+        "description": "Business logic services",
+        "keywords": ["services", "business", "logic"]
+      },
+      "directoryPath": "/services"
+    },
+    {
+      "id": "services/calculator.ts",
+      "type": "low_level",
+      "feature": {
+        "description": "Calculator service using math utilities",
+        "keywords": ["calculator", "compute", "math"]
+      },
+      "metadata": {
+        "entityType": "file",
+        "path": "services/calculator.ts",
+        "language": "typescript"
+      }
+    }
+  ],
+  "edges": [
+    {
+      "source": "root",
+      "target": "utils",
+      "type": "functional",
+      "level": 1,
+      "siblingOrder": 0
+    },
+    {
+      "source": "root",
+      "target": "services",
+      "type": "functional",
+      "level": 1,
+      "siblingOrder": 1
+    },
+    {
+      "source": "utils",
+      "target": "utils/math.ts",
+      "type": "functional",
+      "level": 2,
+      "siblingOrder": 0
+    },
+    {
+      "source": "utils",
+      "target": "utils/string.ts",
+      "type": "functional",
+      "level": 2,
+      "siblingOrder": 1
+    },
+    {
+      "source": "services",
+      "target": "services/calculator.ts",
+      "type": "functional",
+      "level": 2,
+      "siblingOrder": 0
+    },
+    {
+      "source": "services/calculator.ts",
+      "target": "utils/math.ts",
+      "type": "dependency",
+      "dependencyType": "import",
+      "isRuntime": false
+    }
+  ]
+}
