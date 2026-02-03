@@ -17,23 +17,66 @@ program
   .argument('<path>', 'Repository path')
   .option('-o, --output <file>', 'Output file path', 'rpg.json')
   .option('--include-source', 'Include source code in nodes')
-  .action(async (repoPath: string, options: { output: string; includeSource?: boolean }) => {
-    console.log(`Encoding repository: ${repoPath}`)
+  .option('-i, --include <patterns...>', 'Include file patterns (default: **/*.ts,**/*.js,**/*.py)')
+  .option(
+    '-e, --exclude <patterns...>',
+    'Exclude file patterns (default: **/node_modules/**,**/dist/**)'
+  )
+  .option('-d, --max-depth <depth>', 'Maximum directory depth', '10')
+  .option('--verbose', 'Show detailed progress')
+  .action(
+    async (
+      repoPath: string,
+      options: {
+        output: string
+        includeSource?: boolean
+        include?: string[]
+        exclude?: string[]
+        maxDepth: string
+        verbose?: boolean
+      }
+    ) => {
+      console.log(`Encoding repository: ${repoPath}`)
+      if (options.verbose) {
+        console.log(
+          `  Include patterns: ${options.include?.join(', ') || '**/*.ts,**/*.js,**/*.py'}`
+        )
+        console.log(
+          `  Exclude patterns: ${options.exclude?.join(', ') || '**/node_modules/**,**/dist/**'}`
+        )
+        console.log(`  Max depth: ${options.maxDepth}`)
+      }
 
-    const encoder = new RPGEncoder(repoPath, {
-      includeSource: options.includeSource,
-    })
+      const encoder = new RPGEncoder(repoPath, {
+        includeSource: options.includeSource,
+        include: options.include,
+        exclude: options.exclude,
+        maxDepth: Number.parseInt(options.maxDepth),
+      })
 
-    const result = await encoder.encode()
+      const result = await encoder.encode()
 
-    await Bun.write(options.output, result.rpg.toJSON())
+      await Bun.write(options.output, result.rpg.toJSON())
 
-    console.log(`\nEncoding complete:`)
-    console.log(`  Files processed: ${result.filesProcessed}`)
-    console.log(`  Entities extracted: ${result.entitiesExtracted}`)
-    console.log(`  Duration: ${result.duration}ms`)
-    console.log(`  Output: ${options.output}`)
-  })
+      const stats = result.rpg.getStats()
+
+      console.log('\nEncoding complete:')
+      console.log(`  Files processed: ${result.filesProcessed}`)
+      console.log(`  Entities extracted: ${result.entitiesExtracted}`)
+      console.log(`  Duration: ${result.duration}ms`)
+      console.log(`  Output: ${options.output}`)
+
+      if (options.verbose) {
+        console.log('\nGraph statistics:')
+        console.log(`  Total nodes: ${stats.nodeCount}`)
+        console.log(`    High-level (modules): ${stats.highLevelNodeCount}`)
+        console.log(`    Low-level (entities): ${stats.lowLevelNodeCount}`)
+        console.log(`  Total edges: ${stats.edgeCount}`)
+        console.log(`    Functional: ${stats.functionalEdgeCount}`)
+        console.log(`    Dependency: ${stats.dependencyEdgeCount}`)
+      }
+    }
+  )
 
 // Generate command
 program
@@ -56,7 +99,7 @@ program
       process.exit(1)
     }
 
-    console.log(`Generating repository...`)
+    console.log('Generating repository...')
     console.log(`Specification: ${spec.substring(0, 100)}...`)
 
     const zerorepo = new ZeroRepo({
@@ -68,7 +111,7 @@ program
     const rpg = await zerorepo.buildImplementationGraph(proposalGraph)
     const result = await zerorepo.generateRepository(rpg, options.output)
 
-    console.log(`\nGeneration complete:`)
+    console.log('\nGeneration complete:')
     console.log(`  Files generated: ${result.filesGenerated}`)
     console.log(`  Lines of code: ${result.linesOfCode}`)
     console.log(`  Output: ${result.outputPath}`)
@@ -165,7 +208,7 @@ program
       console.log(`  Edges traversed: ${results.edges.length}`)
       console.log(`  Max depth reached: ${results.maxDepthReached}`)
 
-      console.log(`\nNodes:`)
+      console.log('\nNodes:')
       for (const n of results.nodes) {
         console.log(`  - ${n.id}: ${n.feature.description}`)
       }
