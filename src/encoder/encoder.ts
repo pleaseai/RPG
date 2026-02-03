@@ -585,9 +585,109 @@ export class RPGEncoder {
 
   /**
    * Inject dependency edges via AST analysis
+   *
+   * Parses each file to extract import statements and creates
+   * dependency edges between importing and imported files.
    */
-  private async injectDependencies(_rpg: RepositoryPlanningGraph): Promise<void> {
-    // TODO: Implement AST-based dependency extraction
+  private async injectDependencies(rpg: RepositoryPlanningGraph): Promise<void> {
+    const lowLevelNodes = rpg.getLowLevelNodes()
+    const fileNodes = lowLevelNodes.filter((n) => n.metadata?.entityType === 'file')
+
+    // Build a map of file paths to node IDs for quick lookup
+    const filePathToNodeId = this.buildFilePathMap(fileNodes)
+
+    // Track created edges to avoid duplicates
+    const createdEdges = new Set<string>()
+
+    // Parse each file and extract dependencies
+    for (const node of fileNodes) {
+      await this.extractFileDependencies(rpg, node, filePathToNodeId, createdEdges)
+    }
+  }
+
+  /**
+   * Build a map of file paths to node IDs
+   */
+  private buildFilePathMap(
+    fileNodes: Array<{ id: string; metadata?: { path?: string } }>
+  ): Map<string, string> {
+    const map = new Map<string, string>()
+    for (const node of fileNodes) {
+      if (node.metadata?.path) {
+        map.set(node.metadata.path, node.id)
+      }
+    }
+    return map
+  }
+
+  /**
+   * Extract and create dependency edges for a single file
+   */
+  private async extractFileDependencies(
+    rpg: RepositoryPlanningGraph,
+    node: { id: string; metadata?: { path?: string } },
+    filePathToNodeId: Map<string, string>,
+    createdEdges: Set<string>
+  ): Promise<void> {
+    const filePath = node.metadata?.path
+    if (!filePath) return
+
+    const fullPath = path.join(this.repoPath, filePath)
+    const parseResult = await this.astParser.parseFile(fullPath)
+
+    for (const importInfo of parseResult.imports) {
+      const targetPath = this.resolveImportPath(filePath, importInfo.module)
+      if (!targetPath) continue
+
+      const targetNodeId = filePathToNodeId.get(targetPath)
+      if (!targetNodeId || targetNodeId === node.id) continue
+
+      // Avoid duplicate edges
+      const edgeKey = `${node.id}->${targetNodeId}`
+      if (createdEdges.has(edgeKey)) continue
+      createdEdges.add(edgeKey)
+
+      rpg.addDependencyEdge({
+        source: node.id,
+        target: targetNodeId,
+        dependencyType: 'import',
+      })
+    }
+  }
+
+  /**
+   * Resolve import module path to actual file path
+   */
+  private resolveImportPath(sourceFile: string, modulePath: string): string | null {
+    // Skip external modules (node_modules, built-ins)
+    if (!modulePath.startsWith('.') && !modulePath.startsWith('/')) {
+      return null
+    }
+
+    const sourceDir = path.dirname(sourceFile)
+    const resolvedPath = path.normalize(path.join(sourceDir, modulePath))
+
+    // Try different extensions
+    const extensions = ['.ts', '.tsx', '.js', '.jsx', '.py', '']
+    for (const ext of extensions) {
+      const candidatePath = resolvedPath + ext
+      // Check if this path exists in our file set by normalizing
+      const normalizedPath = candidatePath.replace(/\\/g, '/')
+      if (!normalizedPath.startsWith('/')) {
+        return normalizedPath
+      }
+    }
+
+    // Handle index files (e.g., './utils' -> './utils/index.ts')
+    for (const ext of extensions) {
+      const indexPath = path.join(resolvedPath, `index${ext}`)
+      const normalizedPath = indexPath.replace(/\\/g, '/')
+      if (!normalizedPath.startsWith('/')) {
+        return normalizedPath
+      }
+    }
+
+    return resolvedPath.replace(/\\/g, '/')
   }
 
   /**

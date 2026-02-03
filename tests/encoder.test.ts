@@ -253,3 +253,63 @@ describe('RPGEncoder.buildFunctionalHierarchy', () => {
     }
   })
 })
+
+describe('RPGEncoder.injectDependencies', () => {
+  test('creates dependency edges for imports', async () => {
+    const encoder = new RPGEncoder(PROJECT_ROOT, {
+      include: ['src/encoder/**/*.ts'],
+      exclude: [],
+    })
+    const result = await encoder.encode()
+
+    // Should have dependency edges from encoder.ts to other modules
+    const dependencyEdges = result.rpg.getDependencyEdges()
+    expect(dependencyEdges.length).toBeGreaterThan(0)
+  })
+
+  test('dependency edges have import type', async () => {
+    const encoder = new RPGEncoder(PROJECT_ROOT, {
+      include: ['src/encoder/**/*.ts'],
+      exclude: [],
+    })
+    const result = await encoder.encode()
+
+    const dependencyEdges = result.rpg.getDependencyEdges()
+    for (const edge of dependencyEdges) {
+      expect(edge.dependencyType).toBe('import')
+    }
+  })
+
+  test('dependency edges connect file nodes', async () => {
+    const encoder = new RPGEncoder(PROJECT_ROOT, {
+      include: ['src/encoder/**/*.ts'],
+      exclude: [],
+    })
+    const result = await encoder.encode()
+
+    const dependencyEdges = result.rpg.getDependencyEdges()
+    for (const edge of dependencyEdges) {
+      const sourceNode = result.rpg.getNode(edge.source)
+      const targetNode = result.rpg.getNode(edge.target)
+      expect(sourceNode).toBeDefined()
+      expect(targetNode).toBeDefined()
+      expect(sourceNode?.metadata?.entityType).toBe('file')
+      expect(targetNode?.metadata?.entityType).toBe('file')
+    }
+  })
+
+  test('does not create edges for external imports', async () => {
+    const encoder = new RPGEncoder(PROJECT_ROOT, {
+      include: ['src/encoder/encoder.ts'],
+      exclude: [],
+    })
+    const result = await encoder.encode()
+
+    // All dependency edges should be between known files
+    const dependencyEdges = result.rpg.getDependencyEdges()
+    for (const edge of dependencyEdges) {
+      expect(result.rpg.getNode(edge.source)).toBeDefined()
+      expect(result.rpg.getNode(edge.target)).toBeDefined()
+    }
+  })
+})
