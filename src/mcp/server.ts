@@ -1,7 +1,10 @@
+import { existsSync } from 'node:fs'
 import { readFile } from 'node:fs/promises'
+import { dirname, join } from 'node:path'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
-import type { SemanticSearch } from '../encoder/semantic-search'
+import { HuggingFaceEmbedding } from '../encoder/embedding'
+import { SemanticSearch } from '../encoder/semantic-search'
 import { RepositoryPlanningGraph } from '../graph'
 import { RPGError, invalidPathError } from './errors'
 import {
@@ -133,10 +136,13 @@ export async function loadRPG(filePath: string): Promise<RepositoryPlanningGraph
  */
 export async function main(): Promise<void> {
   const args = process.argv.slice(2)
+  const noSearch = args.includes('--no-search')
+  const filteredArgs = args.filter((a) => a !== '--no-search')
 
   let rpg: RepositoryPlanningGraph | null = null
+  let semanticSearch: SemanticSearch | null = null
 
-  const rpgPath = args[0]
+  const rpgPath = filteredArgs[0]
   if (rpgPath) {
     try {
       console.error(`Loading RPG from: ${rpgPath}`)
@@ -146,19 +152,78 @@ export async function main(): Promise<void> {
       console.error(`Failed to load RPG: ${error instanceof Error ? error.message : String(error)}`)
       process.exit(1)
     }
+
+    // Initialize semantic search unless disabled
+    if (!noSearch) {
+      try {
+        semanticSearch = await initSemanticSearch(rpg, rpgPath)
+      } catch (error) {
+        console.error(
+          `Semantic search initialization failed, continuing without it: ${error instanceof Error ? error.message : String(error)}`
+        )
+      }
+    } else {
+      console.error('Semantic search disabled (--no-search)')
+    }
   } else {
     console.error('No RPG file path provided. Server will start without a pre-loaded RPG.')
-    console.error('Usage: bun run src/mcp/server.ts <rpg-file.json>')
+    console.error('Usage: bun run src/mcp/server.ts <rpg-file.json> [--no-search]')
     console.error(
       'Note: rpg_encode tool will still work, but other tools require an RPG to be loaded.'
     )
   }
 
-  const server = createMcpServer(rpg)
+  const server = createMcpServer(rpg, semanticSearch)
   const transport = new StdioServerTransport()
 
   await server.connect(transport)
   console.error('RPG MCP server started')
+}
+
+/**
+ * Initialize semantic search with HuggingFace embedding and index RPG nodes
+ */
+async function initSemanticSearch(
+  rpg: RepositoryPlanningGraph,
+  rpgPath: string
+): Promise<SemanticSearch> {
+  const dbPath = join(dirname(rpgPath), `${rpgPath}.vectors`)
+
+  const embedding = new HuggingFaceEmbedding({
+    model: 'MongoDB/mdbr-leaf-ir',
+    dtype: 'q8',
+  })
+
+  const semanticSearch = new SemanticSearch({
+    dbPath,
+    tableName: 'rpg_nodes',
+    embedding,
+  })
+
+  // Skip indexing if vector DB already exists
+  const existingCount = existsSync(dbPath) ? await semanticSearch.count() : 0
+  if (existingCount > 0) {
+    console.error(`Semantic search ready (${existingCount} nodes already indexed)`)
+    return semanticSearch
+  }
+
+  // Index all RPG nodes
+  const nodes = rpg.getNodes()
+  console.error(`Indexing ${nodes.length} nodes for semantic search...`)
+
+  const documents = nodes.map((node) => ({
+    id: node.id,
+    content: `${node.feature.description} ${(node.feature.keywords ?? []).join(' ')} ${node.metadata?.path ?? ''}`,
+    metadata: {
+      entityType: node.metadata?.entityType,
+      path: node.metadata?.path,
+    },
+  }))
+
+  await semanticSearch.indexBatch(documents)
+  console.error(`Semantic search ready (${documents.length} nodes indexed)`)
+
+  return semanticSearch
 }
 
 // Run if executed directly
