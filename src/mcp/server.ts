@@ -125,7 +125,7 @@ function formatError(error: unknown): {
 export async function loadRPG(filePath: string): Promise<RepositoryPlanningGraph> {
   try {
     const content = await readFile(filePath, 'utf-8')
-    return RepositoryPlanningGraph.fromJSON(content)
+    return await RepositoryPlanningGraph.fromJSON(content)
   } catch (error) {
     throw invalidPathError(filePath)
   }
@@ -208,7 +208,7 @@ async function initSemanticSearch(
   }
 
   // Index all RPG nodes
-  const nodes = rpg.getNodes()
+  const nodes = await rpg.getNodes()
   console.error(`Indexing ${nodes.length} nodes for semantic search...`)
 
   const documents = nodes.map((node) => ({

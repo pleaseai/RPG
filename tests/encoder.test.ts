@@ -150,7 +150,7 @@ describe('RPGEncoder.extractEntities', () => {
     const result = await encoder.encode()
 
     // Check that all node IDs are unique
-    const nodeIds = result.rpg.getNodes().map((n) => n.id)
+    const nodeIds = (await result.rpg.getNodes()).map((n) => n.id)
     const uniqueIds = new Set(nodeIds)
     expect(uniqueIds.size).toBe(nodeIds.length)
   })
@@ -163,7 +163,7 @@ describe('RPGEncoder.extractEntities', () => {
     const result = await encoder.encode()
 
     // Should have a file entity
-    const fileNodes = result.rpg.getNodes().filter((n) => n.metadata?.entityType === 'file')
+    const fileNodes = (await result.rpg.getNodes()).filter((n) => n.metadata?.entityType === 'file')
     expect(fileNodes.length).toBeGreaterThanOrEqual(1)
   })
 
@@ -175,7 +175,7 @@ describe('RPGEncoder.extractEntities', () => {
     const result = await encoder.encode()
 
     // Should have class and function entities
-    const nodes = result.rpg.getNodes()
+    const nodes = await result.rpg.getNodes()
     const classNodes = nodes.filter((n) => n.metadata?.entityType === 'class')
     const functionNodes = nodes.filter(
       (n) => n.metadata?.entityType === 'function' || n.metadata?.entityType === 'method'
@@ -195,7 +195,7 @@ describe('RPGEncoder.buildFunctionalHierarchy', () => {
     const result = await encoder.encode()
 
     // Should create a high-level node for src/encoder directory
-    const highLevelNodes = result.rpg.getHighLevelNodes()
+    const highLevelNodes = await result.rpg.getHighLevelNodes()
     expect(highLevelNodes.length).toBeGreaterThanOrEqual(1)
 
     // Check for directory node
@@ -213,7 +213,7 @@ describe('RPGEncoder.buildFunctionalHierarchy', () => {
     const result = await encoder.encode()
 
     // Should have functional edges
-    const functionalEdges = result.rpg.getFunctionalEdges()
+    const functionalEdges = await result.rpg.getFunctionalEdges()
     expect(functionalEdges.length).toBeGreaterThan(0)
   })
 
@@ -225,15 +225,13 @@ describe('RPGEncoder.buildFunctionalHierarchy', () => {
     const result = await encoder.encode()
 
     // Find the file node
-    const fileNode = result.rpg
-      .getNodes()
-      .find(
-        (n) => n.metadata?.entityType === 'file' && n.metadata?.path === 'src/encoder/encoder.ts'
-      )
+    const fileNode = (await result.rpg.getNodes()).find(
+      (n) => n.metadata?.entityType === 'file' && n.metadata?.path === 'src/encoder/encoder.ts'
+    )
     expect(fileNode).toBeDefined()
 
     // Find edges from file to its contained entities (class, methods)
-    const edges = result.rpg.getFunctionalEdges()
+    const edges = await result.rpg.getFunctionalEdges()
     const fileEdges = edges.filter((e) => e.source === fileNode?.id)
     expect(fileEdges.length).toBeGreaterThan(0)
   })
@@ -245,7 +243,7 @@ describe('RPGEncoder.buildFunctionalHierarchy', () => {
     })
     const result = await encoder.encode()
 
-    const highLevelNodes = result.rpg.getHighLevelNodes()
+    const highLevelNodes = await result.rpg.getHighLevelNodes()
     for (const node of highLevelNodes) {
       expect(node.feature).toBeDefined()
       expect(node.feature.description).toBeDefined()
@@ -263,7 +261,7 @@ describe('RPGEncoder.injectDependencies', () => {
     const result = await encoder.encode()
 
     // Should have dependency edges from encoder.ts to other modules
-    const dependencyEdges = result.rpg.getDependencyEdges()
+    const dependencyEdges = await result.rpg.getDependencyEdges()
     expect(dependencyEdges.length).toBeGreaterThan(0)
   })
 
@@ -274,7 +272,7 @@ describe('RPGEncoder.injectDependencies', () => {
     })
     const result = await encoder.encode()
 
-    const dependencyEdges = result.rpg.getDependencyEdges()
+    const dependencyEdges = await result.rpg.getDependencyEdges()
     for (const edge of dependencyEdges) {
       expect(edge.dependencyType).toBe('import')
     }
@@ -287,10 +285,10 @@ describe('RPGEncoder.injectDependencies', () => {
     })
     const result = await encoder.encode()
 
-    const dependencyEdges = result.rpg.getDependencyEdges()
+    const dependencyEdges = await result.rpg.getDependencyEdges()
     for (const edge of dependencyEdges) {
-      const sourceNode = result.rpg.getNode(edge.source)
-      const targetNode = result.rpg.getNode(edge.target)
+      const sourceNode = await result.rpg.getNode(edge.source)
+      const targetNode = await result.rpg.getNode(edge.target)
       expect(sourceNode).toBeDefined()
       expect(targetNode).toBeDefined()
       expect(sourceNode?.metadata?.entityType).toBe('file')
@@ -306,10 +304,10 @@ describe('RPGEncoder.injectDependencies', () => {
     const result = await encoder.encode()
 
     // All dependency edges should be between known files
-    const dependencyEdges = result.rpg.getDependencyEdges()
+    const dependencyEdges = await result.rpg.getDependencyEdges()
     for (const edge of dependencyEdges) {
-      expect(result.rpg.getNode(edge.source)).toBeDefined()
-      expect(result.rpg.getNode(edge.target)).toBeDefined()
+      expect(await result.rpg.getNode(edge.source)).toBeDefined()
+      expect(await result.rpg.getNode(edge.target)).toBeDefined()
     }
   })
 })

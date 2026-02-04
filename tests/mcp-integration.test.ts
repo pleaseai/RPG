@@ -66,8 +66,8 @@ describe('MCP Integration Tests', () => {
       expect(exploreResult.edges.length).toBeGreaterThan(0)
     })
 
-    it('should get accurate stats for sample RPG', () => {
-      const stats = executeStats(rpg)
+    it('should get accurate stats for sample RPG', async () => {
+      const stats = await executeStats(rpg)
 
       // Verify against known sample-rpg.json structure
       expect(stats.name).toBe('sample-project')

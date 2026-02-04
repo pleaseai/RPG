@@ -111,110 +111,110 @@ describe('Edge', () => {
 })
 
 describe('RepositoryPlanningGraph', () => {
-  test('creates empty graph', () => {
-    const rpg = new RepositoryPlanningGraph({ name: 'test-repo' })
-    const stats = rpg.getStats()
+  test('creates empty graph', async () => {
+    const rpg = await RepositoryPlanningGraph.create({ name: 'test-repo' })
+    const stats = await rpg.getStats()
 
     expect(stats.nodeCount).toBe(0)
     expect(stats.edgeCount).toBe(0)
   })
 
-  test('adds and retrieves nodes', () => {
-    const rpg = new RepositoryPlanningGraph({ name: 'test-repo' })
+  test('adds and retrieves nodes', async () => {
+    const rpg = await RepositoryPlanningGraph.create({ name: 'test-repo' })
 
-    rpg.addHighLevelNode({
+    await rpg.addHighLevelNode({
       id: 'module',
       feature: { description: 'auth module' },
     })
 
-    rpg.addLowLevelNode({
+    await rpg.addLowLevelNode({
       id: 'func',
       feature: { description: 'login function' },
       metadata: { entityType: 'function', path: '/auth.ts' },
     })
 
-    expect(rpg.hasNode('module')).toBe(true)
-    expect(rpg.hasNode('func')).toBe(true)
-    expect(rpg.hasNode('nonexistent')).toBe(false)
+    expect(await rpg.hasNode('module')).toBe(true)
+    expect(await rpg.hasNode('func')).toBe(true)
+    expect(await rpg.hasNode('nonexistent')).toBe(false)
 
-    const node = rpg.getNode('module')
+    const node = await rpg.getNode('module')
     expect(node?.feature.description).toBe('auth module')
   })
 
-  test('adds and retrieves edges', () => {
-    const rpg = new RepositoryPlanningGraph({ name: 'test-repo' })
+  test('adds and retrieves edges', async () => {
+    const rpg = await RepositoryPlanningGraph.create({ name: 'test-repo' })
 
-    rpg.addHighLevelNode({ id: 'parent', feature: { description: 'parent' } })
-    rpg.addLowLevelNode({
+    await rpg.addHighLevelNode({ id: 'parent', feature: { description: 'parent' } })
+    await rpg.addLowLevelNode({
       id: 'child',
       feature: { description: 'child' },
       metadata: { entityType: 'file', path: '/test.ts' },
     })
 
-    rpg.addFunctionalEdge({ source: 'parent', target: 'child' })
-    rpg.addDependencyEdge({
+    await rpg.addFunctionalEdge({ source: 'parent', target: 'child' })
+    await rpg.addDependencyEdge({
       source: 'child',
       target: 'parent',
       dependencyType: 'import',
     })
 
-    const edges = rpg.getEdges()
+    const edges = await rpg.getEdges()
     expect(edges.length).toBe(2)
 
-    const funcEdges = rpg.getFunctionalEdges()
+    const funcEdges = await rpg.getFunctionalEdges()
     expect(funcEdges.length).toBe(1)
 
-    const depEdges = rpg.getDependencyEdges()
+    const depEdges = await rpg.getDependencyEdges()
     expect(depEdges.length).toBe(1)
   })
 
-  test('gets children and parent', () => {
-    const rpg = new RepositoryPlanningGraph({ name: 'test-repo' })
+  test('gets children and parent', async () => {
+    const rpg = await RepositoryPlanningGraph.create({ name: 'test-repo' })
 
-    rpg.addHighLevelNode({ id: 'root', feature: { description: 'root' } })
-    rpg.addHighLevelNode({ id: 'child1', feature: { description: 'child1' } })
-    rpg.addHighLevelNode({ id: 'child2', feature: { description: 'child2' } })
+    await rpg.addHighLevelNode({ id: 'root', feature: { description: 'root' } })
+    await rpg.addHighLevelNode({ id: 'child1', feature: { description: 'child1' } })
+    await rpg.addHighLevelNode({ id: 'child2', feature: { description: 'child2' } })
 
-    rpg.addFunctionalEdge({ source: 'root', target: 'child1' })
-    rpg.addFunctionalEdge({ source: 'root', target: 'child2' })
+    await rpg.addFunctionalEdge({ source: 'root', target: 'child1' })
+    await rpg.addFunctionalEdge({ source: 'root', target: 'child2' })
 
-    const children = rpg.getChildren('root')
+    const children = await rpg.getChildren('root')
     expect(children.length).toBe(2)
 
-    const parent = rpg.getParent('child1')
+    const parent = await rpg.getParent('child1')
     expect(parent?.id).toBe('root')
   })
 
-  test('searches by feature', () => {
-    const rpg = new RepositoryPlanningGraph({ name: 'test-repo' })
+  test('searches by feature', async () => {
+    const rpg = await RepositoryPlanningGraph.create({ name: 'test-repo' })
 
-    rpg.addHighLevelNode({ id: 'auth', feature: { description: 'handle authentication' } })
-    rpg.addHighLevelNode({ id: 'data', feature: { description: 'process data' } })
+    await rpg.addHighLevelNode({ id: 'auth', feature: { description: 'handle authentication' } })
+    await rpg.addHighLevelNode({ id: 'data', feature: { description: 'process data' } })
 
-    const results = rpg.searchByFeature('auth')
+    const results = await rpg.searchByFeature('authentication')
     expect(results.length).toBe(1)
     expect(results[0]?.id).toBe('auth')
   })
 
-  test('serializes and deserializes', () => {
-    const rpg = new RepositoryPlanningGraph({
+  test('serializes and deserializes', async () => {
+    const rpg = await RepositoryPlanningGraph.create({
       name: 'test-repo',
       description: 'Test repository',
     })
 
-    rpg.addHighLevelNode({ id: 'root', feature: { description: 'root module' } })
-    rpg.addLowLevelNode({
+    await rpg.addHighLevelNode({ id: 'root', feature: { description: 'root module' } })
+    await rpg.addLowLevelNode({
       id: 'func',
       feature: { description: 'test function' },
       metadata: { entityType: 'function', path: '/test.ts' },
     })
-    rpg.addFunctionalEdge({ source: 'root', target: 'func' })
+    await rpg.addFunctionalEdge({ source: 'root', target: 'func' })
 
-    const json = rpg.toJSON()
-    const restored = RepositoryPlanningGraph.fromJSON(json)
+    const json = await rpg.toJSON()
+    const restored = await RepositoryPlanningGraph.fromJSON(json)
 
-    expect(restored.getStats().nodeCount).toBe(2)
-    expect(restored.getStats().edgeCount).toBe(1)
+    expect((await restored.getStats()).nodeCount).toBe(2)
+    expect((await restored.getStats()).edgeCount).toBe(1)
     expect(restored.getConfig().name).toBe('test-repo')
   })
 })

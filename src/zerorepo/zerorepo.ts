@@ -49,7 +49,7 @@ export class ZeroRepo {
    * Stage A: Build proposal-level functionality graph
    */
   async buildProposalGraph(): Promise<RepositoryPlanningGraph> {
-    const rpg = new RepositoryPlanningGraph({
+    const rpg = await RepositoryPlanningGraph.create({
       name: 'generated-repo',
       description: this.options.spec,
     })

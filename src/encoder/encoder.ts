@@ -104,7 +104,7 @@ export class RPGEncoder {
       rootPath: this.repoPath,
     }
 
-    const rpg = new RepositoryPlanningGraph(config)
+    const rpg = await RepositoryPlanningGraph.create(config)
 
     // Phase 1: Semantic Lifting
     const files = await this.discoverFiles()
@@ -115,7 +115,7 @@ export class RPGEncoder {
       entitiesExtracted += entities.length
 
       for (const entity of entities) {
-        rpg.addLowLevelNode({
+        await rpg.addLowLevelNode({
           id: entity.id,
           feature: entity.feature,
           metadata: entity.metadata,
@@ -457,16 +457,16 @@ export class RPGEncoder {
    * functional edges representing the parent-child hierarchy.
    */
   private async buildFunctionalHierarchy(rpg: RepositoryPlanningGraph): Promise<void> {
-    const lowLevelNodes = rpg.getLowLevelNodes()
+    const lowLevelNodes = await rpg.getLowLevelNodes()
     const directoryGroups = this.groupNodesByDirectory(lowLevelNodes)
 
     // Create high-level directory nodes
     const directoryNodeIds = await this.createDirectoryNodes(rpg, directoryGroups)
 
     // Create edges: directory hierarchy, directory-to-file, file-to-entity
-    this.createDirectoryHierarchyEdges(rpg, directoryNodeIds)
-    this.createDirectoryToFileEdges(rpg, directoryGroups, directoryNodeIds)
-    this.createFileToEntityEdges(rpg, lowLevelNodes)
+    await this.createDirectoryHierarchyEdges(rpg, directoryNodeIds)
+    await this.createDirectoryToFileEdges(rpg, directoryGroups, directoryNodeIds)
+    await this.createFileToEntityEdges(rpg, lowLevelNodes)
   }
 
   /**
@@ -488,7 +488,7 @@ export class RPGEncoder {
         filePath: dirPath,
       })
 
-      rpg.addHighLevelNode({
+      await rpg.addHighLevelNode({
         id: dirId,
         feature,
         directoryPath: dirPath,
@@ -504,10 +504,10 @@ export class RPGEncoder {
   /**
    * Create parent-child edges for directory hierarchy
    */
-  private createDirectoryHierarchyEdges(
+  private async createDirectoryHierarchyEdges(
     rpg: RepositoryPlanningGraph,
     directoryNodeIds: Map<string, string>
-  ): void {
+  ): Promise<void> {
     const sortedDirs = [...directoryNodeIds.keys()].sort(
       (a, b) => a.split('/').length - b.split('/').length
     )
@@ -518,7 +518,7 @@ export class RPGEncoder {
       const targetId = directoryNodeIds.get(dirPath)
 
       if (sourceId && targetId) {
-        rpg.addFunctionalEdge({ source: sourceId, target: targetId })
+        await rpg.addFunctionalEdge({ source: sourceId, target: targetId })
       }
     }
   }
@@ -526,18 +526,18 @@ export class RPGEncoder {
   /**
    * Connect file nodes to their directory nodes
    */
-  private createDirectoryToFileEdges(
+  private async createDirectoryToFileEdges(
     rpg: RepositoryPlanningGraph,
     directoryGroups: Map<string, Array<{ id: string; metadata?: { entityType?: string } }>>,
     directoryNodeIds: Map<string, string>
-  ): void {
+  ): Promise<void> {
     for (const [dirPath, nodes] of directoryGroups.entries()) {
       const dirId = directoryNodeIds.get(dirPath)
       if (!dirId) continue
 
       for (const node of nodes) {
         if (node.metadata?.entityType === 'file') {
-          rpg.addFunctionalEdge({ source: dirId, target: node.id })
+          await rpg.addFunctionalEdge({ source: dirId, target: node.id })
         }
       }
     }
@@ -546,15 +546,15 @@ export class RPGEncoder {
   /**
    * Connect non-file entities to their parent file nodes
    */
-  private createFileToEntityEdges(
+  private async createFileToEntityEdges(
     rpg: RepositoryPlanningGraph,
     lowLevelNodes: Array<{ id: string; metadata?: { entityType?: string; path?: string } }>
-  ): void {
+  ): Promise<void> {
     for (const node of lowLevelNodes) {
       if (node.metadata?.entityType !== 'file' && node.metadata?.path) {
         const fileId = `${node.metadata.path}:file`
-        if (rpg.getNode(fileId)) {
-          rpg.addFunctionalEdge({ source: fileId, target: node.id })
+        if (await rpg.getNode(fileId)) {
+          await rpg.addFunctionalEdge({ source: fileId, target: node.id })
         }
       }
     }
@@ -592,7 +592,7 @@ export class RPGEncoder {
    * dependency edges between importing and imported files.
    */
   private async injectDependencies(rpg: RepositoryPlanningGraph): Promise<void> {
-    const lowLevelNodes = rpg.getLowLevelNodes()
+    const lowLevelNodes = await rpg.getLowLevelNodes()
     const fileNodes = lowLevelNodes.filter((n) => n.metadata?.entityType === 'file')
 
     // Build a map of file paths to node IDs for quick lookup
@@ -649,7 +649,7 @@ export class RPGEncoder {
       if (createdEdges.has(edgeKey)) continue
       createdEdges.add(edgeKey)
 
-      rpg.addDependencyEdge({
+      await rpg.addDependencyEdge({
         source: node.id,
         target: targetNodeId,
         dependencyType: 'import',

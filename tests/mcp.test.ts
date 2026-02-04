@@ -197,7 +197,7 @@ describe('MCP Tool Execution', () => {
     // Load sample RPG fixture
     const fixturePath = join(__dirname, 'fixtures', 'sample-rpg.json')
     const content = await readFile(fixturePath, 'utf-8')
-    rpg = RepositoryPlanningGraph.fromJSON(content)
+    rpg = await RepositoryPlanningGraph.fromJSON(content)
   })
 
   describe('executeSearch', () => {
@@ -311,12 +311,12 @@ describe('MCP Tool Execution', () => {
   })
 
   describe('executeStats', () => {
-    it('should throw when RPG is null', () => {
-      expect(() => executeStats(null)).toThrow(RPGError)
+    it('should throw when RPG is null', async () => {
+      await expect(executeStats(null)).rejects.toThrow(RPGError)
     })
 
-    it('should return graph statistics', () => {
-      const result = executeStats(rpg)
+    it('should return graph statistics', async () => {
+      const result = await executeStats(rpg)
       expect(result.name).toBe('sample-project')
       expect(result.nodeCount).toBeGreaterThan(0)
       expect(result.edgeCount).toBeGreaterThan(0)

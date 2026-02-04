@@ -34,6 +34,7 @@
     "@modelcontextprotocol/sdk": "^1.25.3",
     "@surrealdb/node": "^2.6.0",
     "ai": "^6.0.69",
+    "better-sqlite3": "^12.6.2",
     "commander": "^12.0.0",
     "graphology": "^0.25.4",
     "graphology-types": "^0.24.7",
@@ -46,6 +47,7 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.0",
+    "@types/better-sqlite3": "^7.6.13",
     "@types/bun": "^1.1.0",
     "@vitest/coverage-v8": "^2.1.0",
     "@vitest/ui": "^2.1.0",

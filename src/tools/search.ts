@@ -78,7 +78,7 @@ export class SearchNode {
     if (options.mode === 'snippets' || options.mode === 'auto') {
       // Path/pattern-based search
       if (options.filePattern) {
-        const matches = this.rpg.searchByPath(options.filePattern)
+        const matches = await this.rpg.searchByPath(options.filePattern)
         results.push(...matches)
       }
     }
@@ -101,7 +101,7 @@ export class SearchNode {
     if (strategy === 'string' || !this.semanticSearch) {
       const results: Node[] = []
       for (const term of featureTerms) {
-        const matches = this.rpg.searchByFeature(term)
+        const matches = await this.rpg.searchByFeature(term)
         results.push(...matches)
       }
       return results
@@ -119,7 +119,7 @@ export class SearchNode {
 
       // Map search results back to RPG nodes
       for (const sr of searchResults) {
-        const node = this.rpg.getNode(sr.id)
+        const node = await this.rpg.getNode(sr.id)
         if (node) {
           results.push(node)
         }

@@ -30,12 +30,12 @@ describe('E2E: Encode Real Repository', () => {
       expect(result.rpg.getConfig().name).toBe('rpg')
 
       // Should have both high-level and low-level nodes
-      expect(result.rpg.getHighLevelNodes().length).toBeGreaterThan(0)
-      expect(result.rpg.getLowLevelNodes().length).toBeGreaterThan(0)
+      expect((await result.rpg.getHighLevelNodes()).length).toBeGreaterThan(0)
+      expect((await result.rpg.getLowLevelNodes()).length).toBeGreaterThan(0)
 
       // Should have both functional and dependency edges
-      expect(result.rpg.getFunctionalEdges().length).toBeGreaterThan(0)
-      expect(result.rpg.getDependencyEdges().length).toBeGreaterThan(0)
+      expect((await result.rpg.getFunctionalEdges()).length).toBeGreaterThan(0)
+      expect((await result.rpg.getDependencyEdges()).length).toBeGreaterThan(0)
 
       // Duration should be reasonable (under 30 seconds)
       expect(result.duration).toBeLessThan(30000)
@@ -60,8 +60,8 @@ describe('E2E: Encode Real Repository', () => {
       expect(result1.entitiesExtracted).toBe(result2.entitiesExtracted)
 
       // Same node IDs
-      const ids1 = new Set(result1.rpg.getNodes().map((n) => n.id))
-      const ids2 = new Set(result2.rpg.getNodes().map((n) => n.id))
+      const ids1 = new Set((await result1.rpg.getNodes()).map((n) => n.id))
+      const ids2 = new Set((await result2.rpg.getNodes()).map((n) => n.id))
       expect(ids1).toEqual(ids2)
     })
 
@@ -74,10 +74,10 @@ describe('E2E: Encode Real Repository', () => {
       const result = await encoder.encode()
 
       // encoder.ts should import from semantic.ts, cache.ts
-      const edges = result.rpg.getDependencyEdges()
-      const encoderFile = result.rpg
-        .getNodes()
-        .find((n) => n.metadata?.path === 'src/encoder/encoder.ts')
+      const edges = await result.rpg.getDependencyEdges()
+      const encoderFile = (await result.rpg.getNodes()).find(
+        (n) => n.metadata?.path === 'src/encoder/encoder.ts'
+      )
 
       expect(encoderFile).toBeDefined()
 
@@ -86,10 +86,12 @@ describe('E2E: Encode Real Repository', () => {
       expect(encoderImports.length).toBeGreaterThan(0)
 
       // Should import from semantic.ts or cache.ts
-      const importedPaths = encoderImports.map((e) => {
-        const targetNode = result.rpg.getNode(e.target)
-        return targetNode?.metadata?.path
-      })
+      const importedPaths = await Promise.all(
+        encoderImports.map(async (e) => {
+          const targetNode = await result.rpg.getNode(e.target)
+          return targetNode?.metadata?.path
+        })
+      )
 
       const hasInternalImports = importedPaths.some(
         (p) => p?.includes('semantic.ts') || p?.includes('cache.ts')
@@ -105,8 +107,8 @@ describe('E2E: Encode Real Repository', () => {
 
       const result = await encoder.encode()
 
-      const highLevelNodes = result.rpg.getHighLevelNodes()
-      const functionalEdges = result.rpg.getFunctionalEdges()
+      const highLevelNodes = await result.rpg.getHighLevelNodes()
+      const functionalEdges = await result.rpg.getFunctionalEdges()
 
       // Should have directory nodes for src subdirectories
       const dirPaths = highLevelNodes.map((n) => n.directoryPath || n.metadata?.path)
@@ -115,14 +117,17 @@ describe('E2E: Encode Real Repository', () => {
       expect(dirPaths.some((p) => p?.includes('utils'))).toBe(true)
 
       // Functional edges should connect directories to files
-      const dirToFileEdges = functionalEdges.filter((e) => {
-        const sourceNode = result.rpg.getNode(e.source)
-        const targetNode = result.rpg.getNode(e.target)
-        return (
-          sourceNode?.metadata?.entityType === 'module' &&
-          targetNode?.metadata?.entityType === 'file'
-        )
-      })
+      const dirToFileEdgesChecks = await Promise.all(
+        functionalEdges.map(async (e) => {
+          const sourceNode = await result.rpg.getNode(e.source)
+          const targetNode = await result.rpg.getNode(e.target)
+          return (
+            sourceNode?.metadata?.entityType === 'module' &&
+            targetNode?.metadata?.entityType === 'file'
+          )
+        })
+      )
+      const dirToFileEdges = functionalEdges.filter((_, i) => dirToFileEdgesChecks[i])
       expect(dirToFileEdges.length).toBeGreaterThan(0)
     })
   })
@@ -137,22 +142,26 @@ describe('E2E: Encode Real Repository', () => {
       const result = await encoder.encode()
 
       // Serialize
-      const json = result.rpg.toJSON()
+      const json = await result.rpg.toJSON()
 
       // Verify JSON is valid
       expect(() => JSON.parse(json)).not.toThrow()
 
       // Deserialize
-      const restored = RepositoryPlanningGraph.fromJSON(json)
+      const restored = await RepositoryPlanningGraph.fromJSON(json)
 
       // Compare structure
-      expect(restored.getNodes().length).toBe(result.rpg.getNodes().length)
-      expect(restored.getFunctionalEdges().length).toBe(result.rpg.getFunctionalEdges().length)
-      expect(restored.getDependencyEdges().length).toBe(result.rpg.getDependencyEdges().length)
+      expect((await restored.getNodes()).length).toBe((await result.rpg.getNodes()).length)
+      expect((await restored.getFunctionalEdges()).length).toBe(
+        (await result.rpg.getFunctionalEdges()).length
+      )
+      expect((await restored.getDependencyEdges()).length).toBe(
+        (await result.rpg.getDependencyEdges()).length
+      )
 
       // Compare individual nodes
-      for (const originalNode of result.rpg.getNodes()) {
-        const restoredNode = restored.getNode(originalNode.id)
+      for (const originalNode of await result.rpg.getNodes()) {
+        const restoredNode = await restored.getNode(originalNode.id)
         expect(restoredNode).toBeDefined()
         expect(restoredNode?.feature).toEqual(originalNode.feature)
         expect(restoredNode?.metadata).toEqual(originalNode.metadata)
@@ -192,7 +201,7 @@ describe('E2E: Encode Real Repository', () => {
       const result = await encoder.encode()
 
       // Index all nodes
-      const documents = result.rpg.getNodes().map((node) => ({
+      const documents = (await result.rpg.getNodes()).map((node) => ({
         id: node.id,
         content: node.feature.description,
         metadata: {
@@ -225,7 +234,8 @@ describe('E2E: Encode Real Repository', () => {
       const result = await encoder.encode()
 
       // Index nodes
-      const documents = result.rpg.getNodes().map((node) => ({
+      const allNodes = await result.rpg.getNodes()
+      const documents = allNodes.map((node) => ({
         id: node.id,
         content: `${node.feature.description} ${node.metadata?.path || ''} ${node.metadata?.entityType || ''}`,
         metadata: {
@@ -241,7 +251,7 @@ describe('E2E: Encode Real Repository', () => {
       expect(results.length).toBeGreaterThan(0)
 
       // Verify we indexed classes and methods (encoder.ts has class + methods)
-      const nodeTypes = result.rpg.getNodes().map((n) => n.metadata?.entityType)
+      const nodeTypes = allNodes.map((n) => n.metadata?.entityType)
       expect(nodeTypes).toContain('class')
       expect(nodeTypes).toContain('method')
 
@@ -272,9 +282,9 @@ describe('E2E: Encode Real Repository', () => {
       console.log(`  Files processed: ${result.filesProcessed}`)
       console.log(`  Entities extracted: ${result.entitiesExtracted}`)
       console.log(`  Duration: ${duration}ms`)
-      console.log(`  Nodes: ${result.rpg.getNodes().length}`)
+      console.log(`  Nodes: ${(await result.rpg.getNodes()).length}`)
       console.log(
-        `  Edges: ${result.rpg.getFunctionalEdges().length + result.rpg.getDependencyEdges().length}`
+        `  Edges: ${(await result.rpg.getFunctionalEdges()).length + (await result.rpg.getDependencyEdges()).length}`
       )
     })
   })

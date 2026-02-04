@@ -180,7 +180,7 @@ export async function executeExplore(rpg: RepositoryPlanningGraph | null, input:
     throw rpgNotLoadedError()
   }
 
-  const startNodeExists = rpg.hasNode(input.startNode)
+  const startNodeExists = await rpg.hasNode(input.startNode)
   if (!startNodeExists) {
     throw nodeNotFoundError(input.startNode)
   }
@@ -218,7 +218,7 @@ export async function executeEncode(input: EncodeInput) {
 
     let rpgPath: string | undefined
     if (input.outputPath) {
-      await writeFile(input.outputPath, result.rpg.toJSON())
+      await writeFile(input.outputPath, await result.rpg.toJSON())
       rpgPath = input.outputPath
     }
 
@@ -237,12 +237,12 @@ export async function executeEncode(input: EncodeInput) {
 /**
  * Execute rpg_stats tool
  */
-export function executeStats(rpg: RepositoryPlanningGraph | null) {
+export async function executeStats(rpg: RepositoryPlanningGraph | null) {
   if (!rpg) {
     throw rpgNotLoadedError()
   }
 
-  const stats = rpg.getStats()
+  const stats = await rpg.getStats()
   const config = rpg.getConfig()
 
   return {

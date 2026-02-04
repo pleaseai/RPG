@@ -73,7 +73,7 @@ export class Greeter {
       expect(result.entitiesExtracted).toBeGreaterThan(2) // At least 2 files + functions/classes
 
       // Verify nodes
-      const nodes = result.rpg.getNodes()
+      const nodes = await result.rpg.getNodes()
       const fileNodes = nodes.filter((n) => n.metadata?.entityType === 'file')
       expect(fileNodes.length).toBe(2)
 
@@ -84,20 +84,23 @@ export class Greeter {
       expect(classNodes.length).toBeGreaterThanOrEqual(1) // Greeter
 
       // Verify hierarchy
-      const highLevelNodes = result.rpg.getHighLevelNodes()
+      const highLevelNodes = await result.rpg.getHighLevelNodes()
       expect(highLevelNodes.length).toBeGreaterThanOrEqual(1)
 
       // Verify dependency edges
-      const dependencyEdges = result.rpg.getDependencyEdges()
+      const dependencyEdges = await result.rpg.getDependencyEdges()
       // index.ts should have an import edge to utils.ts
-      const importEdge = dependencyEdges.find((e) => {
-        const sourceNode = result.rpg.getNode(e.source)
-        const targetNode = result.rpg.getNode(e.target)
-        return (
-          sourceNode?.metadata?.path?.includes('index.ts') &&
-          targetNode?.metadata?.path?.includes('utils.ts')
-        )
-      })
+      const importEdgeChecks = await Promise.all(
+        dependencyEdges.map(async (e) => {
+          const sourceNode = await result.rpg.getNode(e.source)
+          const targetNode = await result.rpg.getNode(e.target)
+          return (
+            sourceNode?.metadata?.path?.includes('index.ts') &&
+            targetNode?.metadata?.path?.includes('utils.ts')
+          )
+        })
+      )
+      const importEdge = dependencyEdges.find((_, i) => importEdgeChecks[i])
       expect(importEdge).toBeDefined()
     })
 
@@ -142,11 +145,11 @@ class Greeter:
       expect(result.filesProcessed).toBe(2)
 
       // Verify Python entities were extracted
-      const nodes = result.rpg.getNodes()
-      const fileNodes = nodes.filter((n) => n.metadata?.entityType === 'file')
+      const pyNodes = await result.rpg.getNodes()
+      const fileNodes = pyNodes.filter((n) => n.metadata?.entityType === 'file')
       expect(fileNodes.length).toBe(2)
 
-      const functionNodes = nodes.filter((n) => n.metadata?.entityType === 'function')
+      const functionNodes = pyNodes.filter((n) => n.metadata?.entityType === 'function')
       expect(functionNodes.length).toBeGreaterThanOrEqual(2) // main, greet
     })
   })
@@ -172,19 +175,21 @@ export function run(): void {
       const result = await encoder.encode()
 
       // Serialize
-      const json = result.rpg.toJSON()
+      const json = await result.rpg.toJSON()
 
       // Deserialize
-      const restored = RepositoryPlanningGraph.fromJSON(json)
+      const restored = await RepositoryPlanningGraph.fromJSON(json)
 
       // Verify
       expect(restored.getConfig().name).toBe(result.rpg.getConfig().name)
-      expect(restored.getNodes().length).toBe(result.rpg.getNodes().length)
-      expect(restored.getFunctionalEdges().length).toBe(result.rpg.getFunctionalEdges().length)
+      expect((await restored.getNodes()).length).toBe((await result.rpg.getNodes()).length)
+      expect((await restored.getFunctionalEdges()).length).toBe(
+        (await result.rpg.getFunctionalEdges()).length
+      )
 
       // Verify node content is preserved
-      for (const originalNode of result.rpg.getNodes()) {
-        const restoredNode = restored.getNode(originalNode.id)
+      for (const originalNode of await result.rpg.getNodes()) {
+        const restoredNode = await restored.getNode(originalNode.id)
         expect(restoredNode).toBeDefined()
         expect(restoredNode?.feature.description).toBe(originalNode.feature.description)
         expect(restoredNode?.metadata?.entityType).toBe(originalNode.metadata?.entityType)
@@ -249,7 +254,7 @@ export function query(sql: string): unknown[] {
       const result = await encoder.encode()
 
       // Index all nodes in semantic search
-      const nodes = result.rpg.getNodes()
+      const nodes = await result.rpg.getNodes()
       const documents = nodes.map((node) => ({
         id: node.id,
         content: node.feature.description,
@@ -310,7 +315,7 @@ export function deleteUser(id: string): Promise<void> {
       const result = await encoder.encode()
 
       // Index nodes
-      const nodes = result.rpg.getNodes()
+      const nodes = await result.rpg.getNodes()
       const documents = nodes.map((node) => ({
         id: node.id,
         content: node.feature.description,
@@ -337,7 +342,7 @@ export function deleteUser(id: string): Promise<void> {
 
       expect(result.filesProcessed).toBe(0)
       expect(result.entitiesExtracted).toBe(0)
-      expect(result.rpg.getNodes().length).toBe(0)
+      expect((await result.rpg.getNodes()).length).toBe(0)
     })
 
     it('should handle files with syntax errors gracefully', async () => {
@@ -387,7 +392,7 @@ export function deepFunction(): void {
       expect(result.filesProcessed).toBe(1)
 
       // Should create high-level nodes for the directory hierarchy
-      const highLevelNodes = result.rpg.getHighLevelNodes()
+      const highLevelNodes = await result.rpg.getHighLevelNodes()
       expect(highLevelNodes.length).toBeGreaterThan(0)
     })
 

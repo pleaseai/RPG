@@ -43,7 +43,7 @@ describe('E2E: Hybrid Search Pipeline (superjson)', () => {
     })
 
     // Index all RPG nodes with feature descriptions
-    const documents = rpg.getNodes().map((node) => ({
+    const documents = (await rpg.getNodes()).map((node) => ({
       id: node.id,
       content: `${node.feature.description} ${(node.feature.keywords ?? []).join(' ')} ${node.metadata?.path ?? ''}`,
       metadata: {
@@ -70,20 +70,17 @@ describe('E2E: Hybrid Search Pipeline (superjson)', () => {
   })
 
   describe('Encode superjson', () => {
-    it('should have high-level and low-level nodes', () => {
-      expect(rpg.getHighLevelNodes().length).toBeGreaterThan(0)
-      expect(rpg.getLowLevelNodes().length).toBeGreaterThan(0)
+    it('should have high-level and low-level nodes', async () => {
+      expect((await rpg.getHighLevelNodes()).length).toBeGreaterThan(0)
+      expect((await rpg.getLowLevelNodes()).length).toBeGreaterThan(0)
     })
 
-    it('should have functional edges', () => {
-      expect(rpg.getFunctionalEdges().length).toBeGreaterThan(0)
+    it('should have functional edges', async () => {
+      expect((await rpg.getFunctionalEdges()).length).toBeGreaterThan(0)
     })
 
-    it('should contain known superjson files', () => {
-      const paths = rpg
-        .getNodes()
-        .map((n) => n.metadata?.path)
-        .filter(Boolean)
+    it('should contain known superjson files', async () => {
+      const paths = (await rpg.getNodes()).map((n) => n.metadata?.path).filter(Boolean)
       expect(paths.some((p) => p?.includes('transformer.ts'))).toBe(true)
       expect(paths.some((p) => p?.includes('plainer.ts'))).toBe(true)
       expect(paths.some((p) => p?.includes('is.ts'))).toBe(true)

@@ -1,5 +1,4 @@
-import type { SQLQueryBindings } from 'bun:sqlite'
-import { Database } from 'bun:sqlite'
+import Database from 'better-sqlite3'
 import type {
   Edge,
   FunctionalEdge,
@@ -20,6 +19,8 @@ import type {
   SearchHit,
   GraphStats,
 } from './store'
+
+type BindValue = string | number | null | undefined
 
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS nodes (
@@ -88,20 +89,19 @@ END;
 `
 
 /**
- * SQLiteStore - GraphStore implementation using bun:sqlite
+ * SQLiteStore - GraphStore implementation using better-sqlite3
  *
  * Uses FTS5 for full-text search and recursive CTEs for graph traversal.
- * Zero external dependencies (bun:sqlite is built-in).
  */
 export class SQLiteStore implements GraphStore {
-  private db!: Database
+  private db!: InstanceType<typeof Database>
 
   // ==================== Lifecycle ====================
 
   async open(path: string): Promise<void> {
     this.db = new Database(path === 'memory' ? ':memory:' : path)
-    this.db.exec('PRAGMA journal_mode = WAL')
-    this.db.exec('PRAGMA foreign_keys = ON')
+    this.db.pragma('journal_mode = WAL')
+    this.db.pragma('foreign_keys = ON')
     this.db.exec(SCHEMA)
   }
 
@@ -137,18 +137,18 @@ export class SQLiteStore implements GraphStore {
   }
 
   async getNode(id: string): Promise<Node | null> {
-    const row = this.db.prepare('SELECT * FROM nodes WHERE id = ?').get(id) as NodeRow | null
+    const row = this.db.prepare('SELECT * FROM nodes WHERE id = ?').get(id) as NodeRow | undefined
     return row ? this.rowToNode(row) : null
   }
 
   async hasNode(id: string): Promise<boolean> {
     const row = this.db.prepare('SELECT 1 FROM nodes WHERE id = ?').get(id)
-    return row !== null
+    return row !== undefined
   }
 
   async updateNode(id: string, updates: Partial<Node>): Promise<void> {
     const sets: string[] = []
-    const values: SQLQueryBindings[] = []
+    const values: BindValue[] = []
 
     if (updates.feature) {
       if (updates.feature.description !== undefined) {
@@ -202,7 +202,7 @@ export class SQLiteStore implements GraphStore {
   async getNodes(filter?: NodeFilter): Promise<Node[]> {
     let sql = 'SELECT * FROM nodes'
     const conditions: string[] = []
-    const values: SQLQueryBindings[] = []
+    const values: BindValue[] = []
 
     if (filter?.type) {
       conditions.push('type = ?')
@@ -254,7 +254,7 @@ export class SQLiteStore implements GraphStore {
   async getEdges(filter?: EdgeFilter): Promise<Edge[]> {
     let sql = 'SELECT * FROM edges'
     const conditions: string[] = []
-    const values: SQLQueryBindings[] = []
+    const values: BindValue[] = []
 
     if (filter?.type) {
       conditions.push('type = ?')
@@ -311,7 +311,7 @@ export class SQLiteStore implements GraphStore {
          WHERE e.target = ? AND e.type = 'functional'
          LIMIT 1`
       )
-      .get(nodeId) as NodeRow | null
+      .get(nodeId) as NodeRow | undefined
     return row ? this.rowToNode(row) : null
   }
 
@@ -399,11 +399,12 @@ export class SQLiteStore implements GraphStore {
 
     // Collect edges between discovered nodes
     const nodeIds = new Set([startNode, ...traversalRows.map((r) => r.node_id)])
+    const placeholders = [...nodeIds].map(() => '?').join(',')
     const edgeRows = this.db
       .prepare(
         `SELECT source, target, type, dep_type FROM edges
-         WHERE source IN (${[...nodeIds].map(() => '?').join(',')})
-           AND target IN (${[...nodeIds].map(() => '?').join(',')})
+         WHERE source IN (${placeholders})
+           AND target IN (${placeholders})
            AND type IN (${edgeTypeIn})`
       )
       .all(...nodeIds, ...nodeIds) as Array<{
@@ -426,8 +427,11 @@ export class SQLiteStore implements GraphStore {
   // ==================== Search ====================
 
   async searchByFeature(query: string, scopes?: string[]): Promise<SearchHit[]> {
+    const ftsQuery = this.toFtsQuery(query)
+    if (!ftsQuery) return []
+
     let sql: string
-    const params: SQLQueryBindings[] = []
+    const params: BindValue[] = []
 
     if (scopes && scopes.length > 0) {
       // Scope-restricted search: find subtree first, then FTS within
@@ -448,7 +452,7 @@ export class SQLiteStore implements GraphStore {
         ORDER BY rank
         LIMIT 50
       `
-      params.push(...scopes, query)
+      params.push(...scopes, ftsQuery)
     } else {
       sql = `
         SELECT n.*, rank
@@ -458,7 +462,7 @@ export class SQLiteStore implements GraphStore {
         ORDER BY rank
         LIMIT 50
       `
-      params.push(query)
+      params.push(ftsQuery)
     }
 
     const rows = this.db.prepare(sql).all(...params) as Array<NodeRow & { rank: number }>
@@ -468,9 +472,29 @@ export class SQLiteStore implements GraphStore {
     }))
   }
 
+  /**
+   * Convert a plain-text query into an FTS5 MATCH expression with prefix matching.
+   *
+   * Restricts to feature columns only (feature_desc, feature_keywords) to match
+   * the original graphology behavior which searched description + keywords, not paths.
+   *
+   * Each word becomes a prefix token: "auth" → {feature_desc feature_keywords} : "auth" *
+   */
+  private toFtsQuery(query: string): string | null {
+    // Extract alphanumeric words, discard punctuation
+    const words = query.match(/[a-zA-Z0-9_]+/g)
+    if (!words || words.length === 0) return null
+    // Restrict to feature columns, prefix match each word
+    const cols = '{feature_desc feature_keywords}'
+    return words.map((w) => `${cols} : "${w}" *`).join(' OR ')
+  }
+
   async searchByPath(pattern: string): Promise<Node[]> {
-    // Use LIKE for simple glob patterns, FTS for complex queries
-    const likePattern = pattern.replace(/\*/g, '%')
+    // Convert glob/regex patterns to SQL LIKE:
+    //   ".*" → "%"  (regex any)
+    //   "*"  → "%"  (glob any)
+    //   "."  → "_"  (single char, only when standalone regex dot)
+    const likePattern = pattern.replace(/\.\*/g, '%').replace(/\*/g, '%')
     const rows = this.db
       .prepare('SELECT * FROM nodes WHERE path LIKE ?')
       .all(likePattern) as NodeRow[]

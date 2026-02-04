@@ -56,9 +56,9 @@ program
 
       const result = await encoder.encode()
 
-      await Bun.write(options.output, result.rpg.toJSON())
+      await Bun.write(options.output, await result.rpg.toJSON())
 
-      const stats = result.rpg.getStats()
+      const stats = await result.rpg.getStats()
 
       console.log('\nEncoding complete:')
       console.log(`  Files processed: ${result.filesProcessed}`)
@@ -128,7 +128,7 @@ program
   .action(async (options: { rpg: string; term?: string; mode: string; pattern?: string }) => {
     const file = Bun.file(options.rpg)
     const json = await file.text()
-    const rpg = RepositoryPlanningGraph.fromJSON(json)
+    const rpg = await RepositoryPlanningGraph.fromJSON(json)
 
     const search = new SearchNode(rpg)
     const results = await search.query({
@@ -157,7 +157,7 @@ program
   .action(async (entities: string[], options: { rpg: string }) => {
     const file = Bun.file(options.rpg)
     const json = await file.text()
-    const rpg = RepositoryPlanningGraph.fromJSON(json)
+    const rpg = await RepositoryPlanningGraph.fromJSON(json)
 
     const fetcher = new FetchNode(rpg)
     const results = await fetcher.get({ codeEntities: entities })
@@ -193,7 +193,7 @@ program
     ) => {
       const file = Bun.file(options.rpg)
       const json = await file.text()
-      const rpg = RepositoryPlanningGraph.fromJSON(json)
+      const rpg = await RepositoryPlanningGraph.fromJSON(json)
 
       const explorer = new ExploreRPG(rpg)
       const results = await explorer.traverse({
@@ -235,8 +235,8 @@ program
   .action(async (filePath: string) => {
     const file = Bun.file(filePath)
     const json = await file.text()
-    const rpg = RepositoryPlanningGraph.fromJSON(json)
-    const stats = rpg.getStats()
+    const rpg = await RepositoryPlanningGraph.fromJSON(json)
+    const stats = await rpg.getStats()
     const config = rpg.getConfig()
 
     console.log(`\nRPG Statistics for "${config.name}":`)

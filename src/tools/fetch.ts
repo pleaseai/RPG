@@ -55,12 +55,12 @@ export class FetchNode {
     const allIds = [...(options.codeEntities ?? []), ...(options.featureEntities ?? [])]
 
     for (const id of allIds) {
-      const node = this.rpg.getNode(id)
+      const node = await this.rpg.getNode(id)
       if (node) {
         entities.push({
           node,
           sourceCode: 'sourceCode' in node ? node.sourceCode : undefined,
-          featurePaths: this.getFeaturePaths(node.id),
+          featurePaths: await this.getFeaturePaths(node.id),
         })
       } else {
         notFound.push(id)
@@ -73,13 +73,13 @@ export class FetchNode {
   /**
    * Get feature paths for a node by traversing functional edges
    */
-  private getFeaturePaths(nodeId: string): string[] {
+  private async getFeaturePaths(nodeId: string): Promise<string[]> {
     const paths: string[] = []
-    let current = this.rpg.getNode(nodeId)
+    let current = await this.rpg.getNode(nodeId)
 
     while (current) {
       paths.unshift(current.feature.description)
-      current = this.rpg.getParent(current.id)
+      current = await this.rpg.getParent(current.id)
     }
 
     return [paths.join(' / ')]

@@ -1,4 +1,3 @@
-import Graph from 'graphology'
 import { z } from 'zod'
 import {
   type DependencyEdge,
@@ -21,6 +20,7 @@ import {
   isHighLevelNode,
   isLowLevelNode,
 } from './node'
+import type { GraphStats, GraphStore } from './store'
 
 /**
  * Repository Planning Graph configuration
@@ -56,14 +56,29 @@ export type SerializedRPG = z.infer<typeof SerializedRPGSchema>
  * A hierarchical, dual-view graph G = (V, E) that combines:
  * - Nodes: High-level (architectural) and Low-level (implementation)
  * - Edges: Functional (hierarchy) and Dependency (imports/calls)
+ *
+ * Delegates all storage to a GraphStore backend.
  */
 export class RepositoryPlanningGraph {
-  private graph: Graph
+  private store: GraphStore
   private config: RPGConfig
 
-  constructor(config: RPGConfig) {
+  constructor(config: RPGConfig, store: GraphStore) {
     this.config = config
-    this.graph = new Graph({ multi: true, type: 'directed' })
+    this.store = store
+  }
+
+  /**
+   * Factory: create an RPG with an optional store (defaults to in-memory SQLiteStore)
+   */
+  static async create(config: RPGConfig, store?: GraphStore): Promise<RepositoryPlanningGraph> {
+    let actualStore = store
+    if (!actualStore) {
+      const { SQLiteStore } = await import('./sqlite-store')
+      actualStore = new SQLiteStore()
+      await actualStore.open('memory')
+    }
+    return new RepositoryPlanningGraph(config, actualStore)
   }
 
   // ==================== Node Operations ====================
@@ -71,97 +86,97 @@ export class RepositoryPlanningGraph {
   /**
    * Add a node to the graph
    */
-  addNode(node: Node): void {
-    if (this.graph.hasNode(node.id)) {
+  async addNode(node: Node): Promise<void> {
+    if (await this.store.hasNode(node.id)) {
       throw new Error(`Node with id "${node.id}" already exists`)
     }
-    this.graph.addNode(node.id, node)
+    await this.store.addNode(node)
   }
 
   /**
    * Add a high-level node
    */
-  addHighLevelNode(params: {
+  async addHighLevelNode(params: {
     id: string
     feature: SemanticFeature
     directoryPath?: string
     metadata?: StructuralMetadata
-  }): HighLevelNode {
+  }): Promise<HighLevelNode> {
     const node = createHighLevelNode(params)
-    this.addNode(node)
+    await this.addNode(node)
     return node
   }
 
   /**
    * Add a low-level node
    */
-  addLowLevelNode(params: {
+  async addLowLevelNode(params: {
     id: string
     feature: SemanticFeature
     metadata: StructuralMetadata
     sourceCode?: string
-  }): LowLevelNode {
+  }): Promise<LowLevelNode> {
     const node = createLowLevelNode(params)
-    this.addNode(node)
+    await this.addNode(node)
     return node
   }
 
   /**
    * Get a node by ID
    */
-  getNode(id: string): Node | undefined {
-    if (!this.graph.hasNode(id)) {
-      return undefined
-    }
-    return this.graph.getNodeAttributes(id) as Node
+  async getNode(id: string): Promise<Node | undefined> {
+    const node = await this.store.getNode(id)
+    return node ?? undefined
   }
 
   /**
    * Update a node's attributes
    */
-  updateNode(id: string, updates: Partial<Node>): void {
-    if (!this.graph.hasNode(id)) {
+  async updateNode(id: string, updates: Partial<Node>): Promise<void> {
+    if (!(await this.store.hasNode(id))) {
       throw new Error(`Node with id "${id}" not found`)
     }
-    this.graph.mergeNodeAttributes(id, updates)
+    await this.store.updateNode(id, updates)
   }
 
   /**
    * Remove a node and its associated edges
    */
-  removeNode(id: string): void {
-    if (!this.graph.hasNode(id)) {
+  async removeNode(id: string): Promise<void> {
+    if (!(await this.store.hasNode(id))) {
       throw new Error(`Node with id "${id}" not found`)
     }
-    this.graph.dropNode(id)
+    await this.store.removeNode(id)
   }
 
   /**
    * Check if a node exists
    */
-  hasNode(id: string): boolean {
-    return this.graph.hasNode(id)
+  async hasNode(id: string): Promise<boolean> {
+    return this.store.hasNode(id)
   }
 
   /**
    * Get all nodes
    */
-  getNodes(): Node[] {
-    return this.graph.mapNodes((_id, attrs) => attrs as Node)
+  async getNodes(): Promise<Node[]> {
+    return this.store.getNodes()
   }
 
   /**
    * Get all high-level nodes
    */
-  getHighLevelNodes(): HighLevelNode[] {
-    return this.getNodes().filter(isHighLevelNode)
+  async getHighLevelNodes(): Promise<HighLevelNode[]> {
+    const nodes = await this.store.getNodes({ type: 'high_level' })
+    return nodes.filter(isHighLevelNode)
   }
 
   /**
    * Get all low-level nodes
    */
-  getLowLevelNodes(): LowLevelNode[] {
-    return this.getNodes().filter(isLowLevelNode)
+  async getLowLevelNodes(): Promise<LowLevelNode[]> {
+    const nodes = await this.store.getNodes({ type: 'low_level' })
+    return nodes.filter(isLowLevelNode)
   }
 
   // ==================== Edge Operations ====================
@@ -169,128 +184,109 @@ export class RepositoryPlanningGraph {
   /**
    * Add an edge to the graph
    */
-  addEdge(edge: Edge): void {
-    if (!this.graph.hasNode(edge.source)) {
+  async addEdge(edge: Edge): Promise<void> {
+    if (!(await this.store.hasNode(edge.source))) {
       throw new Error(`Source node "${edge.source}" not found`)
     }
-    if (!this.graph.hasNode(edge.target)) {
+    if (!(await this.store.hasNode(edge.target))) {
       throw new Error(`Target node "${edge.target}" not found`)
     }
-
-    const edgeKey = `${edge.source}->${edge.target}:${edge.type}`
-    this.graph.addEdgeWithKey(edgeKey, edge.source, edge.target, edge)
+    await this.store.addEdge(edge)
   }
 
   /**
    * Add a functional edge (parent-child hierarchy)
    */
-  addFunctionalEdge(params: {
+  async addFunctionalEdge(params: {
     source: string
     target: string
     level?: number
     siblingOrder?: number
-  }): FunctionalEdge {
+  }): Promise<FunctionalEdge> {
     const edge = createFunctionalEdge(params)
-    this.addEdge(edge)
+    await this.addEdge(edge)
     return edge
   }
 
   /**
    * Add a dependency edge (import/call)
    */
-  addDependencyEdge(params: {
+  async addDependencyEdge(params: {
     source: string
     target: string
     dependencyType: 'import' | 'call' | 'inherit' | 'implement' | 'use'
     isRuntime?: boolean
     line?: number
-  }): DependencyEdge {
+  }): Promise<DependencyEdge> {
     const edge = createDependencyEdge(params)
-    this.addEdge(edge)
+    await this.addEdge(edge)
     return edge
   }
 
   /**
    * Get all edges
    */
-  getEdges(): Edge[] {
-    return this.graph.mapEdges((_edge, attrs) => attrs as Edge)
+  async getEdges(): Promise<Edge[]> {
+    return this.store.getEdges()
   }
 
   /**
    * Get functional edges only
    */
-  getFunctionalEdges(): FunctionalEdge[] {
-    return this.getEdges().filter(isFunctionalEdge)
+  async getFunctionalEdges(): Promise<FunctionalEdge[]> {
+    const edges = await this.store.getEdges({ type: EdgeType.Functional })
+    return edges.filter(isFunctionalEdge)
   }
 
   /**
    * Get dependency edges only
    */
-  getDependencyEdges(): DependencyEdge[] {
-    return this.getEdges().filter(isDependencyEdge)
+  async getDependencyEdges(): Promise<DependencyEdge[]> {
+    const edges = await this.store.getEdges({ type: EdgeType.Dependency })
+    return edges.filter(isDependencyEdge)
   }
 
   /**
    * Get outgoing edges from a node
    */
-  getOutEdges(nodeId: string, edgeType?: EdgeType): Edge[] {
-    if (!this.graph.hasNode(nodeId)) {
-      return []
-    }
-    const edges = this.graph.mapOutEdges(nodeId, (_edge, attrs) => attrs as Edge)
-    if (edgeType) {
-      return edges.filter((e) => e.type === edgeType)
-    }
-    return edges
+  async getOutEdges(nodeId: string, edgeType?: EdgeType): Promise<Edge[]> {
+    return this.store.getOutEdges(nodeId, edgeType)
   }
 
   /**
    * Get incoming edges to a node
    */
-  getInEdges(nodeId: string, edgeType?: EdgeType): Edge[] {
-    if (!this.graph.hasNode(nodeId)) {
-      return []
-    }
-    const edges = this.graph.mapInEdges(nodeId, (_edge, attrs) => attrs as Edge)
-    if (edgeType) {
-      return edges.filter((e) => e.type === edgeType)
-    }
-    return edges
+  async getInEdges(nodeId: string, edgeType?: EdgeType): Promise<Edge[]> {
+    return this.store.getInEdges(nodeId, edgeType)
   }
 
   /**
    * Get children of a node (via functional edges)
    */
-  getChildren(nodeId: string): Node[] {
-    const edges = this.getOutEdges(nodeId, EdgeType.Functional)
-    return edges.map((e) => this.getNode(e.target)).filter((n): n is Node => n !== undefined)
+  async getChildren(nodeId: string): Promise<Node[]> {
+    return this.store.getChildren(nodeId)
   }
 
   /**
    * Get parent of a node (via functional edges)
    */
-  getParent(nodeId: string): Node | undefined {
-    const edges = this.getInEdges(nodeId, EdgeType.Functional)
-    const firstEdge = edges[0]
-    if (!firstEdge) return undefined
-    return this.getNode(firstEdge.source)
+  async getParent(nodeId: string): Promise<Node | undefined> {
+    const parent = await this.store.getParent(nodeId)
+    return parent ?? undefined
   }
 
   /**
    * Get dependencies of a node (via dependency edges)
    */
-  getDependencies(nodeId: string): Node[] {
-    const edges = this.getOutEdges(nodeId, EdgeType.Dependency)
-    return edges.map((e) => this.getNode(e.target)).filter((n): n is Node => n !== undefined)
+  async getDependencies(nodeId: string): Promise<Node[]> {
+    return this.store.getDependencies(nodeId)
   }
 
   /**
    * Get dependents of a node (nodes that depend on this node)
    */
-  getDependents(nodeId: string): Node[] {
-    const edges = this.getInEdges(nodeId, EdgeType.Dependency)
-    return edges.map((e) => this.getNode(e.source)).filter((n): n is Node => n !== undefined)
+  async getDependents(nodeId: string): Promise<Node[]> {
+    return this.store.getDependents(nodeId)
   }
 
   // ==================== Graph Operations ====================
@@ -298,58 +294,23 @@ export class RepositoryPlanningGraph {
   /**
    * Get topological order of nodes (respecting dependencies)
    */
-  getTopologicalOrder(): Node[] {
-    const visited = new Set<string>()
-    const result: Node[] = []
-
-    const visit = (nodeId: string) => {
-      if (visited.has(nodeId)) return
-      visited.add(nodeId)
-
-      // Visit dependencies first
-      const deps = this.getOutEdges(nodeId, EdgeType.Dependency)
-      for (const dep of deps) {
-        visit(dep.target)
-      }
-
-      const node = this.getNode(nodeId)
-      if (node) result.push(node)
-    }
-
-    for (const node of this.getNodes()) {
-      visit(node.id)
-    }
-
-    return result.reverse()
+  async getTopologicalOrder(): Promise<Node[]> {
+    return this.store.getTopologicalOrder()
   }
 
   /**
    * Find nodes by semantic feature search
    */
-  searchByFeature(query: string): Node[] {
-    const queryLower = query.toLowerCase()
-    return this.getNodes().filter((node) => {
-      const desc = node.feature.description.toLowerCase()
-      const keywords = node.feature.keywords?.map((k) => k.toLowerCase()) ?? []
-      const subFeatures = node.feature.subFeatures?.map((f) => f.toLowerCase()) ?? []
-
-      return (
-        desc.includes(queryLower) ||
-        keywords.some((k) => k.includes(queryLower)) ||
-        subFeatures.some((f) => f.includes(queryLower))
-      )
-    })
+  async searchByFeature(query: string): Promise<Node[]> {
+    const hits = await this.store.searchByFeature(query)
+    return hits.map((h) => h.node)
   }
 
   /**
    * Find nodes by file path pattern
    */
-  searchByPath(pattern: string): Node[] {
-    const regex = new RegExp(pattern.replace(/\*/g, '.*'))
-    return this.getLowLevelNodes().filter((node) => {
-      const path = node.metadata?.path
-      return path && regex.test(path)
-    })
+  async searchByPath(pattern: string): Promise<Node[]> {
+    return this.store.searchByPath(pattern)
   }
 
   // ==================== Serialization ====================
@@ -357,45 +318,36 @@ export class RepositoryPlanningGraph {
   /**
    * Serialize the graph for persistence
    */
-  serialize(): SerializedRPG {
-    return {
-      version: '1.0.0',
-      config: this.config,
-      nodes: this.getNodes(),
-      edges: this.getEdges(),
-    }
+  async serialize(): Promise<SerializedRPG> {
+    return this.store.exportJSON(this.config)
   }
 
   /**
    * Export to JSON string
    */
-  toJSON(): string {
-    return JSON.stringify(this.serialize(), null, 2)
+  async toJSON(): Promise<string> {
+    const data = await this.serialize()
+    return JSON.stringify(data, null, 2)
   }
 
   /**
    * Create an RPG from serialized data
    */
-  static deserialize(data: SerializedRPG): RepositoryPlanningGraph {
+  static async deserialize(
+    data: SerializedRPG,
+    store?: GraphStore
+  ): Promise<RepositoryPlanningGraph> {
     const parsed = SerializedRPGSchema.parse(data)
-    const rpg = new RepositoryPlanningGraph(parsed.config)
-
-    for (const nodeData of parsed.nodes) {
-      rpg.addNode(nodeData as Node)
-    }
-
-    for (const edgeData of parsed.edges) {
-      rpg.addEdge(edgeData as Edge)
-    }
-
+    const rpg = await RepositoryPlanningGraph.create(parsed.config, store)
+    await rpg.store.importJSON(parsed)
     return rpg
   }
 
   /**
    * Create an RPG from JSON string
    */
-  static fromJSON(json: string): RepositoryPlanningGraph {
-    return RepositoryPlanningGraph.deserialize(JSON.parse(json))
+  static async fromJSON(json: string, store?: GraphStore): Promise<RepositoryPlanningGraph> {
+    return RepositoryPlanningGraph.deserialize(JSON.parse(json), store)
   }
 
   // ==================== Statistics ====================
@@ -403,22 +355,8 @@ export class RepositoryPlanningGraph {
   /**
    * Get graph statistics
    */
-  getStats(): {
-    nodeCount: number
-    edgeCount: number
-    highLevelNodeCount: number
-    lowLevelNodeCount: number
-    functionalEdgeCount: number
-    dependencyEdgeCount: number
-  } {
-    return {
-      nodeCount: this.graph.order,
-      edgeCount: this.graph.size,
-      highLevelNodeCount: this.getHighLevelNodes().length,
-      lowLevelNodeCount: this.getLowLevelNodes().length,
-      functionalEdgeCount: this.getFunctionalEdges().length,
-      dependencyEdgeCount: this.getDependencyEdges().length,
-    }
+  async getStats(): Promise<GraphStats> {
+    return this.store.getStats()
   }
 
   /**
@@ -426,5 +364,12 @@ export class RepositoryPlanningGraph {
    */
   getConfig(): RPGConfig {
     return { ...this.config }
+  }
+
+  /**
+   * Close the store and release resources
+   */
+  async close(): Promise<void> {
+    await this.store.close()
   }
 }

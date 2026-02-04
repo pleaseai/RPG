@@ -68,7 +68,7 @@ export class ExploreRPG {
     }
 
     const edgeTypes = this.resolveEdgeTypes(edgeType)
-    this.exploreNode(startNode, 0, maxDepth, direction, edgeTypes, state)
+    await this.exploreNode(startNode, 0, maxDepth, direction, edgeTypes, state)
 
     return {
       nodes: state.nodes,
@@ -90,20 +90,20 @@ export class ExploreRPG {
   /**
    * Recursively explore a node and its connected edges
    */
-  private exploreNode(
+  private async exploreNode(
     nodeId: string,
     depth: number,
     maxDepth: number,
     direction: 'out' | 'in' | 'both',
     edgeTypes: EdgeType[],
     state: ExploreState
-  ): void {
+  ): Promise<void> {
     if (depth > maxDepth || state.visited.has(nodeId)) {
       return
     }
     state.visited.add(nodeId)
 
-    const node = this.rpg.getNode(nodeId)
+    const node = await this.rpg.getNode(nodeId)
     if (!node) {
       return
     }
@@ -112,63 +112,63 @@ export class ExploreRPG {
     state.maxDepthReached = Math.max(state.maxDepthReached, depth)
 
     for (const et of edgeTypes) {
-      this.processEdges(nodeId, depth, maxDepth, direction, et, state)
+      await this.processEdges(nodeId, depth, maxDepth, direction, et, state)
     }
   }
 
   /**
    * Process edges for a node in given direction
    */
-  private processEdges(
+  private async processEdges(
     nodeId: string,
     depth: number,
     maxDepth: number,
     direction: 'out' | 'in' | 'both',
     edgeType: EdgeType,
     state: ExploreState
-  ): void {
+  ): Promise<void> {
     if (direction === 'out' || direction === 'both') {
-      this.processOutEdges(nodeId, depth, maxDepth, direction, edgeType, state)
+      await this.processOutEdges(nodeId, depth, maxDepth, direction, edgeType, state)
     }
 
     if (direction === 'in' || direction === 'both') {
-      this.processInEdges(nodeId, depth, maxDepth, direction, edgeType, state)
+      await this.processInEdges(nodeId, depth, maxDepth, direction, edgeType, state)
     }
   }
 
   /**
    * Process outgoing edges
    */
-  private processOutEdges(
+  private async processOutEdges(
     nodeId: string,
     depth: number,
     maxDepth: number,
     direction: 'out' | 'in' | 'both',
     edgeType: EdgeType,
     state: ExploreState
-  ): void {
+  ): Promise<void> {
     const edgeTypes = [edgeType]
-    for (const edge of this.rpg.getOutEdges(nodeId, edgeType)) {
+    for (const edge of await this.rpg.getOutEdges(nodeId, edgeType)) {
       this.addEdge(edge, state)
-      this.exploreNode(edge.target, depth + 1, maxDepth, direction, edgeTypes, state)
+      await this.exploreNode(edge.target, depth + 1, maxDepth, direction, edgeTypes, state)
     }
   }
 
   /**
    * Process incoming edges
    */
-  private processInEdges(
+  private async processInEdges(
     nodeId: string,
     depth: number,
     maxDepth: number,
     direction: 'out' | 'in' | 'both',
     edgeType: EdgeType,
     state: ExploreState
-  ): void {
+  ): Promise<void> {
     const edgeTypes = [edgeType]
-    for (const edge of this.rpg.getInEdges(nodeId, edgeType)) {
+    for (const edge of await this.rpg.getInEdges(nodeId, edgeType)) {
       this.addEdge(edge, state)
-      this.exploreNode(edge.source, depth + 1, maxDepth, direction, edgeTypes, state)
+      await this.exploreNode(edge.source, depth + 1, maxDepth, direction, edgeTypes, state)
     }
   }
 

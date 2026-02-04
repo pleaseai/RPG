@@ -11,11 +11,11 @@ describe('SearchNode', () => {
   let rpg: RepositoryPlanningGraph
   let search: SearchNode
 
-  beforeEach(() => {
-    rpg = new RepositoryPlanningGraph({ name: 'test-repo' })
+  beforeEach(async () => {
+    rpg = await RepositoryPlanningGraph.create({ name: 'test-repo' })
 
     // Add test nodes
-    rpg.addHighLevelNode({
+    await rpg.addHighLevelNode({
       id: 'auth-module',
       feature: {
         description: 'handle user authentication',
@@ -24,7 +24,7 @@ describe('SearchNode', () => {
       directoryPath: '/src/auth',
     })
 
-    rpg.addHighLevelNode({
+    await rpg.addHighLevelNode({
       id: 'data-module',
       feature: {
         description: 'process and transform data',
@@ -33,7 +33,7 @@ describe('SearchNode', () => {
       directoryPath: '/src/data',
     })
 
-    rpg.addLowLevelNode({
+    await rpg.addLowLevelNode({
       id: 'login-func',
       feature: {
         description: 'validate user credentials',
@@ -47,7 +47,7 @@ describe('SearchNode', () => {
       },
     })
 
-    rpg.addLowLevelNode({
+    await rpg.addLowLevelNode({
       id: 'logout-func',
       feature: {
         description: 'terminate user session',
@@ -61,8 +61,8 @@ describe('SearchNode', () => {
       },
     })
 
-    rpg.addFunctionalEdge({ source: 'auth-module', target: 'login-func' })
-    rpg.addFunctionalEdge({ source: 'auth-module', target: 'logout-func' })
+    await rpg.addFunctionalEdge({ source: 'auth-module', target: 'login-func' })
+    await rpg.addFunctionalEdge({ source: 'auth-module', target: 'logout-func' })
 
     search = new SearchNode(rpg)
   })
@@ -98,7 +98,7 @@ describe('SearchNode', () => {
   test('searches by file pattern', async () => {
     const results = await search.query({
       mode: 'snippets',
-      filePattern: '/src/auth/.*',
+      filePattern: '/src/auth/%',
     })
 
     expect(results.totalMatches).toBe(2)
@@ -108,7 +108,7 @@ describe('SearchNode', () => {
     const results = await search.query({
       mode: 'auto',
       featureTerms: ['validate'],
-      filePattern: '/src/auth/login.ts',
+      filePattern: '/src/auth/login%',
     })
 
     expect(results.totalMatches).toBeGreaterThanOrEqual(1)
@@ -137,9 +137,9 @@ describe('SearchNode with SemanticSearch', () => {
       `rpg-search-test-${Date.now()}-${Math.random().toString(36).slice(2)}`
     )
 
-    rpg = new RepositoryPlanningGraph({ name: 'test-repo' })
+    rpg = await RepositoryPlanningGraph.create({ name: 'test-repo' })
 
-    rpg.addHighLevelNode({
+    await rpg.addHighLevelNode({
       id: 'auth-module',
       feature: {
         description: 'handle user authentication',
@@ -148,7 +148,7 @@ describe('SearchNode with SemanticSearch', () => {
       directoryPath: '/src/auth',
     })
 
-    rpg.addLowLevelNode({
+    await rpg.addLowLevelNode({
       id: 'login-func',
       feature: {
         description: 'validate user credentials',
@@ -162,7 +162,7 @@ describe('SearchNode with SemanticSearch', () => {
       },
     })
 
-    rpg.addFunctionalEdge({ source: 'auth-module', target: 'login-func' })
+    await rpg.addFunctionalEdge({ source: 'auth-module', target: 'login-func' })
 
     // Set up semantic search with mock embeddings
     const embedding = new MockEmbedding(64)
@@ -236,9 +236,9 @@ describe('SearchNode fallback without SemanticSearch', () => {
   let rpg: RepositoryPlanningGraph
   let search: SearchNode
 
-  beforeEach(() => {
-    rpg = new RepositoryPlanningGraph({ name: 'test-repo' })
-    rpg.addHighLevelNode({
+  beforeEach(async () => {
+    rpg = await RepositoryPlanningGraph.create({ name: 'test-repo' })
+    await rpg.addHighLevelNode({
       id: 'auth-module',
       feature: {
         description: 'handle user authentication',
@@ -277,20 +277,20 @@ describe('FetchNode', () => {
   let rpg: RepositoryPlanningGraph
   let fetch: FetchNode
 
-  beforeEach(() => {
-    rpg = new RepositoryPlanningGraph({ name: 'test-repo' })
+  beforeEach(async () => {
+    rpg = await RepositoryPlanningGraph.create({ name: 'test-repo' })
 
-    rpg.addHighLevelNode({
+    await rpg.addHighLevelNode({
       id: 'root',
       feature: { description: 'root module' },
     })
 
-    rpg.addHighLevelNode({
+    await rpg.addHighLevelNode({
       id: 'child',
       feature: { description: 'child module' },
     })
 
-    rpg.addLowLevelNode({
+    await rpg.addLowLevelNode({
       id: 'func',
       feature: { description: 'test function' },
       metadata: {
@@ -302,8 +302,8 @@ describe('FetchNode', () => {
       sourceCode: 'function test() { return true; }',
     })
 
-    rpg.addFunctionalEdge({ source: 'root', target: 'child' })
-    rpg.addFunctionalEdge({ source: 'child', target: 'func' })
+    await rpg.addFunctionalEdge({ source: 'root', target: 'child' })
+    await rpg.addFunctionalEdge({ source: 'child', target: 'func' })
 
     fetch = new FetchNode(rpg)
   })
@@ -352,43 +352,43 @@ describe('ExploreRPG', () => {
   let rpg: RepositoryPlanningGraph
   let explore: ExploreRPG
 
-  beforeEach(() => {
-    rpg = new RepositoryPlanningGraph({ name: 'test-repo' })
+  beforeEach(async () => {
+    rpg = await RepositoryPlanningGraph.create({ name: 'test-repo' })
 
     // Create a graph structure:
     // root -> moduleA -> funcA1, funcA2
     //      -> moduleB -> funcB1
     // funcA1 imports funcB1 (dependency)
 
-    rpg.addHighLevelNode({ id: 'root', feature: { description: 'root' } })
-    rpg.addHighLevelNode({ id: 'moduleA', feature: { description: 'module A' } })
-    rpg.addHighLevelNode({ id: 'moduleB', feature: { description: 'module B' } })
+    await rpg.addHighLevelNode({ id: 'root', feature: { description: 'root' } })
+    await rpg.addHighLevelNode({ id: 'moduleA', feature: { description: 'module A' } })
+    await rpg.addHighLevelNode({ id: 'moduleB', feature: { description: 'module B' } })
 
-    rpg.addLowLevelNode({
+    await rpg.addLowLevelNode({
       id: 'funcA1',
       feature: { description: 'function A1' },
       metadata: { entityType: 'function', path: '/a/a1.ts' },
     })
-    rpg.addLowLevelNode({
+    await rpg.addLowLevelNode({
       id: 'funcA2',
       feature: { description: 'function A2' },
       metadata: { entityType: 'function', path: '/a/a2.ts' },
     })
-    rpg.addLowLevelNode({
+    await rpg.addLowLevelNode({
       id: 'funcB1',
       feature: { description: 'function B1' },
       metadata: { entityType: 'function', path: '/b/b1.ts' },
     })
 
     // Functional edges (hierarchy)
-    rpg.addFunctionalEdge({ source: 'root', target: 'moduleA' })
-    rpg.addFunctionalEdge({ source: 'root', target: 'moduleB' })
-    rpg.addFunctionalEdge({ source: 'moduleA', target: 'funcA1' })
-    rpg.addFunctionalEdge({ source: 'moduleA', target: 'funcA2' })
-    rpg.addFunctionalEdge({ source: 'moduleB', target: 'funcB1' })
+    await rpg.addFunctionalEdge({ source: 'root', target: 'moduleA' })
+    await rpg.addFunctionalEdge({ source: 'root', target: 'moduleB' })
+    await rpg.addFunctionalEdge({ source: 'moduleA', target: 'funcA1' })
+    await rpg.addFunctionalEdge({ source: 'moduleA', target: 'funcA2' })
+    await rpg.addFunctionalEdge({ source: 'moduleB', target: 'funcB1' })
 
     // Dependency edge
-    rpg.addDependencyEdge({
+    await rpg.addDependencyEdge({
       source: 'funcA1',
       target: 'funcB1',
       dependencyType: 'import',
