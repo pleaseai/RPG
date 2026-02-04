@@ -72,7 +72,7 @@ bun run src/cli.ts encode ./my_project
 
 | Module | Purpose |
 |--------|---------|
-| `src/graph/` | RPG data structures (Node, Edge, RepositoryPlanningGraph) using graphology |
+| `src/graph/` | RPG data structures (Node, Edge, GraphStore interface, SQLiteStore, SurrealStore) |
 | `src/encoder/` | Code → RPG extraction (semantic lifting, structural reorganization, artifact grounding) |
 | `src/zerorepo/` | Intent → Code generation (proposal construction, implementation planning, code generation) |
 | `src/tools/` | Agentic tools (SearchNode, FetchNode, ExploreRPG) for graph navigation |
@@ -90,11 +90,30 @@ bun run src/cli.ts encode ./my_project
 2. Evolution: Commit-level incremental updates (add/modify/delete)
 3. Operation: SearchNode, FetchNode, ExploreRPG tools
 
+### GraphStore Implementations
+
+The `GraphStore` interface (`src/graph/store.ts`) defines the storage API for RPG graphs. Two implementations exist:
+
+| Store | Module | Engine | Search |
+|-------|--------|--------|--------|
+| `SQLiteStore` | `src/graph/sqlite-store.ts` | `bun:sqlite` (WAL mode) | FTS5 full-text search |
+| `SurrealStore` | `src/graph/surreal-store.ts` | `surrealdb` + `@surrealdb/node` embedded | BM25 search |
+
+**Import pattern** — store implementations are NOT re-exported from `src/graph/index.ts` to avoid transitive `bun:sqlite` loading:
+```typescript
+// Correct: import directly
+import { SQLiteStore } from './graph/sqlite-store'
+import { SurrealStore } from './graph/surreal-store'
+
+// Wrong: barrel import will fail in non-Bun environments
+// import { SQLiteStore } from './graph'
+```
+
 ### Key Libraries
 
-- **graphology**: Graph data structure and algorithms
 - **tree-sitter**: AST parsing for multiple languages
 - **lancedb**: Vector DB for semantic search (Bun-native, disk-based)
+- **surrealdb** + **@surrealdb/node**: Embedded graph database (mem:// or surrealkv://)
 - **@huggingface/transformers**: Local embedding with MongoDB LEAF models
 - **zod**: Schema validation for graph data
 - **commander**: CLI framework
@@ -164,6 +183,20 @@ Or with the installed package:
 - **Vitest over Bun Test**: Jest compatibility for planned MCP server development
 - **LanceDB over ChromaDB**: No external server required, Bun-native, disk-based persistence
 - **Paper-based implementation**: Original implementation based on research papers, not forked from Microsoft code
+- **Dual GraphStore backends**: SQLiteStore (zero-dep, bun:sqlite) and SurrealStore (native graph relations) for evaluation
+
+## Known Gotchas
+
+### bun:sqlite and vitest
+Tests that import `bun:sqlite` (directly or transitively) require `bun --bun vitest run`. The vitest config has `server.deps.external: [/^bun:/]` but Node.js still cannot resolve `bun:` protocol modules.
+
+### SurrealDB embedded engine limitations
+- **No transactions**: `mem://` and `surrealkv://` engines do not support `beginTransaction()`. Use sequential operations instead.
+- **option\<T\> fields**: SCHEMAFULL tables with `option<T>` fields reject JS `null`. Omit the field entirely from the content object.
+- **ORDER BY**: Fields used in `ORDER BY` must also appear in the `SELECT` clause.
+- **No LIKE operator**: Use application-level regex filtering instead.
+- **update().patch()**: Expects RFC 6902 JSON Patch operations, not plain objects. Use `UPDATE SET` queries for partial updates.
+- **SDK imports**: Use `createNodeEngines` from `@surrealdb/node` and `RecordId`, `Table`, `Surreal` from `surrealdb`.
 
 ## Semantic Extraction
 
@@ -183,3 +216,13 @@ RPG encoding uses LLM for semantic feature extraction. Options:
 | HuggingFace (local) | MongoDB/mdbr-leaf-ir | 768 | Free |
 | HuggingFace (local) | MongoDB/mdbr-leaf-mt | 1024 | Free |
 | OpenAI | text-embedding-3-small | 1536 | $0.02/1M |
+| OpenAI | text-embedding-3-large | 3072 | $0.13/1M |
+
+### Alternative Embedding Models (Not Yet Implemented)
+
+| Provider | Model | Dimension | Cost | Notes |
+|----------|-------|-----------|------|-------|
+| Voyage AI | voyage-code-3 | 1024 | $0.18/1M | Code retrieval SOTA |
+| Voyage AI | voyage-4 | 1024 | $0.10/1M | Shared embedding space, MoE |
+| Google | gemini-embedding-001 | 3072 | Free | MTEB Multilingual #1 |
+| Jina AI | jina-embeddings-v3 | 1024 | $0.02/1M | Paper baseline (Agentless) |
