@@ -13,6 +13,11 @@ export default defineConfig({
       exclude: ['src/cli.ts'],
     },
     testTimeout: 10000,
+    server: {
+      deps: {
+        external: [/^bun:/],
+      },
+    },
   },
   resolve: {
     alias: {

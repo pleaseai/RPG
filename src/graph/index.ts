@@ -44,3 +44,18 @@ export type { BaseEdge, FunctionalEdge, DependencyEdge, Edge, DataFlowEdge } fro
 export { RepositoryPlanningGraph, SerializedRPGSchema } from './rpg'
 
 export type { RPGConfig, SerializedRPG } from './rpg'
+
+// GraphStore interface and types
+export type {
+  GraphStore,
+  NodeFilter,
+  EdgeFilter,
+  TraverseOptions,
+  TraverseResult,
+  SearchHit,
+  GraphStats,
+} from './store'
+
+// Store implementations - import directly to avoid loading engine dependencies:
+//   import { SQLiteStore } from './graph/sqlite-store'   // requires bun:sqlite
+//   import { SurrealStore } from './graph/surreal-store'  // requires surrealdb + @surrealdb/node
