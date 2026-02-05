@@ -28,7 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      id-token: write  # Required for npm OIDC trusted publishing
+      id-token: write # Required for npm OIDC trusted publishing
     steps:
       - uses: actions/checkout@v4
       - uses: oven-sh/setup-bun@v2
