@@ -1,44 +1,53 @@
+// Adapters: RPG domain types ↔ generic store attrs
+export {
+  attrsToEdge,
+  attrsToNode,
+  edgeToAttrs,
+  nodeToAttrs,
+  nodeToSearchFields,
+} from './adapters'
+
+// Edge types and utilities
+export {
+  BaseEdgeSchema,
+  createDependencyEdge,
+  createFunctionalEdge,
+  DataFlowEdgeSchema,
+  DependencyEdgeSchema,
+  DependencyType,
+  EdgeSchema,
+  EdgeType,
+  FunctionalEdgeSchema,
+  isDependencyEdge,
+  isFunctionalEdge,
+} from './edge'
+
+export type { BaseEdge, DataFlowEdge, DependencyEdge, Edge, FunctionalEdge } from './edge'
+
 // Node types and utilities
 export {
-  NodeType,
-  EntityType,
-  SemanticFeatureSchema,
-  StructuralMetadataSchema,
   BaseNodeSchema,
-  HighLevelNodeSchema,
-  LowLevelNodeSchema,
-  NodeSchema,
   createHighLevelNode,
   createLowLevelNode,
+  EntityType,
+  HighLevelNodeSchema,
   isHighLevelNode,
   isLowLevelNode,
+  LowLevelNodeSchema,
+  NodeSchema,
+  NodeType,
+  SemanticFeatureSchema,
+  StructuralMetadataSchema,
 } from './node'
 
 export type {
-  SemanticFeature,
-  StructuralMetadata,
   BaseNode,
   HighLevelNode,
   LowLevelNode,
   Node,
+  SemanticFeature,
+  StructuralMetadata,
 } from './node'
-
-// Edge types and utilities
-export {
-  EdgeType,
-  DependencyType,
-  BaseEdgeSchema,
-  FunctionalEdgeSchema,
-  DependencyEdgeSchema,
-  EdgeSchema,
-  DataFlowEdgeSchema,
-  createFunctionalEdge,
-  createDependencyEdge,
-  isFunctionalEdge,
-  isDependencyEdge,
-} from './edge'
-
-export type { BaseEdge, FunctionalEdge, DependencyEdge, Edge, DataFlowEdge } from './edge'
 
 // Repository Planning Graph
 export { RepositoryPlanningGraph, SerializedRPGSchema } from './rpg'
@@ -47,23 +56,14 @@ export type { RPGConfig, SerializedRPG } from './rpg'
 
 // GraphStore interface and types
 export type {
+  EdgeFilter,
+  GraphStats,
   GraphStore,
   NodeFilter,
-  EdgeFilter,
+  SearchHit,
   TraverseOptions,
   TraverseResult,
-  SearchHit,
-  GraphStats,
 } from './store'
-
-// Adapters: RPG domain types ↔ generic store attrs
-export {
-  nodeToAttrs,
-  attrsToNode,
-  nodeToSearchFields,
-  edgeToAttrs,
-  attrsToEdge,
-} from './adapters'
 
 // Legacy store implementations - import directly to avoid loading engine dependencies:
 //   import { SQLiteStore } from './graph/sqlite-store'   // requires better-sqlite3

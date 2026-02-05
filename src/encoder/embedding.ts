@@ -42,7 +42,7 @@ export abstract class Embedding {
    * Preprocess array of texts
    */
   protected preprocessTexts(texts: string[]): string[] {
-    return texts.map((text) => this.preprocessText(text))
+    return texts.map(text => this.preprocessText(text))
   }
 
   /**
@@ -81,7 +81,7 @@ export interface OpenAIEmbeddingConfig {
 /**
  * Supported OpenAI embedding models and their dimensions
  */
-const OPENAI_MODELS: Record<string, { dimension: number; description: string }> = {
+const OPENAI_MODELS: Record<string, { dimension: number, description: string }> = {
   'text-embedding-3-small': {
     dimension: 1536,
     description: 'High performance and cost-effective embedding model (recommended)',
@@ -142,7 +142,8 @@ export class OpenAIEmbedding extends Embedding {
         vector: embedding,
         dimension: this.dimension,
       }
-    } catch (error) {
+    }
+    catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       throw new Error(`Failed to generate OpenAI embedding: ${message}`)
     }
@@ -171,11 +172,12 @@ export class OpenAIEmbedding extends Embedding {
       }
       this.dimension = firstResult.embedding.length
 
-      return response.data.map((item) => ({
+      return response.data.map(item => ({
         vector: item.embedding,
         dimension: this.dimension,
       }))
-    } catch (error) {
+    }
+    catch (error) {
       const message = error instanceof Error ? error.message : String(error)
       throw new Error(`Failed to generate OpenAI batch embeddings: ${message}`)
     }
@@ -199,7 +201,7 @@ export class OpenAIEmbedding extends Embedding {
   /**
    * Get list of supported models
    */
-  static getSupportedModels(): Record<string, { dimension: number; description: string }> {
+  static getSupportedModels(): Record<string, { dimension: number, description: string }> {
     return { ...OPENAI_MODELS }
   }
 }
@@ -226,7 +228,7 @@ export class MockEmbedding extends Embedding {
 
   async embedBatch(texts: string[]): Promise<EmbeddingVector[]> {
     const processedTexts = this.preprocessTexts(texts)
-    return processedTexts.map((text) => ({
+    return processedTexts.map(text => ({
       vector: this.generateDeterministicVector(text),
       dimension: this.dimension,
     }))
@@ -263,7 +265,7 @@ export class MockEmbedding extends Embedding {
 
     // Normalize to unit vector
     const magnitude = Math.sqrt(vector.reduce((sum, val) => sum + val * val, 0))
-    return vector.map((val) => val / magnitude)
+    return vector.map(val => val / magnitude)
   }
 }
 
@@ -431,11 +433,12 @@ export class HuggingFaceEmbedding extends Embedding {
       this.model = model
 
       console.log(`[HuggingFace] Model loaded successfully: ${modelId}`)
-    } catch (error) {
+    }
+    catch (error) {
       this.modelLoading = null // Reset so it can be retried
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
       const err = new Error(
-        `Failed to load HuggingFace model ${this.config.model}: ${errorMessage}`
+        `Failed to load HuggingFace model ${this.config.model}: ${errorMessage}`,
       )
       ;(err as Error & { cause?: unknown }).cause = error
       throw err
@@ -492,7 +495,8 @@ export class HuggingFaceEmbedding extends Embedding {
         vector: embedding,
         dimension: embedding.length,
       }
-    } catch (error) {
+    }
+    catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
       const err = new Error(`HuggingFace embedding failed: ${errorMessage}`)
       ;(err as Error & { cause?: unknown }).cause = error
@@ -512,7 +516,7 @@ export class HuggingFaceEmbedding extends Embedding {
     }
 
     const processedTexts = this.preprocessTexts(texts)
-    const prefixedTexts = processedTexts.map((text) => this.applyQueryPrefix(text))
+    const prefixedTexts = processedTexts.map(text => this.applyQueryPrefix(text))
 
     try {
       // Tokenize batch with truncation to handle texts longer than maxTokens
@@ -533,22 +537,24 @@ export class HuggingFaceEmbedding extends Embedding {
       // Convert tensor to array
       const embeddings = outputs.sentence_embedding.tolist() as number[][]
 
-      return embeddings.map((embedding) => ({
+      return embeddings.map(embedding => ({
         vector: embedding,
         dimension: embedding.length,
       }))
-    } catch (error) {
+    }
+    catch (error) {
       // Fallback: process individually in parallel if batch fails
       const batchErrorMessage = error instanceof Error ? error.message : 'Unknown error'
       console.warn(
-        `[HuggingFace] Batch embedding failed: ${batchErrorMessage}, falling back to parallel individual processing`
+        `[HuggingFace] Batch embedding failed: ${batchErrorMessage}, falling back to parallel individual processing`,
       )
 
       try {
-        return await Promise.all(texts.map((text) => this.embed(text)))
-      } catch (individualError) {
+        return await Promise.all(texts.map(text => this.embed(text)))
+      }
+      catch (individualError) {
         const err = new Error(
-          `HuggingFace batch embedding failed (both batch and individual attempts failed): ${batchErrorMessage}`
+          `HuggingFace batch embedding failed (both batch and individual attempts failed): ${batchErrorMessage}`,
         )
         ;(err as Error & { cause?: unknown }).cause = individualError
         throw err

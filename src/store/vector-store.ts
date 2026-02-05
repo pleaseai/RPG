@@ -5,19 +5,19 @@ import type { Lifecycle, VectorSearchOpts, VectorSearchResult } from './types'
  */
 export interface VectorStore extends Lifecycle {
   /** Upsert a single embedding */
-  upsert(id: string, embedding: number[], metadata?: Record<string, unknown>): Promise<void>
+  upsert: (id: string, embedding: number[], metadata?: Record<string, unknown>) => Promise<void>
 
   /** Remove an embedding by ID */
-  remove(id: string): Promise<void>
+  remove: (id: string) => Promise<void>
 
   /** Search by vector similarity */
-  search(query: number[], opts?: VectorSearchOpts): Promise<VectorSearchResult[]>
+  search: (query: number[], opts?: VectorSearchOpts) => Promise<VectorSearchResult[]>
 
   /** Batch upsert embeddings */
-  upsertBatch?(
-    docs: Array<{ id: string; embedding: number[]; metadata?: Record<string, unknown> }>
-  ): Promise<void>
+  upsertBatch?: (
+    docs: Array<{ id: string, embedding: number[], metadata?: Record<string, unknown> }>,
+  ) => Promise<void>
 
   /** Count indexed embeddings */
-  count(): Promise<number>
+  count: () => Promise<number>
 }

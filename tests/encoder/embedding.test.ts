@@ -1,7 +1,7 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import { MockEmbedding, OpenAIEmbedding } from '../../src/encoder/embedding'
 
-describe('MockEmbedding', () => {
+describe('mockEmbedding', () => {
   it('should embed text and return correct dimension', async () => {
     const embedding = new MockEmbedding(128)
     const result = await embedding.embed('test text')
@@ -76,7 +76,7 @@ describe('MockEmbedding', () => {
   })
 })
 
-describe('OpenAIEmbedding', () => {
+describe('openAIEmbedding', () => {
   it('should return correct provider', () => {
     const embedding = new OpenAIEmbedding({ apiKey: 'test-key' })
     expect(embedding.getProvider()).toBe('OpenAI')

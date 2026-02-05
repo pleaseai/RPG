@@ -1,10 +1,10 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { VectorStore } from '../../src/utils/vector'
 
-describe('VectorStore Hybrid Search', () => {
+describe('vectorStore Hybrid Search', () => {
   let store: VectorStore
   let testDbPath: string
   const dimension = 64
@@ -23,13 +23,13 @@ describe('VectorStore Hybrid Search', () => {
       vector.push((hash / 2147483647) * 2 - 1)
     }
     const magnitude = Math.sqrt(vector.reduce((sum, val) => sum + val * val, 0))
-    return vector.map((val) => val / magnitude)
+    return vector.map(val => val / magnitude)
   }
 
   beforeEach(async () => {
     testDbPath = join(
       tmpdir(),
-      `rpg-vector-test-${Date.now()}-${Math.random().toString(36).slice(2)}`
+      `rpg-vector-test-${Date.now()}-${Math.random().toString(36).slice(2)}`,
     )
     store = new VectorStore({
       dbPath: testDbPath,
@@ -76,7 +76,8 @@ describe('VectorStore Hybrid Search', () => {
     await store.close()
     try {
       await rm(testDbPath, { recursive: true, force: true })
-    } catch {
+    }
+    catch {
       // Ignore cleanup errors
     }
   })
@@ -109,7 +110,7 @@ describe('VectorStore Hybrid Search', () => {
 
       expect(results.length).toBeGreaterThan(0)
       // Should find the database-related document
-      const ids = results.map((r) => r.id)
+      const ids = results.map(r => r.id)
       expect(ids).toContain('db-1')
     })
 
@@ -181,7 +182,7 @@ describe('VectorStore Hybrid Search', () => {
       const merged = store.rrfRerank(vectorResults, ftsResults, 0.5, 10)
 
       // 'b' and 'a' appear in both lists, should have higher RRF scores
-      const ids = merged.map((r) => r.id)
+      const ids = merged.map(r => r.id)
       expect(ids).toContain('a')
       expect(ids).toContain('b')
       expect(ids).toContain('c')

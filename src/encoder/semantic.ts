@@ -1,4 +1,5 @@
-import { LLMClient, type LLMProvider } from '../utils/llm'
+import type { LLMProvider } from '../utils/llm'
+import { LLMClient } from '../utils/llm'
 
 /**
  * Options for semantic extraction
@@ -96,7 +97,8 @@ export class SemanticExtractor {
     if (this.llmClient && input.sourceCode) {
       try {
         return await this.extractWithLLM(input)
-      } catch {
+      }
+      catch {
         // Fall back to heuristic on error
       }
     }
@@ -115,7 +117,7 @@ export class SemanticExtractor {
     const batchSize = 5
     for (let i = 0; i < inputs.length; i += batchSize) {
       const batch = inputs.slice(i, i + batchSize)
-      const batchResults = await Promise.all(batch.map((input) => this.extract(input)))
+      const batchResults = await Promise.all(batch.map(input => this.extract(input)))
       results.push(...batchResults)
     }
 
@@ -164,8 +166,8 @@ Use verb + object format for descriptions (e.g., "validate user input", "fetch d
     if (input.sourceCode) {
       // Truncate long source code
       const maxSourceLength = 2000
-      const truncatedSource =
-        input.sourceCode.length > maxSourceLength
+      const truncatedSource
+        = input.sourceCode.length > maxSourceLength
           ? `${input.sourceCode.substring(0, maxSourceLength)}\n... (truncated)`
           : input.sourceCode
 
@@ -316,7 +318,7 @@ Use verb + object format for descriptions (e.g., "validate user input", "fetch d
       .replace(/[_-]/g, ' ')
       .toLowerCase()
       .split(' ')
-      .filter((w) => w.length > 2)
+      .filter(w => w.length > 2)
 
     for (const part of nameParts) {
       keywords.add(part)
@@ -333,8 +335,8 @@ Use verb + object format for descriptions (e.g., "validate user input", "fetch d
     // Add path parts
     const pathParts = input.filePath
       .split('/')
-      .filter((p) => p && p !== '.' && p !== '..')
-      .map((p) => p.replace(/\.[^.]+$/, '').toLowerCase())
+      .filter(p => p && p !== '.' && p !== '..')
+      .map(p => p.replace(/\.[^.]+$/, '').toLowerCase())
 
     for (const part of pathParts) {
       if (part.length > 2) {
@@ -360,8 +362,8 @@ Use verb + object format for descriptions (e.g., "validate user input", "fetch d
 
     // Clean up keywords
     feature.keywords = feature.keywords
-      .filter((k) => typeof k === 'string' && k.length > 0)
-      .map((k) => k.toLowerCase().trim())
+      .filter(k => typeof k === 'string' && k.length > 0)
+      .map(k => k.toLowerCase().trim())
 
     return feature
   }

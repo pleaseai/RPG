@@ -1,7 +1,7 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { RPGEncoder } from '../../src/encoder'
 import { MockEmbedding } from '../../src/encoder/embedding'
 import { SemanticSearch } from '../../src/encoder/semantic-search'
@@ -10,8 +10,8 @@ import { RepositoryPlanningGraph } from '../../src/graph'
 // This test suite encodes the actual rpg repository
 const PROJECT_ROOT = resolve(__dirname, '../..')
 
-describe('E2E: Encode Real Repository', () => {
-  describe('Encode rpg Project', () => {
+describe('e2E: Encode Real Repository', () => {
+  describe('encode rpg Project', () => {
     it('should encode the entire src directory', async () => {
       const encoder = new RPGEncoder(PROJECT_ROOT, {
         include: ['src/**/*.ts'],
@@ -60,8 +60,8 @@ describe('E2E: Encode Real Repository', () => {
       expect(result1.entitiesExtracted).toBe(result2.entitiesExtracted)
 
       // Same node IDs
-      const ids1 = new Set((await result1.rpg.getNodes()).map((n) => n.id))
-      const ids2 = new Set((await result2.rpg.getNodes()).map((n) => n.id))
+      const ids1 = new Set((await result1.rpg.getNodes()).map(n => n.id))
+      const ids2 = new Set((await result2.rpg.getNodes()).map(n => n.id))
       expect(ids1).toEqual(ids2)
     })
 
@@ -76,13 +76,13 @@ describe('E2E: Encode Real Repository', () => {
       // encoder.ts should import from semantic.ts, cache.ts
       const edges = await result.rpg.getDependencyEdges()
       const encoderFile = (await result.rpg.getNodes()).find(
-        (n) => n.metadata?.path === 'src/encoder/encoder.ts'
+        n => n.metadata?.path === 'src/encoder/encoder.ts',
       )
 
       expect(encoderFile).toBeDefined()
 
       // Find imports from encoder.ts
-      const encoderImports = edges.filter((e) => e.source === encoderFile?.id)
+      const encoderImports = edges.filter(e => e.source === encoderFile?.id)
       expect(encoderImports.length).toBeGreaterThan(0)
 
       // Should import from semantic.ts or cache.ts
@@ -90,11 +90,11 @@ describe('E2E: Encode Real Repository', () => {
         encoderImports.map(async (e) => {
           const targetNode = await result.rpg.getNode(e.target)
           return targetNode?.metadata?.path
-        })
+        }),
       )
 
       const hasInternalImports = importedPaths.some(
-        (p) => p?.includes('semantic.ts') || p?.includes('cache.ts')
+        p => p?.includes('semantic.ts') || p?.includes('cache.ts'),
       )
       expect(hasInternalImports).toBe(true)
     })
@@ -111,10 +111,10 @@ describe('E2E: Encode Real Repository', () => {
       const functionalEdges = await result.rpg.getFunctionalEdges()
 
       // Should have directory nodes for src subdirectories
-      const dirPaths = highLevelNodes.map((n) => n.directoryPath || n.metadata?.path)
-      expect(dirPaths.some((p) => p?.includes('encoder'))).toBe(true)
-      expect(dirPaths.some((p) => p?.includes('graph'))).toBe(true)
-      expect(dirPaths.some((p) => p?.includes('utils'))).toBe(true)
+      const dirPaths = highLevelNodes.map(n => n.directoryPath || n.metadata?.path)
+      expect(dirPaths.some(p => p?.includes('encoder'))).toBe(true)
+      expect(dirPaths.some(p => p?.includes('graph'))).toBe(true)
+      expect(dirPaths.some(p => p?.includes('utils'))).toBe(true)
 
       // Functional edges should connect directories to files
       const dirToFileEdgesChecks = await Promise.all(
@@ -122,17 +122,17 @@ describe('E2E: Encode Real Repository', () => {
           const sourceNode = await result.rpg.getNode(e.source)
           const targetNode = await result.rpg.getNode(e.target)
           return (
-            sourceNode?.metadata?.entityType === 'module' &&
-            targetNode?.metadata?.entityType === 'file'
+            sourceNode?.metadata?.entityType === 'module'
+            && targetNode?.metadata?.entityType === 'file'
           )
-        })
+        }),
       )
       const dirToFileEdges = functionalEdges.filter((_, i) => dirToFileEdgesChecks[i])
       expect(dirToFileEdges.length).toBeGreaterThan(0)
     })
   })
 
-  describe('Serialization Roundtrip', () => {
+  describe('serialization Roundtrip', () => {
     it('should serialize and restore full RPG without data loss', async () => {
       const encoder = new RPGEncoder(PROJECT_ROOT, {
         include: ['src/graph/**/*.ts'],
@@ -153,10 +153,10 @@ describe('E2E: Encode Real Repository', () => {
       // Compare structure
       expect((await restored.getNodes()).length).toBe((await result.rpg.getNodes()).length)
       expect((await restored.getFunctionalEdges()).length).toBe(
-        (await result.rpg.getFunctionalEdges()).length
+        (await result.rpg.getFunctionalEdges()).length,
       )
       expect((await restored.getDependencyEdges()).length).toBe(
-        (await result.rpg.getDependencyEdges()).length
+        (await result.rpg.getDependencyEdges()).length,
       )
 
       // Compare individual nodes
@@ -169,7 +169,7 @@ describe('E2E: Encode Real Repository', () => {
     })
   })
 
-  describe('Semantic Search E2E', () => {
+  describe('semantic Search E2E', () => {
     let search: SemanticSearch
     let searchDbPath: string
 
@@ -186,7 +186,8 @@ describe('E2E: Encode Real Repository', () => {
       await search.close()
       try {
         await rm(searchDbPath, { recursive: true, force: true })
-      } catch {
+      }
+      catch {
         // Ignore cleanup errors
       }
     })
@@ -201,7 +202,7 @@ describe('E2E: Encode Real Repository', () => {
       const result = await encoder.encode()
 
       // Index all nodes
-      const documents = (await result.rpg.getNodes()).map((node) => ({
+      const documents = (await result.rpg.getNodes()).map(node => ({
         id: node.id,
         content: node.feature.description,
         metadata: {
@@ -235,7 +236,7 @@ describe('E2E: Encode Real Repository', () => {
 
       // Index nodes
       const allNodes = await result.rpg.getNodes()
-      const documents = allNodes.map((node) => ({
+      const documents = allNodes.map(node => ({
         id: node.id,
         content: `${node.feature.description} ${node.metadata?.path || ''} ${node.metadata?.entityType || ''}`,
         metadata: {
@@ -251,7 +252,7 @@ describe('E2E: Encode Real Repository', () => {
       expect(results.length).toBeGreaterThan(0)
 
       // Verify we indexed classes and methods (encoder.ts has class + methods)
-      const nodeTypes = allNodes.map((n) => n.metadata?.entityType)
+      const nodeTypes = allNodes.map(n => n.metadata?.entityType)
       expect(nodeTypes).toContain('class')
       expect(nodeTypes).toContain('method')
 
@@ -263,7 +264,7 @@ describe('E2E: Encode Real Repository', () => {
     })
   })
 
-  describe('Performance', () => {
+  describe('performance', () => {
     it('should encode large codebase efficiently', async () => {
       const encoder = new RPGEncoder(PROJECT_ROOT, {
         include: ['src/**/*.ts'],
@@ -284,7 +285,7 @@ describe('E2E: Encode Real Repository', () => {
       console.log(`  Duration: ${duration}ms`)
       console.log(`  Nodes: ${(await result.rpg.getNodes()).length}`)
       console.log(
-        `  Edges: ${(await result.rpg.getFunctionalEdges()).length + (await result.rpg.getDependencyEdges()).length}`
+        `  Edges: ${(await result.rpg.getFunctionalEdges()).length + (await result.rpg.getDependencyEdges()).length}`,
       )
     })
   })

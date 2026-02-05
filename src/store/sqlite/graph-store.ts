@@ -1,4 +1,3 @@
-import Database from 'better-sqlite3'
 import type { GraphStore } from '../graph-store'
 import type {
   EdgeAttrs,
@@ -9,6 +8,7 @@ import type {
   TraverseOpts,
   TraverseResult,
 } from '../types'
+import Database from 'better-sqlite3'
 
 type BindValue = string | number | null | undefined
 
@@ -71,7 +71,8 @@ export class SQLiteGraphStore implements GraphStore {
 
   async updateNode(id: string, patch: Partial<NodeAttrs>): Promise<void> {
     const existing = await this.getNode(id)
-    if (!existing) return
+    if (!existing)
+      return
     const merged = { ...existing, ...patch }
     this.db.prepare('UPDATE nodes SET attrs = ? WHERE id = ?').run(JSON.stringify(merged), id)
   }
@@ -80,18 +81,19 @@ export class SQLiteGraphStore implements GraphStore {
     this.db.prepare('DELETE FROM nodes WHERE id = ?').run(id)
   }
 
-  async getNodes(filter?: NodeFilter): Promise<Array<{ id: string; attrs: NodeAttrs }>> {
+  async getNodes(filter?: NodeFilter): Promise<Array<{ id: string, attrs: NodeAttrs }>> {
     const rows = this.db.prepare('SELECT id, attrs FROM nodes').all() as Array<{
       id: string
       attrs: string
     }>
 
-    let results = rows.map((r) => ({ id: r.id, attrs: JSON.parse(r.attrs) as NodeAttrs }))
+    let results = rows.map(r => ({ id: r.id, attrs: JSON.parse(r.attrs) as NodeAttrs }))
 
     if (filter) {
       results = results.filter((r) => {
         for (const [key, value] of Object.entries(filter)) {
-          if (value !== undefined && r.attrs[key] !== value) return false
+          if (value !== undefined && r.attrs[key] !== value)
+            return false
         }
         return true
       })
@@ -115,8 +117,8 @@ export class SQLiteGraphStore implements GraphStore {
   }
 
   async getEdges(
-    filter?: EdgeFilter
-  ): Promise<Array<{ source: string; target: string; attrs: EdgeAttrs }>> {
+    filter?: EdgeFilter,
+  ): Promise<Array<{ source: string, target: string, attrs: EdgeAttrs }>> {
     let sql = 'SELECT source, target, attrs FROM edges'
     const conditions: string[] = []
     const values: BindValue[] = []
@@ -144,7 +146,7 @@ export class SQLiteGraphStore implements GraphStore {
       attrs: string
     }>
 
-    return rows.map((r) => ({
+    return rows.map(r => ({
       source: r.source,
       target: r.target,
       attrs: JSON.parse(r.attrs) as EdgeAttrs,
@@ -156,7 +158,7 @@ export class SQLiteGraphStore implements GraphStore {
   async getNeighbors(
     id: string,
     direction: 'in' | 'out' | 'both',
-    edgeType?: string
+    edgeType?: string,
   ): Promise<string[]> {
     const results = new Set<string>()
     const typeClause = edgeType ? ' AND type = ?' : ''
@@ -191,10 +193,12 @@ export class SQLiteGraphStore implements GraphStore {
     if (direction === 'out') {
       directionClause = 'e.source = t.node_id'
       nextNodeExpr = 'e.target'
-    } else if (direction === 'in') {
+    }
+    else if (direction === 'in') {
       directionClause = 'e.target = t.node_id'
       nextNodeExpr = 'e.source'
-    } else {
+    }
+    else {
       directionClause = '(e.source = t.node_id OR e.target = t.node_id)'
       nextNodeExpr = 'CASE WHEN e.source = t.node_id THEN e.target ELSE e.source END'
     }
@@ -217,7 +221,7 @@ export class SQLiteGraphStore implements GraphStore {
       depth: number
     }>
 
-    const nodes: Array<{ id: string; attrs: NodeAttrs }> = []
+    const nodes: Array<{ id: string, attrs: NodeAttrs }> = []
     let maxDepthReached = 0
 
     for (const row of traversalRows) {
@@ -232,15 +236,17 @@ export class SQLiteGraphStore implements GraphStore {
               break
             }
           }
-          if (!matches) continue
+          if (!matches)
+            continue
         }
         nodes.push({ id: row.node_id, attrs })
       }
-      if (row.depth > maxDepthReached) maxDepthReached = row.depth
+      if (row.depth > maxDepthReached)
+        maxDepthReached = row.depth
     }
 
     // Collect edges between discovered nodes
-    const nodeIds = new Set([startId, ...traversalRows.map((r) => r.node_id)])
+    const nodeIds = new Set([startId, ...traversalRows.map(r => r.node_id)])
     const placeholders = [...nodeIds].map(() => '?').join(',')
     const edgeTypeClause = edgeType ? `AND type = '${edgeType}'` : ''
     const edgeRows = this.db
@@ -248,7 +254,7 @@ export class SQLiteGraphStore implements GraphStore {
         `SELECT source, target, attrs FROM edges
          WHERE source IN (${placeholders})
            AND target IN (${placeholders})
-           ${edgeTypeClause}`
+           ${edgeTypeClause}`,
       )
       .all(...nodeIds, ...nodeIds) as Array<{
       source: string
@@ -256,7 +262,7 @@ export class SQLiteGraphStore implements GraphStore {
       attrs: string
     }>
 
-    const edges = edgeRows.map((r) => ({
+    const edges = edgeRows.map(r => ({
       source: r.source,
       target: r.target,
       attrs: JSON.parse(r.attrs) as EdgeAttrs,
@@ -268,17 +274,18 @@ export class SQLiteGraphStore implements GraphStore {
   // ==================== Subgraph / Serialization ====================
 
   async subgraph(nodeIds: string[]): Promise<SerializedGraph> {
-    const nodes: Array<{ id: string; attrs: NodeAttrs }> = []
+    const nodes: Array<{ id: string, attrs: NodeAttrs }> = []
     for (const id of nodeIds) {
       const attrs = await this.getNode(id)
-      if (attrs) nodes.push({ id, attrs })
+      if (attrs)
+        nodes.push({ id, attrs })
     }
 
     const placeholders = nodeIds.map(() => '?').join(',')
     const edgeRows = this.db
       .prepare(
         `SELECT source, target, attrs FROM edges
-         WHERE source IN (${placeholders}) AND target IN (${placeholders})`
+         WHERE source IN (${placeholders}) AND target IN (${placeholders})`,
       )
       .all(...nodeIds, ...nodeIds) as Array<{
       source: string
@@ -286,7 +293,7 @@ export class SQLiteGraphStore implements GraphStore {
       attrs: string
     }>
 
-    const edges = edgeRows.map((r) => ({
+    const edges = edgeRows.map(r => ({
       source: r.source,
       target: r.target,
       attrs: JSON.parse(r.attrs) as EdgeAttrs,
@@ -307,8 +314,8 @@ export class SQLiteGraphStore implements GraphStore {
     }>
 
     return {
-      nodes: nodeRows.map((r) => ({ id: r.id, attrs: JSON.parse(r.attrs) })),
-      edges: edgeRows.map((r) => ({
+      nodes: nodeRows.map(r => ({ id: r.id, attrs: JSON.parse(r.attrs) })),
+      edges: edgeRows.map(r => ({
         source: r.source,
         target: r.target,
         attrs: JSON.parse(r.attrs),
@@ -319,7 +326,7 @@ export class SQLiteGraphStore implements GraphStore {
   async import(data: SerializedGraph): Promise<void> {
     const insertNode = this.db.prepare('INSERT OR REPLACE INTO nodes (id, attrs) VALUES (?, ?)')
     const insertEdge = this.db.prepare(
-      'INSERT OR REPLACE INTO edges (source, target, type, attrs) VALUES (?, ?, ?, ?)'
+      'INSERT OR REPLACE INTO edges (source, target, type, attrs) VALUES (?, ?, ?, ?)',
     )
 
     const transaction = this.db.transaction(() => {

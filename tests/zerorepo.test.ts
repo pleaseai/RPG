@@ -1,7 +1,7 @@
-import { beforeEach, describe, expect, test } from 'vitest'
+import { beforeEach, describe, expect, it } from 'vitest'
 import { ZeroRepo } from '../src/zerorepo'
 
-describe('ZeroRepo', () => {
+describe('zeroRepo', () => {
   let zerorepo: ZeroRepo
 
   beforeEach(() => {
@@ -10,12 +10,12 @@ describe('ZeroRepo', () => {
     })
   })
 
-  test('creates ZeroRepo with spec', () => {
+  it('creates ZeroRepo with spec', () => {
     const zr = new ZeroRepo({ spec: 'test spec' })
     expect(zr).toBeDefined()
   })
 
-  test('creates ZeroRepo with custom options', () => {
+  it('creates ZeroRepo with custom options', () => {
     const zr = new ZeroRepo({
       spec: 'test spec',
       language: 'python',
@@ -24,21 +24,21 @@ describe('ZeroRepo', () => {
     expect(zr).toBeDefined()
   })
 
-  test('buildProposalGraph returns RPG', async () => {
+  it('buildProposalGraph returns RPG', async () => {
     const rpg = await zerorepo.buildProposalGraph()
 
     expect(rpg).toBeDefined()
     expect(rpg.getConfig().name).toBe('generated-repo')
   })
 
-  test('buildImplementationGraph accepts proposal graph', async () => {
+  it('buildImplementationGraph accepts proposal graph', async () => {
     const proposalGraph = await zerorepo.buildProposalGraph()
     const rpg = await zerorepo.buildImplementationGraph(proposalGraph)
 
     expect(rpg).toBeDefined()
   })
 
-  test('generateRepository returns result', async () => {
+  it('generateRepository returns result', async () => {
     const proposalGraph = await zerorepo.buildProposalGraph()
     const rpg = await zerorepo.buildImplementationGraph(proposalGraph)
     const result = await zerorepo.generateRepository(rpg, '/tmp/test-output')
@@ -49,8 +49,8 @@ describe('ZeroRepo', () => {
   })
 })
 
-describe('ZeroRepo Pipeline', () => {
-  test('full pipeline executes without error', async () => {
+describe('zeroRepo Pipeline', () => {
+  it('full pipeline executes without error', async () => {
     const zerorepo = new ZeroRepo({
       spec: 'A utility library for string manipulation',
       language: 'typescript',
@@ -67,7 +67,7 @@ describe('ZeroRepo Pipeline', () => {
     expect(result).toBeDefined()
   })
 
-  test('specification is stored in RPG description', async () => {
+  it('specification is stored in RPG description', async () => {
     const spec = 'A machine learning library'
     const zerorepo = new ZeroRepo({ spec })
 
@@ -76,19 +76,19 @@ describe('ZeroRepo Pipeline', () => {
   })
 })
 
-describe('ZeroRepo Options', () => {
-  test('default language is typescript', async () => {
+describe('zeroRepo Options', () => {
+  it('default language is typescript', async () => {
     const zerorepo = new ZeroRepo({ spec: 'test' })
     // Default options are applied internally
     expect(zerorepo).toBeDefined()
   })
 
-  test('generateTests defaults to true', async () => {
+  it('generateTests defaults to true', async () => {
     const zerorepo = new ZeroRepo({ spec: 'test' })
     expect(zerorepo).toBeDefined()
   })
 
-  test('accepts python language', () => {
+  it('accepts python language', () => {
     const zerorepo = new ZeroRepo({
       spec: 'test',
       language: 'python',
@@ -96,7 +96,7 @@ describe('ZeroRepo Options', () => {
     expect(zerorepo).toBeDefined()
   })
 
-  test('accepts generateTests false', () => {
+  it('accepts generateTests false', () => {
     const zerorepo = new ZeroRepo({
       spec: 'test',
       generateTests: false,

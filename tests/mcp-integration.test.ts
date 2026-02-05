@@ -1,11 +1,10 @@
-import { readFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { RepositoryPlanningGraph } from '../src/graph'
 import { createMcpServer, loadRPG } from '../src/mcp/server'
 import { executeExplore, executeFetch, executeSearch, executeStats } from '../src/mcp/tools'
 
-describe('MCP Integration Tests', () => {
+describe('mCP Integration Tests', () => {
   let rpg: RepositoryPlanningGraph
 
   beforeAll(async () => {
@@ -36,7 +35,7 @@ describe('MCP Integration Tests', () => {
     })
   })
 
-  describe('Full workflow integration', () => {
+  describe('full workflow integration', () => {
     it('should search, fetch, and explore in sequence', async () => {
       // Step 1: Search for math-related nodes
       const searchResult = await executeSearch(rpg, {
@@ -80,7 +79,7 @@ describe('MCP Integration Tests', () => {
     })
   })
 
-  describe('Graph traversal patterns', () => {
+  describe('graph traversal patterns', () => {
     it('should find all children of utils module', async () => {
       const result = await executeExplore(rpg, {
         startNode: 'utils',
@@ -90,7 +89,7 @@ describe('MCP Integration Tests', () => {
       })
 
       // utils has 2 children: math.ts and string.ts
-      const childIds = result.nodes.filter((n) => n.id !== 'utils').map((n) => n.id)
+      const childIds = result.nodes.filter(n => n.id !== 'utils').map(n => n.id)
       expect(childIds).toContain('utils/math.ts')
       expect(childIds).toContain('utils/string.ts')
     })
@@ -104,8 +103,8 @@ describe('MCP Integration Tests', () => {
       })
 
       const dependencyTargets = result.edges
-        .filter((e) => e.source === 'services/calculator.ts')
-        .map((e) => e.target)
+        .filter(e => e.source === 'services/calculator.ts')
+        .map(e => e.target)
       expect(dependencyTargets).toContain('utils/math.ts')
     })
 
@@ -118,20 +117,20 @@ describe('MCP Integration Tests', () => {
       })
 
       const dependents = result.edges
-        .filter((e) => e.target === 'utils/math.ts')
-        .map((e) => e.source)
+        .filter(e => e.target === 'utils/math.ts')
+        .map(e => e.source)
       expect(dependents).toContain('services/calculator.ts')
     })
   })
 
-  describe('Search modes', () => {
+  describe('search modes', () => {
     it('should find nodes by feature keywords', async () => {
       const result = await executeSearch(rpg, {
         mode: 'features',
         featureTerms: ['string', 'manipulation'],
       })
 
-      const ids = result.nodes.map((n) => n.id)
+      const ids = result.nodes.map(n => n.id)
       expect(ids).toContain('utils/string.ts')
     })
 
@@ -141,7 +140,7 @@ describe('MCP Integration Tests', () => {
         filePattern: 'services/.*',
       })
 
-      const ids = result.nodes.map((n) => n.id)
+      const ids = result.nodes.map(n => n.id)
       expect(ids).toContain('services/calculator.ts')
     })
 
@@ -157,7 +156,7 @@ describe('MCP Integration Tests', () => {
     })
   })
 
-  describe('Fetch entity details', () => {
+  describe('fetch entity details', () => {
     it('should return source code for low-level nodes', async () => {
       const result = await executeFetch(rpg, {
         codeEntities: ['utils/math.ts'],

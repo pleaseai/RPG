@@ -1,25 +1,25 @@
-import { RecordId, Surreal, Table } from 'surrealdb'
-import { createNodeEngines } from '@surrealdb/node'
 import type {
-  Edge,
-  FunctionalEdge,
   DependencyEdge,
-  Node,
+  Edge,
+  EdgeType,
+  FunctionalEdge,
   HighLevelNode,
   LowLevelNode,
-  EdgeType,
+  Node,
   StructuralMetadata,
 } from './index'
 import type { RPGConfig, SerializedRPG } from './rpg'
 import type {
+  EdgeFilter,
+  GraphStats,
   GraphStore,
   NodeFilter,
-  EdgeFilter,
+  SearchHit,
   TraverseOptions,
   TraverseResult,
-  SearchHit,
-  GraphStats,
 } from './store'
+import { createNodeEngines } from '@surrealdb/node'
+import { RecordId, Surreal, Table } from 'surrealdb'
 
 const SCHEMA = `
 DEFINE TABLE IF NOT EXISTS node SCHEMAFULL;
@@ -86,7 +86,8 @@ export class SurrealStore implements GraphStore {
 
   async getNode(id: string): Promise<Node | null> {
     const record = await this.db.select<NodeRecord>(new RecordId('node', id))
-    if (!record) return null
+    if (!record)
+      return null
     return this.recordToNode(record)
   }
 
@@ -99,23 +100,31 @@ export class SurrealStore implements GraphStore {
     const sets: Record<string, unknown> = {}
 
     if (updates.feature) {
-      if (updates.feature.description !== undefined) sets.feature_desc = updates.feature.description
-      if (updates.feature.keywords !== undefined) sets.feature_keywords = updates.feature.keywords
-      if (updates.feature.subFeatures !== undefined) sets.feature_sub = updates.feature.subFeatures
+      if (updates.feature.description !== undefined)
+        sets.feature_desc = updates.feature.description
+      if (updates.feature.keywords !== undefined)
+        sets.feature_keywords = updates.feature.keywords
+      if (updates.feature.subFeatures !== undefined)
+        sets.feature_sub = updates.feature.subFeatures
     }
     if (updates.metadata) {
-      if (updates.metadata.entityType !== undefined) sets.entity_type = updates.metadata.entityType
-      if (updates.metadata.path !== undefined) sets.path = updates.metadata.path
+      if (updates.metadata.entityType !== undefined)
+        sets.entity_type = updates.metadata.entityType
+      if (updates.metadata.path !== undefined)
+        sets.path = updates.metadata.path
       if (updates.metadata.qualifiedName !== undefined)
         sets.qualified_name = updates.metadata.qualifiedName
-      if (updates.metadata.startLine !== undefined) sets.line_start = updates.metadata.startLine
-      if (updates.metadata.endLine !== undefined) sets.line_end = updates.metadata.endLine
+      if (updates.metadata.startLine !== undefined)
+        sets.line_start = updates.metadata.startLine
+      if (updates.metadata.endLine !== undefined)
+        sets.line_end = updates.metadata.endLine
     }
 
-    if (Object.keys(sets).length === 0) return
+    if (Object.keys(sets).length === 0)
+      return
 
     // Build UPDATE ... SET query dynamically
-    const setParts = Object.keys(sets).map((key) => `${key} = $${key}`)
+    const setParts = Object.keys(sets).map(key => `${key} = $${key}`)
     await this.db
       .query(`UPDATE $id SET ${setParts.join(', ')}`, {
         id: new RecordId('node', id),
@@ -151,7 +160,7 @@ export class SurrealStore implements GraphStore {
     }
 
     const [rows] = await this.db.query<[NodeRecord[]]>(sql, bindings).collect()
-    return rows.map((r) => this.recordToNode(r))
+    return rows.map(r => this.recordToNode(r))
   }
 
   // ==================== Edge CRUD ====================
@@ -163,17 +172,25 @@ export class SurrealStore implements GraphStore {
     if (edge.type === 'functional') {
       const fEdge = edge as FunctionalEdge
       const data: Record<string, unknown> = {}
-      if (fEdge.level != null) data.level = fEdge.level
-      if (fEdge.siblingOrder != null) data.sibling_order = fEdge.siblingOrder
-      if (fEdge.weight != null) data.weight = fEdge.weight
+      if (fEdge.level != null)
+        data.level = fEdge.level
+      if (fEdge.siblingOrder != null)
+        data.sibling_order = fEdge.siblingOrder
+      if (fEdge.weight != null)
+        data.weight = fEdge.weight
       await this.db.relate(from, new Table('functional'), to, data)
-    } else {
+    }
+    else {
       const dEdge = edge as DependencyEdge
       const data: Record<string, unknown> = {}
-      if (dEdge.dependencyType) data.dep_type = dEdge.dependencyType
-      if (dEdge.isRuntime != null) data.is_runtime = dEdge.isRuntime
-      if (dEdge.line != null) data.dep_line = dEdge.line
-      if (dEdge.weight != null) data.weight = dEdge.weight
+      if (dEdge.dependencyType)
+        data.dep_type = dEdge.dependencyType
+      if (dEdge.isRuntime != null)
+        data.is_runtime = dEdge.isRuntime
+      if (dEdge.line != null)
+        data.dep_line = dEdge.line
+      if (dEdge.weight != null)
+        data.weight = dEdge.weight
       await this.db.relate(from, new Table('dependency'), to, data)
     }
   }
@@ -211,7 +228,7 @@ export class SurrealStore implements GraphStore {
       }
 
       const [rows] = await this.db.query<[EdgeRecord[]]>(sql, bindings).collect()
-      results.push(...rows.map((r) => this.recordToEdge(r, type)))
+      results.push(...rows.map(r => this.recordToEdge(r, type)))
     }
 
     return results
@@ -230,16 +247,17 @@ export class SurrealStore implements GraphStore {
   async getChildren(nodeId: string): Promise<Node[]> {
     // Query functional edges from this node, ordered by sibling_order
     const [refs] = await this.db
-      .query<[Array<{ out: RecordId | string; sibling_order: number | null }>]>(
+      .query<[Array<{ out: RecordId | string, sibling_order: number | null }>]>(
         'SELECT out, sibling_order FROM functional WHERE in = $id ORDER BY sibling_order',
-        { id: new RecordId('node', nodeId) }
+        { id: new RecordId('node', nodeId) },
       )
       .collect()
 
     const nodes: Node[] = []
     for (const ref of refs) {
       const node = await this.getNode(this.extractId(ref.out))
-      if (node) nodes.push(node)
+      if (node)
+        nodes.push(node)
     }
     return nodes
   }
@@ -248,12 +266,13 @@ export class SurrealStore implements GraphStore {
     const [refs] = await this.db
       .query<[Array<{ in: RecordId | string }>]>(
         'SELECT in FROM functional WHERE out = $id LIMIT 1',
-        { id: new RecordId('node', nodeId) }
+        { id: new RecordId('node', nodeId) },
       )
       .collect()
 
     const first = refs[0]
-    if (!first) return null
+    if (!first)
+      return null
     return this.getNode(this.extractId(first.in))
   }
 
@@ -267,7 +286,8 @@ export class SurrealStore implements GraphStore {
     const nodes: Node[] = []
     for (const ref of refs) {
       const node = await this.getNode(this.extractId(ref.out))
-      if (node) nodes.push(node)
+      if (node)
+        nodes.push(node)
     }
     return nodes
   }
@@ -282,7 +302,8 @@ export class SurrealStore implements GraphStore {
     const nodes: Node[] = []
     for (const ref of refs) {
       const node = await this.getNode(this.extractId(ref.in))
-      if (node) nodes.push(node)
+      if (node)
+        nodes.push(node)
     }
     return nodes
   }
@@ -294,7 +315,7 @@ export class SurrealStore implements GraphStore {
 
     const visited = new Set<string>([startNode])
     const nodes: Node[] = []
-    const edges: Array<{ source: string; target: string; type: string; depType?: string }> = []
+    const edges: Array<{ source: string, target: string, type: string, depType?: string }> = []
     let maxDepthReached = 0
     let frontier = [startNode]
 
@@ -303,7 +324,7 @@ export class SurrealStore implements GraphStore {
       const tables = edgeType === 'both' ? ['functional', 'dependency'] : [edgeType]
 
       for (const table of tables) {
-        const frontierIds = frontier.map((id) => new RecordId('node', id))
+        const frontierIds = frontier.map(id => new RecordId('node', id))
 
         if (direction === 'out' || direction === 'both') {
           const [outEdges] = await this.db
@@ -315,8 +336,8 @@ export class SurrealStore implements GraphStore {
           for (const edge of outEdges) {
             const targetId = this.extractId(edge.out)
             if (
-              !visited.has(targetId) &&
-              (!options.depTypeFilter || edge.dep_type === options.depTypeFilter)
+              !visited.has(targetId)
+              && (!options.depTypeFilter || edge.dep_type === options.depTypeFilter)
             ) {
               visited.add(targetId)
               nextFrontier.push(targetId)
@@ -340,8 +361,8 @@ export class SurrealStore implements GraphStore {
           for (const edge of inEdges) {
             const sourceId = this.extractId(edge.in)
             if (
-              !visited.has(sourceId) &&
-              (!options.depTypeFilter || edge.dep_type === options.depTypeFilter)
+              !visited.has(sourceId)
+              && (!options.depTypeFilter || edge.dep_type === options.depTypeFilter)
             ) {
               visited.add(sourceId)
               nextFrontier.push(sourceId)
@@ -359,7 +380,7 @@ export class SurrealStore implements GraphStore {
       if (nextFrontier.length > 0) {
         maxDepthReached = depth
         // Batch fetch all new nodes
-        const newNodeIds = nextFrontier.map((id) => new RecordId('node', id))
+        const newNodeIds = nextFrontier.map(id => new RecordId('node', id))
         const [newNodes] = await this.db
           .query<[NodeRecord[]]>('SELECT * FROM node WHERE id IN $ids', { ids: newNodeIds })
           .collect()
@@ -388,16 +409,17 @@ export class SurrealStore implements GraphStore {
 
       while (queue.length > 0) {
         const batch = queue.splice(0, queue.length)
-        const batchIds = batch.filter((id) => !subtreeIds.has(id))
+        const batchIds = batch.filter(id => !subtreeIds.has(id))
         for (const id of batchIds) subtreeIds.add(id)
 
-        if (batchIds.length === 0) break
+        if (batchIds.length === 0)
+          break
 
-        const batchRids = batchIds.map((id) => new RecordId('node', id))
+        const batchRids = batchIds.map(id => new RecordId('node', id))
         const [childRefs] = await this.db
           .query<[Array<{ out: RecordId | string }>]>(
             'SELECT out FROM functional WHERE in IN $ids',
-            { ids: batchRids }
+            { ids: batchRids },
           )
           .collect()
 
@@ -409,19 +431,20 @@ export class SurrealStore implements GraphStore {
         }
       }
 
-      if (subtreeIds.size === 0) return []
+      if (subtreeIds.size === 0)
+        return []
 
-      const subtreeRids = [...subtreeIds].map((id) => new RecordId('node', id))
+      const subtreeRids = [...subtreeIds].map(id => new RecordId('node', id))
       const [rows] = await this.db
         .query<[Array<NodeRecord & { score: number }>]>(
           `SELECT *, search::score(1) AS score FROM node
            WHERE feature_desc @1@ $query AND id IN $ids
            ORDER BY score DESC LIMIT 50`,
-          { query, ids: subtreeRids }
+          { query, ids: subtreeRids },
         )
         .collect()
 
-      return rows.map((r) => ({
+      return rows.map(r => ({
         node: this.recordToNode(r),
         score: r.score,
       }))
@@ -432,11 +455,11 @@ export class SurrealStore implements GraphStore {
         `SELECT *, search::score(1) AS score FROM node
          WHERE feature_desc @1@ $query
          ORDER BY score DESC LIMIT 50`,
-        { query }
+        { query },
       )
       .collect()
 
-    return rows.map((r) => ({
+    return rows.map(r => ({
       node: this.recordToNode(r),
       score: r.score,
     }))
@@ -449,7 +472,7 @@ export class SurrealStore implements GraphStore {
 
     // Convert glob pattern to regex and filter in application code
     const regex = new RegExp(pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*'))
-    return rows.filter((r) => r.path && regex.test(r.path)).map((r) => this.recordToNode(r))
+    return rows.filter(r => r.path && regex.test(r.path)).map(r => this.recordToNode(r))
   }
 
   // ==================== Ordering ====================
@@ -479,21 +502,24 @@ export class SurrealStore implements GraphStore {
     // BFS from nodes with in-degree 0
     const queue: string[] = []
     for (const [id, deg] of inDegree) {
-      if (deg === 0) queue.push(id)
+      if (deg === 0)
+        queue.push(id)
     }
 
     const ordered: Node[] = []
-    const nodeMap = new Map(allNodes.map((r) => [this.extractId(r.id), this.recordToNode(r)]))
+    const nodeMap = new Map(allNodes.map(r => [this.extractId(r.id), this.recordToNode(r)]))
 
     while (queue.length > 0) {
       const nodeId = queue.shift()!
       const node = nodeMap.get(nodeId)
-      if (node) ordered.push(node)
+      if (node)
+        ordered.push(node)
 
       for (const neighbor of adjList.get(nodeId) ?? []) {
         const newDegree = (inDegree.get(neighbor) ?? 1) - 1
         inDegree.set(neighbor, newDegree)
-        if (newDegree === 0) queue.push(neighbor)
+        if (newDegree === 0)
+          queue.push(neighbor)
       }
     }
 
@@ -505,19 +531,19 @@ export class SurrealStore implements GraphStore {
   async getStats(): Promise<GraphStats> {
     const [nodeCount, funcCount, depCount, hlCount, llCount] = await this.db
       .query<
-        [
-          Array<{ count: number }>,
-          Array<{ count: number }>,
-          Array<{ count: number }>,
-          Array<{ count: number }>,
-          Array<{ count: number }>,
-        ]
-      >(
+      [
+        Array<{ count: number }>,
+        Array<{ count: number }>,
+        Array<{ count: number }>,
+        Array<{ count: number }>,
+        Array<{ count: number }>,
+      ]
+    >(
         `SELECT count() AS count FROM node GROUP ALL;
          SELECT count() AS count FROM functional GROUP ALL;
          SELECT count() AS count FROM dependency GROUP ALL;
          SELECT count() AS count FROM node WHERE type = 'high_level' GROUP ALL;
-         SELECT count() AS count FROM node WHERE type = 'low_level' GROUP ALL;`
+         SELECT count() AS count FROM node WHERE type = 'low_level' GROUP ALL;`,
       )
       .collect()
 
@@ -580,8 +606,8 @@ export class SurrealStore implements GraphStore {
       subFeatures: record.feature_sub ?? undefined,
     }
 
-    const metadata =
-      record.entity_type || record.path
+    const metadata
+      = record.entity_type || record.path
         ? {
             entityType: (record.entity_type as StructuralMetadata['entityType']) ?? undefined,
             path: record.path ?? undefined,
@@ -618,15 +644,24 @@ export class SurrealStore implements GraphStore {
       feature_desc: node.feature.description,
     }
 
-    if (node.feature.keywords) content.feature_keywords = node.feature.keywords
-    if (node.feature.subFeatures) content.feature_sub = node.feature.subFeatures
-    if (node.metadata?.entityType) content.entity_type = node.metadata.entityType
-    if (node.metadata?.path) content.path = node.metadata.path
-    if (node.metadata?.qualifiedName) content.qualified_name = node.metadata.qualifiedName
-    if (node.metadata?.language) content.language = node.metadata.language
-    if (node.metadata?.startLine != null) content.line_start = node.metadata.startLine
-    if (node.metadata?.endLine != null) content.line_end = node.metadata.endLine
-    if (node.metadata?.extra) content.extra = node.metadata.extra
+    if (node.feature.keywords)
+      content.feature_keywords = node.feature.keywords
+    if (node.feature.subFeatures)
+      content.feature_sub = node.feature.subFeatures
+    if (node.metadata?.entityType)
+      content.entity_type = node.metadata.entityType
+    if (node.metadata?.path)
+      content.path = node.metadata.path
+    if (node.metadata?.qualifiedName)
+      content.qualified_name = node.metadata.qualifiedName
+    if (node.metadata?.language)
+      content.language = node.metadata.language
+    if (node.metadata?.startLine != null)
+      content.line_start = node.metadata.startLine
+    if (node.metadata?.endLine != null)
+      content.line_end = node.metadata.endLine
+    if (node.metadata?.extra)
+      content.extra = node.metadata.extra
 
     if (node.type === 'high_level' && (node as HighLevelNode).directoryPath) {
       content.directory_path = (node as HighLevelNode).directoryPath
@@ -658,11 +693,11 @@ export class SurrealStore implements GraphStore {
       target,
       type: 'dependency' as const,
       dependencyType: (record.dep_type ?? 'use') as
-        | 'import'
-        | 'call'
-        | 'inherit'
-        | 'implement'
-        | 'use',
+      | 'import'
+      | 'call'
+      | 'inherit'
+      | 'implement'
+      | 'use',
       isRuntime: record.is_runtime ?? undefined,
       line: record.dep_line ?? undefined,
       weight: record.weight ?? undefined,

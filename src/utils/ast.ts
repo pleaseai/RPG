@@ -39,7 +39,7 @@ export interface ParseResult {
   /** Extracted entities */
   entities: CodeEntity[]
   /** Import statements */
-  imports: Array<{ module: string; names: string[] }>
+  imports: Array<{ module: string, names: string[] }>
   /** Parsing errors */
   errors: string[]
 }
@@ -181,7 +181,7 @@ export class ASTParser {
     try {
       // Set language parser
       this.parser.setLanguage(
-        config.parser as unknown as Parameters<typeof this.parser.setLanguage>[0]
+        config.parser as unknown as Parameters<typeof this.parser.setLanguage>[0],
       )
 
       // Parse the source
@@ -199,7 +199,8 @@ export class ASTParser {
 
       // Extract entities and imports
       this.extractFromNode(tree.rootNode, source, config, result)
-    } catch (error) {
+    }
+    catch (error) {
       result.errors.push(`Parse error: ${error instanceof Error ? error.message : String(error)}`)
     }
 
@@ -223,7 +224,7 @@ export class ASTParser {
     node: Parser.SyntaxNode,
     source: string,
     config: LanguageConfig,
-    result: ParseResult
+    result: ParseResult,
   ): void {
     const nodeType = node.type
 
@@ -256,10 +257,11 @@ export class ASTParser {
   private extractEntity(
     node: Parser.SyntaxNode,
     source: string,
-    entityType: CodeEntity['type']
+    entityType: CodeEntity['type'],
   ): CodeEntity | null {
     const name = this.extractEntityName(node, entityType)
-    if (!name) return null
+    if (!name)
+      return null
 
     const entity: CodeEntity = {
       type: entityType,
@@ -294,7 +296,7 @@ export class ASTParser {
    */
   private extractEntityName(
     node: Parser.SyntaxNode,
-    _entityType: CodeEntity['type']
+    _entityType: CodeEntity['type'],
   ): string | null {
     // For arrow functions assigned to variables
     if (node.type === 'arrow_function') {
@@ -328,7 +330,8 @@ export class ASTParser {
    */
   private extractParameters(node: Parser.SyntaxNode): string[] {
     const paramsNode = node.childForFieldName('parameters')
-    if (!paramsNode) return []
+    if (!paramsNode)
+      return []
 
     const params: string[] = []
     for (const child of paramsNode.children) {
@@ -345,11 +348,14 @@ export class ASTParser {
    */
   private extractParameterName(child: Parser.SyntaxNode): string | null {
     const validTypes = ['identifier', 'required_parameter', 'optional_parameter']
-    if (!validTypes.includes(child.type)) return null
+    if (!validTypes.includes(child.type))
+      return null
 
     const nameNode = child.childForFieldName('pattern') ?? child.childForFieldName('name')
-    if (nameNode) return nameNode.text
-    if (child.type === 'identifier') return child.text
+    if (nameNode)
+      return nameNode.text
+    if (child.type === 'identifier')
+      return child.text
     return null
   }
 
@@ -385,8 +391,8 @@ export class ASTParser {
   private extractImport(
     node: Parser.SyntaxNode,
     _source: string,
-    language: string
-  ): { module: string; names: string[] } | null {
+    language: string,
+  ): { module: string, names: string[] } | null {
     if (language === 'python') {
       return this.extractPythonImport(node)
     }
@@ -396,9 +402,10 @@ export class ASTParser {
   /**
    * Extract JavaScript/TypeScript import
    */
-  private extractJSImport(node: Parser.SyntaxNode): { module: string; names: string[] } | null {
+  private extractJSImport(node: Parser.SyntaxNode): { module: string, names: string[] } | null {
     const sourceNode = node.childForFieldName('source')
-    if (!sourceNode) return null
+    if (!sourceNode)
+      return null
 
     const module = sourceNode.text.replace(/['"]/g, '')
     const names: string[] = []
@@ -419,9 +426,11 @@ export class ASTParser {
     for (const child of clause.children) {
       if (child.type === 'identifier') {
         names.push(child.text)
-      } else if (child.type === 'named_imports') {
+      }
+      else if (child.type === 'named_imports') {
         this.extractNamedImports(child, names)
-      } else if (child.type === 'namespace_import') {
+      }
+      else if (child.type === 'namespace_import') {
         this.extractNamespaceImport(child, names)
       }
     }
@@ -445,7 +454,7 @@ export class ASTParser {
    * Extract namespace import (* as name)
    */
   private extractNamespaceImport(node: Parser.SyntaxNode, names: string[]): void {
-    const nameNode = node.children.find((c) => c.type === 'identifier')
+    const nameNode = node.children.find(c => c.type === 'identifier')
     if (nameNode) {
       names.push(`* as ${nameNode.text}`)
     }
@@ -454,7 +463,7 @@ export class ASTParser {
   /**
    * Extract Python import
    */
-  private extractPythonImport(node: Parser.SyntaxNode): { module: string; names: string[] } | null {
+  private extractPythonImport(node: Parser.SyntaxNode): { module: string, names: string[] } | null {
     if (node.type === 'import_statement') {
       return this.extractPythonBasicImport(node)
     }
@@ -468,8 +477,8 @@ export class ASTParser {
    * Extract Python basic import (import os, sys)
    */
   private extractPythonBasicImport(
-    node: Parser.SyntaxNode
-  ): { module: string; names: string[] } | null {
+    node: Parser.SyntaxNode,
+  ): { module: string, names: string[] } | null {
     const names: string[] = []
     let module = ''
 
@@ -487,17 +496,19 @@ export class ASTParser {
    * Extract Python from import (from module import name1, name2)
    */
   private extractPythonFromImport(
-    node: Parser.SyntaxNode
-  ): { module: string; names: string[] } | null {
+    node: Parser.SyntaxNode,
+  ): { module: string, names: string[] } | null {
     const moduleNode = node.childForFieldName('module_name')
     const module = moduleNode?.text ?? ''
-    if (!module) return null
+    if (!module)
+      return null
 
     const names: string[] = []
     for (const child of node.children) {
       if (child.type === 'dotted_name' && child !== moduleNode) {
         names.push(child.text)
-      } else if (child.type === 'aliased_import') {
+      }
+      else if (child.type === 'aliased_import') {
         const nameNode = child.childForFieldName('name')
         if (nameNode) {
           names.push(nameNode.text)

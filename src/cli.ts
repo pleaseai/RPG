@@ -20,7 +20,7 @@ program
   .option('-i, --include <patterns...>', 'Include file patterns (default: **/*.ts,**/*.js,**/*.py)')
   .option(
     '-e, --exclude <patterns...>',
-    'Exclude file patterns (default: **/node_modules/**,**/dist/**)'
+    'Exclude file patterns (default: **/node_modules/**,**/dist/**)',
   )
   .option('-d, --max-depth <depth>', 'Maximum directory depth', '10')
   .option('--verbose', 'Show detailed progress')
@@ -34,15 +34,15 @@ program
         exclude?: string[]
         maxDepth: string
         verbose?: boolean
-      }
+      },
     ) => {
       console.log(`Encoding repository: ${repoPath}`)
       if (options.verbose) {
         console.log(
-          `  Include patterns: ${options.include?.join(', ') || '**/*.ts,**/*.js,**/*.py'}`
+          `  Include patterns: ${options.include?.join(', ') || '**/*.ts,**/*.js,**/*.py'}`,
         )
         console.log(
-          `  Exclude patterns: ${options.exclude?.join(', ') || '**/node_modules/**,**/dist/**'}`
+          `  Exclude patterns: ${options.exclude?.join(', ') || '**/node_modules/**,**/dist/**'}`,
         )
         console.log(`  Max depth: ${options.maxDepth}`)
       }
@@ -75,7 +75,7 @@ program
         console.log(`    Functional: ${stats.functionalEdgeCount}`)
         console.log(`    Dependency: ${stats.dependencyEdgeCount}`)
       }
-    }
+    },
   )
 
 // Generate command
@@ -86,7 +86,7 @@ program
   .option('-f, --spec-file <file>', 'Specification file')
   .option('-o, --output <dir>', 'Output directory', './generated')
   .option('--no-tests', 'Skip test generation')
-  .action(async (options: { spec?: string; specFile?: string; output: string; tests: boolean }) => {
+  .action(async (options: { spec?: string, specFile?: string, output: string, tests: boolean }) => {
     let spec = options.spec
 
     if (options.specFile) {
@@ -125,7 +125,7 @@ program
   .option('-t, --term <term>', 'Search term')
   .option('-m, --mode <mode>', 'Search mode (features, snippets, auto)', 'auto')
   .option('-p, --pattern <pattern>', 'File pattern for snippet search')
-  .action(async (options: { rpg: string; term?: string; mode: string; pattern?: string }) => {
+  .action(async (options: { rpg: string, term?: string, mode: string, pattern?: string }) => {
     const file = Bun.file(options.rpg)
     const json = await file.text()
     const rpg = await RepositoryPlanningGraph.fromJSON(json)
@@ -189,7 +189,7 @@ program
   .action(
     async (
       node: string,
-      options: { rpg: string; edgeType: string; depth: string; direction: string }
+      options: { rpg: string, edgeType: string, depth: string, direction: string },
     ) => {
       const file = Bun.file(options.rpg)
       const json = await file.text()
@@ -212,7 +212,7 @@ program
       for (const n of results.nodes) {
         console.log(`  - ${n.id}: ${n.feature.description}`)
       }
-    }
+    },
   )
 
 // Evolve command
@@ -221,7 +221,7 @@ program
   .description('Update RPG with new commits')
   .requiredOption('--rpg <file>', 'RPG file path')
   .option('-c, --commits <range>', 'Commit range', 'HEAD~1..HEAD')
-  .action(async (options: { rpg: string; commits: string }) => {
+  .action(async (options: { rpg: string, commits: string }) => {
     console.log(`Evolving RPG with commits: ${options.commits}`)
     // TODO: Implement evolution
     console.log('Evolution not yet implemented')

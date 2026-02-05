@@ -1,25 +1,25 @@
+export type { ContextStore } from './context-store'
 // Store interfaces (generic, domain-agnostic)
 export type { GraphStore } from './graph-store'
 export type { TextSearchStore } from './text-search-store'
-export type { VectorStore } from './vector-store'
-export type { ContextStore } from './context-store'
-
 // Shared types
 export type {
-  NodeAttrs,
+  ContextStoreConfig,
   EdgeAttrs,
-  SerializedGraph,
-  NodeFilter,
   EdgeFilter,
+  Lifecycle,
+  NodeAttrs,
+  NodeFilter,
+  SerializedGraph,
+  TextSearchOpts,
+  TextSearchResult,
   TraverseOpts,
   TraverseResult,
   VectorSearchOpts,
   VectorSearchResult,
-  TextSearchOpts,
-  TextSearchResult,
-  Lifecycle,
-  ContextStoreConfig,
 } from './types'
+
+export type { VectorStore } from './vector-store'
 
 // Store implementations — import directly to avoid transitive deps:
 //   import { SQLiteGraphStore } from './store/sqlite'

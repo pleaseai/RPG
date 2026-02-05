@@ -1,11 +1,13 @@
+import type { SemanticSearch } from '../encoder/semantic-search'
+import type { RepositoryPlanningGraph } from '../graph'
+import type { ExploreEdgeType } from '../tools/explore'
+import type { SearchMode, SearchStrategy } from '../tools/search'
 import { writeFile } from 'node:fs/promises'
 import { z } from 'zod'
 import { RPGEncoder } from '../encoder/encoder'
-import type { SemanticSearch } from '../encoder/semantic-search'
-import type { RepositoryPlanningGraph } from '../graph'
-import { type ExploreEdgeType, ExploreRPG } from '../tools/explore'
+import { ExploreRPG } from '../tools/explore'
 import { FetchNode } from '../tools/fetch'
-import { type SearchMode, SearchNode, type SearchStrategy } from '../tools/search'
+import { SearchNode } from '../tools/search'
 import { encodeFailedError, nodeNotFoundError, rpgNotLoadedError } from './errors'
 
 /**
@@ -19,7 +21,7 @@ export const SearchInputSchema = z.object({
     .enum(['hybrid', 'vector', 'fts', 'string'])
     .optional()
     .describe(
-      'Search strategy for feature search. Defaults to hybrid when semantic search is available.'
+      'Search strategy for feature search. Defaults to hybrid when semantic search is available.',
     ),
 })
 
@@ -37,10 +39,10 @@ export const FetchInputBaseSchema = z.object({
  * Input schema for rpg_fetch tool with validation
  */
 export const FetchInputSchema = FetchInputBaseSchema.refine(
-  (data) => (data.codeEntities?.length ?? 0) > 0 || (data.featureEntities?.length ?? 0) > 0,
+  data => (data.codeEntities?.length ?? 0) > 0 || (data.featureEntities?.length ?? 0) > 0,
   {
     message: 'At least one of codeEntities or featureEntities must be provided',
-  }
+  },
 )
 
 export type FetchInput = z.infer<typeof FetchInputSchema>
@@ -117,7 +119,7 @@ export const RPG_TOOLS = {
 export async function executeSearch(
   rpg: RepositoryPlanningGraph | null,
   input: SearchInput,
-  semanticSearch?: SemanticSearch | null
+  semanticSearch?: SemanticSearch | null,
 ) {
   if (!rpg) {
     throw rpgNotLoadedError()
@@ -132,7 +134,7 @@ export async function executeSearch(
   })
 
   return {
-    nodes: result.nodes.map((node) => ({
+    nodes: result.nodes.map(node => ({
       id: node.id,
       type: node.type,
       feature: node.feature,
@@ -158,7 +160,7 @@ export async function executeFetch(rpg: RepositoryPlanningGraph | null, input: F
   })
 
   return {
-    entities: result.entities.map((entity) => ({
+    entities: result.entities.map(entity => ({
       node: {
         id: entity.node.id,
         type: entity.node.type,
@@ -194,7 +196,7 @@ export async function executeExplore(rpg: RepositoryPlanningGraph | null, input:
   })
 
   return {
-    nodes: result.nodes.map((node) => ({
+    nodes: result.nodes.map(node => ({
       id: node.id,
       type: node.type,
       feature: node.feature,
@@ -229,7 +231,8 @@ export async function executeEncode(input: EncodeInput) {
       duration: result.duration,
       rpgPath,
     }
-  } catch (error) {
+  }
+  catch (error) {
     throw encodeFailedError(error instanceof Error ? error.message : String(error))
   }
 }

@@ -1,7 +1,7 @@
-import { generateText } from 'ai'
-import { createOpenAI } from '@ai-sdk/openai'
 import { createAnthropic } from '@ai-sdk/anthropic'
 import { createGoogleGenerativeAI } from '@ai-sdk/google'
+import { createOpenAI } from '@ai-sdk/openai'
+import { generateText } from 'ai'
 
 /**
  * LLM provider type
@@ -140,9 +140,9 @@ export class LLMClient {
   async completeJSON<T>(prompt: string, systemPrompt?: string): Promise<T> {
     const response = await this.complete(prompt, systemPrompt)
     // Extract JSON from response (handle markdown code blocks)
-    const jsonMatch =
-      response.content.match(/```(?:json)?\s*([\s\S]*?)```/) ||
-      response.content.match(/\{[\s\S]*\}/)
+    const jsonMatch
+      = response.content.match(/```(?:json)?\s*([\s\S]*?)```/)
+        || response.content.match(/\{[\s\S]*\}/)
 
     if (!jsonMatch) {
       throw new Error('No JSON found in response')

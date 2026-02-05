@@ -1,24 +1,24 @@
-import Database from 'better-sqlite3'
 import type {
-  Edge,
-  FunctionalEdge,
   DependencyEdge,
-  Node,
+  Edge,
+  EdgeType,
+  FunctionalEdge,
   HighLevelNode,
   LowLevelNode,
-  EdgeType,
+  Node,
   StructuralMetadata,
 } from './index'
 import type { RPGConfig, SerializedRPG } from './rpg'
 import type {
+  EdgeFilter,
+  GraphStats,
   GraphStore,
   NodeFilter,
-  EdgeFilter,
+  SearchHit,
   TraverseOptions,
   TraverseResult,
-  SearchHit,
-  GraphStats,
 } from './store'
+import Database from 'better-sqlite3'
 
 type BindValue = string | number | null | undefined
 
@@ -132,7 +132,7 @@ export class SQLiteStore implements GraphStore {
       node.metadata?.endLine ?? null,
       node.type === 'high_level' ? ((node as HighLevelNode).directoryPath ?? null) : null,
       node.type === 'low_level' ? ((node as LowLevelNode).sourceCode ?? null) : null,
-      node.metadata?.extra ? JSON.stringify(node.metadata.extra) : null
+      node.metadata?.extra ? JSON.stringify(node.metadata.extra) : null,
     )
   }
 
@@ -187,7 +187,8 @@ export class SQLiteStore implements GraphStore {
       }
     }
 
-    if (sets.length === 0) return
+    if (sets.length === 0)
+      return
 
     sets.push('updated_at = unixepoch()')
     values.push(id)
@@ -222,7 +223,7 @@ export class SQLiteStore implements GraphStore {
     }
 
     const rows = this.db.prepare(sql).all(...values) as NodeRow[]
-    return rows.map((r) => this.rowToNode(r))
+    return rows.map(r => this.rowToNode(r))
   }
 
   // ==================== Edge CRUD ====================
@@ -241,7 +242,7 @@ export class SQLiteStore implements GraphStore {
       edge.type === 'dependency' ? ((edge as DependencyEdge).dependencyType ?? null) : null,
       edge.type === 'dependency' ? ((edge as DependencyEdge).isRuntime ? 1 : 0) : null,
       edge.type === 'dependency' ? ((edge as DependencyEdge).line ?? null) : null,
-      edge.weight ?? null
+      edge.weight ?? null,
     )
   }
 
@@ -274,18 +275,20 @@ export class SQLiteStore implements GraphStore {
     }
 
     const rows = this.db.prepare(sql).all(...values) as EdgeRow[]
-    return rows.map((r) => this.rowToEdge(r))
+    return rows.map(r => this.rowToEdge(r))
   }
 
   async getOutEdges(nodeId: string, type?: EdgeType): Promise<Edge[]> {
     const filter: EdgeFilter = { source: nodeId }
-    if (type) filter.type = type
+    if (type)
+      filter.type = type
     return this.getEdges(filter)
   }
 
   async getInEdges(nodeId: string, type?: EdgeType): Promise<Edge[]> {
     const filter: EdgeFilter = { target: nodeId }
-    if (type) filter.type = type
+    if (type)
+      filter.type = type
     return this.getEdges(filter)
   }
 
@@ -297,10 +300,10 @@ export class SQLiteStore implements GraphStore {
         `SELECT n.* FROM nodes n
          JOIN edges e ON e.target = n.id
          WHERE e.source = ? AND e.type = 'functional'
-         ORDER BY e.sibling_order`
+         ORDER BY e.sibling_order`,
       )
       .all(nodeId) as NodeRow[]
-    return rows.map((r) => this.rowToNode(r))
+    return rows.map(r => this.rowToNode(r))
   }
 
   async getParent(nodeId: string): Promise<Node | null> {
@@ -309,7 +312,7 @@ export class SQLiteStore implements GraphStore {
         `SELECT n.* FROM nodes n
          JOIN edges e ON e.source = n.id
          WHERE e.target = ? AND e.type = 'functional'
-         LIMIT 1`
+         LIMIT 1`,
       )
       .get(nodeId) as NodeRow | undefined
     return row ? this.rowToNode(row) : null
@@ -320,10 +323,10 @@ export class SQLiteStore implements GraphStore {
       .prepare(
         `SELECT n.* FROM nodes n
          JOIN edges e ON e.target = n.id
-         WHERE e.source = ? AND e.type = 'dependency'`
+         WHERE e.source = ? AND e.type = 'dependency'`,
       )
       .all(nodeId) as NodeRow[]
-    return rows.map((r) => this.rowToNode(r))
+    return rows.map(r => this.rowToNode(r))
   }
 
   async getDependents(nodeId: string): Promise<Node[]> {
@@ -331,10 +334,10 @@ export class SQLiteStore implements GraphStore {
       .prepare(
         `SELECT n.* FROM nodes n
          JOIN edges e ON e.source = n.id
-         WHERE e.target = ? AND e.type = 'dependency'`
+         WHERE e.target = ? AND e.type = 'dependency'`,
       )
       .all(nodeId) as NodeRow[]
-    return rows.map((r) => this.rowToNode(r))
+    return rows.map(r => this.rowToNode(r))
   }
 
   // ==================== Deep Traversal ====================
@@ -343,21 +346,25 @@ export class SQLiteStore implements GraphStore {
     const { startNode, edgeType, direction, maxDepth } = options
 
     const edgeTypeConditions: string[] = []
-    if (edgeType === 'functional' || edgeType === 'both') edgeTypeConditions.push("'functional'")
-    if (edgeType === 'dependency' || edgeType === 'both') edgeTypeConditions.push("'dependency'")
+    if (edgeType === 'functional' || edgeType === 'both')
+      edgeTypeConditions.push('\'functional\'')
+    if (edgeType === 'dependency' || edgeType === 'both')
+      edgeTypeConditions.push('\'dependency\'')
     const edgeTypeIn = edgeTypeConditions.join(', ')
 
     let directionClause: string
     if (direction === 'out') {
       directionClause = 'e.source = t.node_id'
-    } else if (direction === 'in') {
+    }
+    else if (direction === 'in') {
       directionClause = 'e.target = t.node_id'
-    } else {
+    }
+    else {
       directionClause = '(e.source = t.node_id OR e.target = t.node_id)'
     }
 
-    const nextNodeExpr =
-      direction === 'in'
+    const nextNodeExpr
+      = direction === 'in'
         ? 'e.source'
         : direction === 'out'
           ? 'e.target'
@@ -393,19 +400,21 @@ export class SQLiteStore implements GraphStore {
     let maxDepthReached = 0
     for (const row of traversalRows) {
       const node = await this.getNode(row.node_id)
-      if (node) nodes.push(node)
-      if (row.depth > maxDepthReached) maxDepthReached = row.depth
+      if (node)
+        nodes.push(node)
+      if (row.depth > maxDepthReached)
+        maxDepthReached = row.depth
     }
 
     // Collect edges between discovered nodes
-    const nodeIds = new Set([startNode, ...traversalRows.map((r) => r.node_id)])
+    const nodeIds = new Set([startNode, ...traversalRows.map(r => r.node_id)])
     const placeholders = [...nodeIds].map(() => '?').join(',')
     const edgeRows = this.db
       .prepare(
         `SELECT source, target, type, dep_type FROM edges
          WHERE source IN (${placeholders})
            AND target IN (${placeholders})
-           AND type IN (${edgeTypeIn})`
+           AND type IN (${edgeTypeIn})`,
       )
       .all(...nodeIds, ...nodeIds) as Array<{
       source: string
@@ -414,7 +423,7 @@ export class SQLiteStore implements GraphStore {
       dep_type: string | null
     }>
 
-    const edges = edgeRows.map((r) => ({
+    const edges = edgeRows.map(r => ({
       source: r.source,
       target: r.target,
       type: r.type,
@@ -428,7 +437,8 @@ export class SQLiteStore implements GraphStore {
 
   async searchByFeature(query: string, scopes?: string[]): Promise<SearchHit[]> {
     const ftsQuery = this.toFtsQuery(query)
-    if (!ftsQuery) return []
+    if (!ftsQuery)
+      return []
 
     let sql: string
     const params: BindValue[] = []
@@ -453,7 +463,8 @@ export class SQLiteStore implements GraphStore {
         LIMIT 50
       `
       params.push(...scopes, ftsQuery)
-    } else {
+    }
+    else {
       sql = `
         SELECT n.*, rank
         FROM nodes_fts
@@ -466,7 +477,7 @@ export class SQLiteStore implements GraphStore {
     }
 
     const rows = this.db.prepare(sql).all(...params) as Array<NodeRow & { rank: number }>
-    return rows.map((r) => ({
+    return rows.map(r => ({
       node: this.rowToNode(r),
       score: -r.rank, // FTS5 rank is negative (lower = better)
     }))
@@ -482,11 +493,12 @@ export class SQLiteStore implements GraphStore {
    */
   private toFtsQuery(query: string): string | null {
     // Extract alphanumeric words, discard punctuation
-    const words = query.match(/[a-zA-Z0-9_]+/g)
-    if (!words || words.length === 0) return null
+    const words = query.match(/\w+/g)
+    if (!words || words.length === 0)
+      return null
     // Restrict to feature columns, prefix match each word
     const cols = '{feature_desc feature_keywords}'
-    return words.map((w) => `${cols} : "${w}" *`).join(' OR ')
+    return words.map(w => `${cols} : "${w}" *`).join(' OR ')
   }
 
   async searchByPath(pattern: string): Promise<Node[]> {
@@ -498,7 +510,7 @@ export class SQLiteStore implements GraphStore {
     const rows = this.db
       .prepare('SELECT * FROM nodes WHERE path LIKE ?')
       .all(likePattern) as NodeRow[]
-    return rows.map((r) => this.rowToNode(r))
+    return rows.map(r => this.rowToNode(r))
   }
 
   // ==================== Ordering ====================
@@ -521,10 +533,10 @@ export class SQLiteStore implements GraphStore {
         SELECT DISTINCT n.*
         FROM topo t
         JOIN nodes n ON n.id = t.id
-        ORDER BY t.ord DESC`
+        ORDER BY t.ord DESC`,
       )
       .all() as NodeRow[]
-    return rows.map((r) => this.rowToNode(r))
+    return rows.map(r => this.rowToNode(r))
   }
 
   // ==================== Statistics ====================
@@ -538,7 +550,7 @@ export class SQLiteStore implements GraphStore {
           (SELECT COUNT(*) FROM nodes WHERE type = 'high_level') as highLevelNodeCount,
           (SELECT COUNT(*) FROM nodes WHERE type = 'low_level') as lowLevelNodeCount,
           (SELECT COUNT(*) FROM edges WHERE type = 'functional') as functionalEdgeCount,
-          (SELECT COUNT(*) FROM edges WHERE type = 'dependency') as dependencyEdgeCount`
+          (SELECT COUNT(*) FROM edges WHERE type = 'dependency') as dependencyEdgeCount`,
       )
       .get() as GraphStats
     return counts
@@ -576,7 +588,7 @@ export class SQLiteStore implements GraphStore {
           node.metadata?.endLine ?? null,
           node.type === 'high_level' ? ((node as HighLevelNode).directoryPath ?? null) : null,
           node.type === 'low_level' ? ((node as LowLevelNode).sourceCode ?? null) : null,
-          node.metadata?.extra ? JSON.stringify(node.metadata.extra) : null
+          node.metadata?.extra ? JSON.stringify(node.metadata.extra) : null,
         )
       }
 
@@ -591,7 +603,7 @@ export class SQLiteStore implements GraphStore {
           edge.type === 'dependency' ? ((edge as DependencyEdge).dependencyType ?? null) : null,
           edge.type === 'dependency' ? ((edge as DependencyEdge).isRuntime ? 1 : 0) : null,
           edge.type === 'dependency' ? ((edge as DependencyEdge).line ?? null) : null,
-          edge.weight ?? null
+          edge.weight ?? null,
         )
       }
     })
@@ -620,8 +632,8 @@ export class SQLiteStore implements GraphStore {
       subFeatures: row.feature_sub ? JSON.parse(row.feature_sub) : undefined,
     }
 
-    const metadata =
-      row.entity_type || row.path
+    const metadata
+      = row.entity_type || row.path
         ? {
             entityType: (row.entity_type as StructuralMetadata['entityType']) ?? undefined,
             path: row.path ?? undefined,
@@ -669,11 +681,11 @@ export class SQLiteStore implements GraphStore {
       target: row.target,
       type: 'dependency' as const,
       dependencyType: (row.dep_type ?? 'use') as
-        | 'import'
-        | 'call'
-        | 'inherit'
-        | 'implement'
-        | 'use',
+      | 'import'
+      | 'call'
+      | 'inherit'
+      | 'implement'
+      | 'use',
       isRuntime: row.is_runtime === 1 ? true : undefined,
       line: row.dep_line ?? undefined,
       weight: row.weight ?? undefined,

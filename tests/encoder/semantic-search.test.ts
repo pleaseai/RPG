@@ -1,11 +1,11 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { MockEmbedding } from '../../src/encoder/embedding'
 import { SemanticSearch } from '../../src/encoder/semantic-search'
 
-describe('SemanticSearch', () => {
+describe('semanticSearch', () => {
   let search: SemanticSearch
   let testDbPath: string
 
@@ -24,7 +24,8 @@ describe('SemanticSearch', () => {
     // Clean up test database
     try {
       await rm(testDbPath, { recursive: true, force: true })
-    } catch {
+    }
+    catch {
       // Ignore cleanup errors
     }
   })
@@ -77,7 +78,7 @@ describe('SemanticSearch', () => {
 
       // Search and check metadata is preserved
       const results = await search.search('Authentication', 2)
-      const authResult = results.find((r) => r.id === 'node-1')
+      const authResult = results.find(r => r.id === 'node-1')
       expect(authResult).toBeDefined()
       expect(authResult?.metadata).toEqual({ type: 'module' })
     })
@@ -231,7 +232,7 @@ describe('SemanticSearch', () => {
       const results = await search.searchFts('database connection', 3)
 
       expect(results.length).toBeGreaterThan(0)
-      const ids = results.map((r) => r.id)
+      const ids = results.map(r => r.id)
       expect(ids).toContain('db-1')
     })
 

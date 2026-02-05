@@ -128,13 +128,13 @@ export class VectorStore {
       text: string
       vector: number[]
       metadata?: Record<string, unknown>
-    }>
+    }>,
   ): Promise<void> {
     if (!this.db) {
       this.db = await lancedb.connect(this.options.dbPath)
     }
 
-    const data: VectorDocument[] = documents.map((doc) => ({
+    const data: VectorDocument[] = documents.map(doc => ({
       id: doc.id,
       text: doc.text,
       vector: doc.vector,
@@ -147,7 +147,8 @@ export class VectorStore {
       // Add to existing table
       this.table = await this.db.openTable(this.options.tableName)
       await this.table.add(data)
-    } else {
+    }
+    else {
       // Create new table
       this.table = await this.db.createTable(this.options.tableName, data)
     }
@@ -184,7 +185,7 @@ export class VectorStore {
     const table = await this.ensureConnection()
 
     // LanceDB uses SQL-like filter syntax
-    const idList = ids.map((id) => `'${id}'`).join(', ')
+    const idList = ids.map(id => `'${id}'`).join(', ')
     await table.delete(`id IN (${idList})`)
   }
 
@@ -221,7 +222,8 @@ export class VectorStore {
         replace: true,
       })
       this.ftsIndexCreated = true
-    } catch (error) {
+    }
+    catch (error) {
       // If FTS index creation fails (e.g., empty table), log but don't throw
       const message = error instanceof Error ? error.message : String(error)
       console.warn(`[VectorStore] FTS index creation failed: ${message}`)
@@ -289,11 +291,11 @@ export class VectorStore {
     vectorResults: VectorSearchResult[],
     ftsResults: VectorSearchResult[],
     vectorWeight = 0.7,
-    topK = 10
+    topK = 10,
   ): VectorSearchResult[] {
     const k = 60
     const ftsWeight = 1 - vectorWeight
-    const scores = new Map<string, { score: number; result: VectorSearchResult }>()
+    const scores = new Map<string, { score: number, result: VectorSearchResult }>()
 
     // Score vector results by rank
     for (const [rank, result] of vectorResults.entries()) {
@@ -307,7 +309,8 @@ export class VectorStore {
       const existing = scores.get(result.id)
       if (existing) {
         existing.score += rrfScore
-      } else {
+      }
+      else {
         scores.set(result.id, { score: rrfScore, result })
       }
     }

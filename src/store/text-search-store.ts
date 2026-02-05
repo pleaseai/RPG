@@ -7,18 +7,18 @@ import type { Lifecycle, TextSearchOpts, TextSearchResult } from './types'
  */
 export interface TextSearchStore extends Lifecycle {
   /** Index a document for text search */
-  index(
+  index: (
     id: string,
     fields: Record<string, string>,
-    metadata?: Record<string, unknown>
-  ): Promise<void>
+    metadata?: Record<string, unknown>,
+  ) => Promise<void>
 
   /** Remove a document from the index */
-  remove(id: string): Promise<void>
+  remove: (id: string) => Promise<void>
 
   /** Search indexed documents */
-  search(query: string, opts?: TextSearchOpts): Promise<TextSearchResult[]>
+  search: (query: string, opts?: TextSearchOpts) => Promise<TextSearchResult[]>
 
   /** Batch index documents */
-  indexBatch?(docs: Array<{ id: string; fields: Record<string, string> }>): Promise<void>
+  indexBatch?: (docs: Array<{ id: string, fields: Record<string, string> }>) => Promise<void>
 }

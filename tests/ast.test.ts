@@ -1,7 +1,7 @@
-import { beforeEach, describe, expect, test } from 'vitest'
-import { ASTParser, type CodeEntity, type ParseResult } from '../src/utils/ast'
+import { beforeEach, describe, expect, it } from 'vitest'
+import { ASTParser } from '../src/utils/ast'
 
-describe('ASTParser', () => {
+describe('aSTParser', () => {
   let parser: ASTParser
 
   beforeEach(() => {
@@ -9,47 +9,47 @@ describe('ASTParser', () => {
   })
 
   describe('constructor', () => {
-    test('creates parser instance', () => {
+    it('creates parser instance', () => {
       expect(parser).toBeDefined()
     })
 
-    test('supports TypeScript language', () => {
+    it('supports TypeScript language', () => {
       expect(parser.isLanguageSupported('typescript')).toBe(true)
     })
 
-    test('supports Python language', () => {
+    it('supports Python language', () => {
       expect(parser.isLanguageSupported('python')).toBe(true)
     })
 
-    test('returns false for unsupported languages', () => {
+    it('returns false for unsupported languages', () => {
       expect(parser.isLanguageSupported('unknown')).toBe(false)
     })
   })
 
   describe('detectLanguage', () => {
-    test('detects TypeScript from .ts extension', () => {
+    it('detects TypeScript from .ts extension', () => {
       expect(parser.detectLanguage('file.ts')).toBe('typescript')
     })
 
-    test('detects TypeScript from .tsx extension', () => {
+    it('detects TypeScript from .tsx extension', () => {
       expect(parser.detectLanguage('file.tsx')).toBe('typescript')
     })
 
-    test('detects JavaScript from .js extension', () => {
+    it('detects JavaScript from .js extension', () => {
       expect(parser.detectLanguage('file.js')).toBe('javascript')
     })
 
-    test('detects Python from .py extension', () => {
+    it('detects Python from .py extension', () => {
       expect(parser.detectLanguage('file.py')).toBe('python')
     })
 
-    test('returns unknown for unsupported extensions', () => {
+    it('returns unknown for unsupported extensions', () => {
       expect(parser.detectLanguage('file.xyz')).toBe('unknown')
     })
   })
 
   describe('parse - TypeScript', () => {
-    test('parses empty file', async () => {
+    it('parses empty file', async () => {
       const result = await parser.parse('', 'typescript')
 
       expect(result.language).toBe('typescript')
@@ -58,7 +58,7 @@ describe('ASTParser', () => {
       expect(result.errors).toEqual([])
     })
 
-    test('extracts function declaration', async () => {
+    it('extracts function declaration', async () => {
       const source = `function greet(name: string): string {
   return 'Hello, ' + name
 }`
@@ -73,14 +73,14 @@ describe('ASTParser', () => {
       })
     })
 
-    test('extracts arrow function', async () => {
+    it('extracts arrow function', async () => {
       const source = `const add = (a: number, b: number) => a + b`
       const result = await parser.parse(source, 'typescript')
 
-      expect(result.entities.some((e) => e.type === 'function' && e.name === 'add')).toBe(true)
+      expect(result.entities.some(e => e.type === 'function' && e.name === 'add')).toBe(true)
     })
 
-    test('extracts class declaration', async () => {
+    it('extracts class declaration', async () => {
       const source = `class User {
   name: string
   constructor(name: string) {
@@ -92,15 +92,15 @@ describe('ASTParser', () => {
 }`
       const result = await parser.parse(source, 'typescript')
 
-      const classEntity = result.entities.find((e) => e.type === 'class')
+      const classEntity = result.entities.find(e => e.type === 'class')
       expect(classEntity).toBeDefined()
       expect(classEntity?.name).toBe('User')
 
-      const methodEntities = result.entities.filter((e) => e.type === 'method')
+      const methodEntities = result.entities.filter(e => e.type === 'method')
       expect(methodEntities.length).toBeGreaterThanOrEqual(1)
     })
 
-    test('extracts interface declaration', async () => {
+    it('extracts interface declaration', async () => {
       const source = `interface Config {
   name: string
   value: number
@@ -112,17 +112,17 @@ describe('ASTParser', () => {
       expect(result.errors).toEqual([])
     })
 
-    test('extracts import statements', async () => {
+    it('extracts import statements', async () => {
       const source = `import { foo, bar } from './module'
 import * as utils from 'utils'
 import path from 'path'`
       const result = await parser.parse(source, 'typescript')
 
       expect(result.imports.length).toBeGreaterThanOrEqual(1)
-      expect(result.imports.some((i) => i.module === './module')).toBe(true)
+      expect(result.imports.some(i => i.module === './module')).toBe(true)
     })
 
-    test('handles syntax errors gracefully', async () => {
+    it('handles syntax errors gracefully', async () => {
       const source = 'function invalid( { incomplete syntax'
       const result = await parser.parse(source, 'typescript')
 
@@ -133,14 +133,14 @@ import path from 'path'`
   })
 
   describe('parse - Python', () => {
-    test('parses empty file', async () => {
+    it('parses empty file', async () => {
       const result = await parser.parse('', 'python')
 
       expect(result.language).toBe('python')
       expect(result.entities).toEqual([])
     })
 
-    test('extracts function definition', async () => {
+    it('extracts function definition', async () => {
       const source = `def greet(name):
     return f"Hello, {name}"`
       const result = await parser.parse(source, 'python')
@@ -153,7 +153,7 @@ import path from 'path'`
       })
     })
 
-    test('extracts async function definition', async () => {
+    it('extracts async function definition', async () => {
       const source = 'async def fetch_data(url):\n    return await client.get(url)'
       const result = await parser.parse(source, 'python')
 
@@ -161,7 +161,7 @@ import path from 'path'`
       expect(result.entities[0].name).toBe('fetch_data')
     })
 
-    test('extracts class definition', async () => {
+    it('extracts class definition', async () => {
       const source = `class User:
     def __init__(self, name):
         self.name = name
@@ -170,12 +170,12 @@ import path from 'path'`
         return f"Hello, {self.name}"`
       const result = await parser.parse(source, 'python')
 
-      const classEntity = result.entities.find((e) => e.type === 'class')
+      const classEntity = result.entities.find(e => e.type === 'class')
       expect(classEntity).toBeDefined()
       expect(classEntity?.name).toBe('User')
     })
 
-    test('extracts import statements', async () => {
+    it('extracts import statements', async () => {
       const source = `import os
 from pathlib import Path
 from typing import List, Dict`
@@ -186,7 +186,7 @@ from typing import List, Dict`
   })
 
   describe('parseFile', () => {
-    test('parses file from path', async () => {
+    it('parses file from path', async () => {
       // Use a file that exists in the project
       const result = await parser.parseFile('./src/utils/ast.ts')
 

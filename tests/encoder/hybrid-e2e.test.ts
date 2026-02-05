@@ -1,17 +1,17 @@
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
+import type { RepositoryPlanningGraph } from '../../src/graph'
 import { rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
+import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { RPGEncoder } from '../../src/encoder'
 import { MockEmbedding } from '../../src/encoder/embedding'
 import { SemanticSearch } from '../../src/encoder/semantic-search'
-import type { RepositoryPlanningGraph } from '../../src/graph'
 import { executeSearch } from '../../src/mcp/tools'
 import { SearchNode } from '../../src/tools'
 
 const SUPERJSON_ROOT = resolve(__dirname, '../fixtures/superjson')
 
-describe('E2E: Hybrid Search Pipeline (superjson)', () => {
+describe('e2E: Hybrid Search Pipeline (superjson)', () => {
   let rpg: RepositoryPlanningGraph
   let semanticSearch: SemanticSearch
   let searchDbPath: string
@@ -33,7 +33,7 @@ describe('E2E: Hybrid Search Pipeline (superjson)', () => {
     // Phase 2: Build semantic index
     searchDbPath = join(
       tmpdir(),
-      `rpg-hybrid-e2e-${Date.now()}-${Math.random().toString(36).slice(2)}`
+      `rpg-hybrid-e2e-${Date.now()}-${Math.random().toString(36).slice(2)}`,
     )
     const embedding = new MockEmbedding(128)
     semanticSearch = new SemanticSearch({
@@ -43,7 +43,7 @@ describe('E2E: Hybrid Search Pipeline (superjson)', () => {
     })
 
     // Index all RPG nodes with feature descriptions
-    const documents = (await rpg.getNodes()).map((node) => ({
+    const documents = (await rpg.getNodes()).map(node => ({
       id: node.id,
       content: `${node.feature.description} ${(node.feature.keywords ?? []).join(' ')} ${node.metadata?.path ?? ''}`,
       metadata: {
@@ -64,12 +64,13 @@ describe('E2E: Hybrid Search Pipeline (superjson)', () => {
     await semanticSearch.close()
     try {
       await rm(searchDbPath, { recursive: true, force: true })
-    } catch {
+    }
+    catch {
       // Ignore cleanup errors
     }
   })
 
-  describe('Encode superjson', () => {
+  describe('encode superjson', () => {
     it('should have high-level and low-level nodes', async () => {
       expect((await rpg.getHighLevelNodes()).length).toBeGreaterThan(0)
       expect((await rpg.getLowLevelNodes()).length).toBeGreaterThan(0)
@@ -80,14 +81,14 @@ describe('E2E: Hybrid Search Pipeline (superjson)', () => {
     })
 
     it('should contain known superjson files', async () => {
-      const paths = (await rpg.getNodes()).map((n) => n.metadata?.path).filter(Boolean)
-      expect(paths.some((p) => p?.includes('transformer.ts'))).toBe(true)
-      expect(paths.some((p) => p?.includes('plainer.ts'))).toBe(true)
-      expect(paths.some((p) => p?.includes('is.ts'))).toBe(true)
+      const paths = (await rpg.getNodes()).map(n => n.metadata?.path).filter(Boolean)
+      expect(paths.some(p => p?.includes('transformer.ts'))).toBe(true)
+      expect(paths.some(p => p?.includes('plainer.ts'))).toBe(true)
+      expect(paths.some(p => p?.includes('is.ts'))).toBe(true)
     })
   })
 
-  describe('Hybrid Search via SearchNode', () => {
+  describe('hybrid Search via SearchNode', () => {
     it('should find transformer-related nodes with hybrid strategy', async () => {
       const search = new SearchNode(rpg, semanticSearch)
       const result = await search.query({
@@ -145,7 +146,7 @@ describe('E2E: Hybrid Search Pipeline (superjson)', () => {
     })
   })
 
-  describe('FTS-only Search', () => {
+  describe('fTS-only Search', () => {
     it('should find nodes via FTS search strategy', async () => {
       const search = new SearchNode(rpg, semanticSearch)
       const result = await search.query({
@@ -158,7 +159,7 @@ describe('E2E: Hybrid Search Pipeline (superjson)', () => {
     })
   })
 
-  describe('Vector-only Search', () => {
+  describe('vector-only Search', () => {
     it('should find nodes via vector search strategy', async () => {
       const search = new SearchNode(rpg, semanticSearch)
       const result = await search.query({
@@ -171,7 +172,7 @@ describe('E2E: Hybrid Search Pipeline (superjson)', () => {
     })
   })
 
-  describe('MCP executeSearch Integration', () => {
+  describe('mCP executeSearch Integration', () => {
     it('should work through executeSearch with hybrid', async () => {
       const result = await executeSearch(
         rpg,
@@ -180,7 +181,7 @@ describe('E2E: Hybrid Search Pipeline (superjson)', () => {
           featureTerms: ['transformer'],
           searchStrategy: 'hybrid',
         },
-        semanticSearch
+        semanticSearch,
       )
 
       expect(result.totalMatches).toBeGreaterThan(0)
@@ -209,7 +210,7 @@ describe('E2E: Hybrid Search Pipeline (superjson)', () => {
           featureTerms: ['registry class'],
           searchStrategy: 'fts',
         },
-        semanticSearch
+        semanticSearch,
       )
 
       expect(result.totalMatches).toBeGreaterThan(0)

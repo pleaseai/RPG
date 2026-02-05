@@ -15,8 +15,8 @@ export interface ContextStore {
   readonly vector: VectorStore
 
   /** Open all sub-stores */
-  open(config: ContextStoreConfig): Promise<void>
+  open: (config: ContextStoreConfig) => Promise<void>
 
   /** Close all sub-stores */
-  close(): Promise<void>
+  close: () => Promise<void>
 }

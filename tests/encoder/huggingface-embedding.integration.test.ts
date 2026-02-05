@@ -53,13 +53,13 @@ describe('huggingFace Embedding Integration', () => {
 
       expect(result.dimension).toBe(768)
       expect(result.vector).toHaveLength(768)
-      expect(result.vector.every((v) => typeof v === 'number')).toBe(true)
+      expect(result.vector.every(v => typeof v === 'number')).toBe(true)
     })
 
     it('should generate non-zero vectors', async () => {
       const result = await irEmbedding.embed('Test embedding generation')
 
-      const hasNonZero = result.vector.some((v) => v !== 0)
+      const hasNonZero = result.vector.some(v => v !== 0)
       expect(hasNonZero).toBe(true)
     })
 
@@ -102,11 +102,11 @@ describe('huggingFace Embedding Integration', () => {
     it('should distinguish between different code concepts', async () => {
       const [authCode, mathCode, unrelated] = await Promise.all([
         irEmbedding.embed(
-          'function authenticate(user, password) { return validateCredentials(user, password); }'
+          'function authenticate(user, password) { return validateCredentials(user, password); }',
         ),
         irEmbedding.embed('function calculateSum(a, b) { return a + b; }'),
         irEmbedding.embed(
-          'function authenticate(username, pwd) { return checkPassword(username, pwd); }'
+          'function authenticate(username, pwd) { return checkPassword(username, pwd); }',
         ),
       ])
 
@@ -182,7 +182,7 @@ describe('huggingFace Embedding Integration', () => {
 
     it('should verify IR model has query prefix', () => {
       expect(irEmbedding.getQueryPrefix()).toBe(
-        'Represent this sentence for searching relevant passages: '
+        'Represent this sentence for searching relevant passages: ',
       )
     })
 
@@ -205,7 +205,7 @@ describe('huggingFace Embedding Integration', () => {
       const longText = Array.from(
         { length: 200 },
         (_, i) =>
-          `This is sentence number ${i + 1} with some additional words to increase token count.`
+          `This is sentence number ${i + 1} with some additional words to increase token count.`,
       ).join(' ')
 
       // Should not throw, truncation should handle it
@@ -227,7 +227,7 @@ describe('huggingFace Embedding Integration', () => {
           }
           return { success: true, data: transform(item) };
         }
-      `
+      `,
       ).join('\n')
 
       const result = await irEmbedding.embed(longCode)
@@ -327,7 +327,7 @@ describe('huggingFace Embedding Integration', () => {
     it('should handle concurrent embed calls correctly', async () => {
       const texts = ['Concurrent 1', 'Concurrent 2', 'Concurrent 3', 'Concurrent 4', 'Concurrent 5']
 
-      const results = await Promise.all(texts.map((t) => irEmbedding.embed(t)))
+      const results = await Promise.all(texts.map(t => irEmbedding.embed(t)))
 
       expect(results).toHaveLength(5)
       for (const result of results) {

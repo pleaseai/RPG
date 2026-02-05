@@ -1,8 +1,8 @@
-import { afterEach, beforeEach, describe, expect, test } from 'vitest'
-import { RepositoryPlanningGraph } from '../../src/graph/rpg'
 import type { HighLevelNode, Node } from '../../src/graph'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { RepositoryPlanningGraph } from '../../src/graph/rpg'
 
-describe('RPG with ContextStore (default)', () => {
+describe('rPG with ContextStore (default)', () => {
   let rpg: RepositoryPlanningGraph
 
   beforeEach(async () => {
@@ -13,8 +13,8 @@ describe('RPG with ContextStore (default)', () => {
     await rpg.close()
   })
 
-  test('add and get high-level node', async () => {
-    const node = await rpg.addHighLevelNode({
+  it('add and get high-level node', async () => {
+    await rpg.addHighLevelNode({
       id: 'auth',
       feature: { description: 'authentication module' },
       directoryPath: '/src/auth',
@@ -28,7 +28,7 @@ describe('RPG with ContextStore (default)', () => {
     expect((fetched as HighLevelNode).directoryPath).toBe('/src/auth')
   })
 
-  test('add and get low-level node', async () => {
+  it('add and get low-level node', async () => {
     await rpg.addLowLevelNode({
       id: 'login',
       feature: { description: 'validate credentials', keywords: ['auth', 'login'] },
@@ -42,7 +42,7 @@ describe('RPG with ContextStore (default)', () => {
     expect(fetched!.feature.keywords).toEqual(['auth', 'login'])
   })
 
-  test('add functional edge and getChildren', async () => {
+  it('add functional edge and getChildren', async () => {
     await rpg.addHighLevelNode({ id: 'root', feature: { description: 'root' } })
     await rpg.addHighLevelNode({ id: 'auth', feature: { description: 'auth' } })
     await rpg.addHighLevelNode({ id: 'api', feature: { description: 'api' } })
@@ -56,7 +56,7 @@ describe('RPG with ContextStore (default)', () => {
     expect(children[1].id).toBe('api')
   })
 
-  test('getParent', async () => {
+  it('getParent', async () => {
     await rpg.addHighLevelNode({ id: 'root', feature: { description: 'root' } })
     await rpg.addHighLevelNode({ id: 'child', feature: { description: 'child' } })
     await rpg.addFunctionalEdge({ source: 'root', target: 'child' })
@@ -66,7 +66,7 @@ describe('RPG with ContextStore (default)', () => {
     expect(parent!.id).toBe('root')
   })
 
-  test('dependency edges', async () => {
+  it('dependency edges', async () => {
     await rpg.addLowLevelNode({
       id: 'a',
       feature: { description: 'module A' },
@@ -88,7 +88,7 @@ describe('RPG with ContextStore (default)', () => {
     expect(dependents[0].id).toBe('a')
   })
 
-  test('searchByFeature', async () => {
+  it('searchByFeature', async () => {
     await rpg.addHighLevelNode({
       id: 'auth-mod',
       feature: { description: 'authentication and authorization module' },
@@ -101,10 +101,10 @@ describe('RPG with ContextStore (default)', () => {
 
     const results = await rpg.searchByFeature('authentication')
     expect(results.length).toBeGreaterThan(0)
-    expect(results.some((n) => n.id === 'auth-mod')).toBe(true)
+    expect(results.some(n => n.id === 'auth-mod')).toBe(true)
   })
 
-  test('searchByPath', async () => {
+  it('searchByPath', async () => {
     await rpg.addLowLevelNode({
       id: 'login',
       feature: { description: 'login handler' },
@@ -121,7 +121,7 @@ describe('RPG with ContextStore (default)', () => {
     expect(results[0].id).toBe('login')
   })
 
-  test('getStats', async () => {
+  it('getStats', async () => {
     await rpg.addHighLevelNode({ id: 'hl', feature: { description: 'module' } })
     await rpg.addLowLevelNode({
       id: 'll',
@@ -138,7 +138,7 @@ describe('RPG with ContextStore (default)', () => {
     expect(stats.functionalEdgeCount).toBe(1)
   })
 
-  test('getTopologicalOrder', async () => {
+  it('getTopologicalOrder', async () => {
     await rpg.addLowLevelNode({
       id: 'a',
       feature: { description: 'A' },
@@ -158,14 +158,14 @@ describe('RPG with ContextStore (default)', () => {
     await rpg.addDependencyEdge({ source: 'b', target: 'c', dependencyType: 'import' })
 
     const order = await rpg.getTopologicalOrder()
-    const ids = order.map((n) => n.id)
+    const ids = order.map(n => n.id)
     expect(ids).toHaveLength(3)
     expect(ids).toContain('a')
     expect(ids).toContain('b')
     expect(ids).toContain('c')
   })
 
-  test('serialize and deserialize roundtrip', async () => {
+  it('serialize and deserialize roundtrip', async () => {
     await rpg.addHighLevelNode({ id: 'root', feature: { description: 'root module' } })
     await rpg.addLowLevelNode({
       id: 'file1',
@@ -189,7 +189,7 @@ describe('RPG with ContextStore (default)', () => {
     await rpg2.close()
   })
 
-  test('updateNode', async () => {
+  it('updateNode', async () => {
     await rpg.addLowLevelNode({
       id: 'n1',
       feature: { description: 'original' },
@@ -204,7 +204,7 @@ describe('RPG with ContextStore (default)', () => {
     expect(fetched!.feature.description).toBe('updated')
   })
 
-  test('removeNode', async () => {
+  it('removeNode', async () => {
     await rpg.addHighLevelNode({ id: 'del', feature: { description: 'delete me' } })
     expect(await rpg.hasNode('del')).toBe(true)
     await rpg.removeNode('del')

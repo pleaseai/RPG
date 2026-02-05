@@ -14,8 +14,8 @@ export type EdgeAttrs = Record<string, unknown> & { type: string }
 
 /** Serialized graph for import/export and subgraph extraction */
 export interface SerializedGraph {
-  nodes: Array<{ id: string; attrs: NodeAttrs }>
-  edges: Array<{ source: string; target: string; attrs: EdgeAttrs }>
+  nodes: Array<{ id: string, attrs: NodeAttrs }>
+  edges: Array<{ source: string, target: string, attrs: EdgeAttrs }>
 }
 
 /** Filter for node queries */
@@ -40,8 +40,8 @@ export interface TraverseOpts {
 
 /** Result of graph traversal */
 export interface TraverseResult {
-  nodes: Array<{ id: string; attrs: NodeAttrs }>
-  edges: Array<{ source: string; target: string; attrs: EdgeAttrs }>
+  nodes: Array<{ id: string, attrs: NodeAttrs }>
+  edges: Array<{ source: string, target: string, attrs: EdgeAttrs }>
   maxDepthReached: number
 }
 
@@ -73,8 +73,8 @@ export interface TextSearchResult {
 
 /** Lifecycle interface for stores that need explicit open/close */
 export interface Lifecycle {
-  open(config: unknown): Promise<void>
-  close(): Promise<void>
+  open: (config: unknown) => Promise<void>
+  close: () => Promise<void>
 }
 
 /** Configuration for ContextStore */

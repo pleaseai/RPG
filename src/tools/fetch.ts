@@ -62,7 +62,8 @@ export class FetchNode {
           sourceCode: 'sourceCode' in node ? node.sourceCode : undefined,
           featurePaths: await this.getFeaturePaths(node.id),
         })
-      } else {
+      }
+      else {
         notFound.push(id)
       }
     }

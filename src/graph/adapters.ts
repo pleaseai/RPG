@@ -21,15 +21,24 @@ export function nodeToAttrs(node: Node): NodeAttrs {
     feature_desc: node.feature.description,
   }
 
-  if (node.feature.keywords) attrs.feature_keywords = node.feature.keywords
-  if (node.feature.subFeatures) attrs.feature_sub = node.feature.subFeatures
-  if (node.metadata?.entityType) attrs.entity_type = node.metadata.entityType
-  if (node.metadata?.path) attrs.path = node.metadata.path
-  if (node.metadata?.qualifiedName) attrs.qualified_name = node.metadata.qualifiedName
-  if (node.metadata?.language) attrs.language = node.metadata.language
-  if (node.metadata?.startLine != null) attrs.line_start = node.metadata.startLine
-  if (node.metadata?.endLine != null) attrs.line_end = node.metadata.endLine
-  if (node.metadata?.extra) attrs.extra = node.metadata.extra
+  if (node.feature.keywords)
+    attrs.feature_keywords = node.feature.keywords
+  if (node.feature.subFeatures)
+    attrs.feature_sub = node.feature.subFeatures
+  if (node.metadata?.entityType)
+    attrs.entity_type = node.metadata.entityType
+  if (node.metadata?.path)
+    attrs.path = node.metadata.path
+  if (node.metadata?.qualifiedName)
+    attrs.qualified_name = node.metadata.qualifiedName
+  if (node.metadata?.language)
+    attrs.language = node.metadata.language
+  if (node.metadata?.startLine != null)
+    attrs.line_start = node.metadata.startLine
+  if (node.metadata?.endLine != null)
+    attrs.line_end = node.metadata.endLine
+  if (node.metadata?.extra)
+    attrs.extra = node.metadata.extra
 
   if (node.type === 'high_level' && (node as HighLevelNode).directoryPath) {
     attrs.directory_path = (node as HighLevelNode).directoryPath
@@ -49,8 +58,8 @@ export function attrsToNode(id: string, attrs: NodeAttrs): Node {
     subFeatures: (attrs.feature_sub as string[] | undefined) ?? undefined,
   }
 
-  const metadata =
-    attrs.entity_type || attrs.path
+  const metadata
+    = attrs.entity_type || attrs.path
       ? ({
           entityType: (attrs.entity_type as StructuralMetadata['entityType']) ?? undefined,
           path: (attrs.path as string) ?? undefined,
@@ -106,17 +115,24 @@ export function nodeToSearchFields(node: Node): Record<string, string> {
 export function edgeToAttrs(edge: Edge): EdgeAttrs {
   const attrs: EdgeAttrs = { type: edge.type }
 
-  if (edge.weight != null) attrs.weight = edge.weight
+  if (edge.weight != null)
+    attrs.weight = edge.weight
 
   if (edge.type === 'functional') {
     const fe = edge as FunctionalEdge
-    if (fe.level != null) attrs.level = fe.level
-    if (fe.siblingOrder != null) attrs.sibling_order = fe.siblingOrder
-  } else {
+    if (fe.level != null)
+      attrs.level = fe.level
+    if (fe.siblingOrder != null)
+      attrs.sibling_order = fe.siblingOrder
+  }
+  else {
     const de = edge as DependencyEdge
-    if (de.dependencyType) attrs.dep_type = de.dependencyType
-    if (de.isRuntime != null) attrs.is_runtime = de.isRuntime
-    if (de.line != null) attrs.dep_line = de.line
+    if (de.dependencyType)
+      attrs.dep_type = de.dependencyType
+    if (de.isRuntime != null)
+      attrs.is_runtime = de.isRuntime
+    if (de.line != null)
+      attrs.dep_line = de.line
   }
 
   return attrs
@@ -140,11 +156,11 @@ export function attrsToEdge(source: string, target: string, attrs: EdgeAttrs): E
     target,
     type: 'dependency' as const,
     dependencyType: ((attrs.dep_type as string) ?? 'use') as
-      | 'import'
-      | 'call'
-      | 'inherit'
-      | 'implement'
-      | 'use',
+    | 'import'
+    | 'call'
+    | 'inherit'
+    | 'implement'
+    | 'use',
     isRuntime: (attrs.is_runtime as boolean) ?? undefined,
     line: (attrs.dep_line as number) ?? undefined,
     weight: (attrs.weight as number) ?? undefined,

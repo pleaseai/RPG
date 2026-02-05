@@ -1,5 +1,3 @@
-import { RecordId, Surreal, Table } from 'surrealdb'
-import { createNodeEngines } from '@surrealdb/node'
 import type { GraphStore } from '../graph-store'
 import type {
   EdgeAttrs,
@@ -10,6 +8,8 @@ import type {
   TraverseOpts,
   TraverseResult,
 } from '../types'
+import { createNodeEngines } from '@surrealdb/node'
+import { RecordId, Surreal, Table } from 'surrealdb'
 
 const SCHEMA = `
 DEFINE TABLE IF NOT EXISTS node SCHEMAFULL;
@@ -62,7 +62,8 @@ export class SurrealGraphStore implements GraphStore {
 
   async getNode(id: string): Promise<NodeAttrs | null> {
     const record = await this.db.select<NodeRecord>(new RecordId('node', id))
-    if (!record) return null
+    if (!record)
+      return null
     return record.attrs
   }
 
@@ -73,7 +74,8 @@ export class SurrealGraphStore implements GraphStore {
 
   async updateNode(id: string, patch: Partial<NodeAttrs>): Promise<void> {
     const existing = await this.getNode(id)
-    if (!existing) return
+    if (!existing)
+      return
     const merged = { ...existing, ...patch }
     await this.db
       .query('UPDATE $id SET attrs = $attrs', {
@@ -87,14 +89,15 @@ export class SurrealGraphStore implements GraphStore {
     await this.db.delete(new RecordId('node', id))
   }
 
-  async getNodes(filter?: NodeFilter): Promise<Array<{ id: string; attrs: NodeAttrs }>> {
+  async getNodes(filter?: NodeFilter): Promise<Array<{ id: string, attrs: NodeAttrs }>> {
     const [rows] = await this.db.query<[NodeRecord[]]>('SELECT * FROM node').collect()
-    let results = rows.map((r) => ({ id: this.extractId(r.id), attrs: r.attrs }))
+    let results = rows.map(r => ({ id: this.extractId(r.id), attrs: r.attrs }))
 
     if (filter) {
       results = results.filter((r) => {
         for (const [key, value] of Object.entries(filter)) {
-          if (value !== undefined && r.attrs[key] !== value) return false
+          if (value !== undefined && r.attrs[key] !== value)
+            return false
         }
         return true
       })
@@ -122,8 +125,8 @@ export class SurrealGraphStore implements GraphStore {
   }
 
   async getEdges(
-    filter?: EdgeFilter
-  ): Promise<Array<{ source: string; target: string; attrs: EdgeAttrs }>> {
+    filter?: EdgeFilter,
+  ): Promise<Array<{ source: string, target: string, attrs: EdgeAttrs }>> {
     let sql = 'SELECT * FROM edge'
     const conditions: string[] = []
     const bindings: Record<string, unknown> = {}
@@ -146,7 +149,7 @@ export class SurrealGraphStore implements GraphStore {
     }
 
     const [rows] = await this.db.query<[EdgeRecord[]]>(sql, bindings).collect()
-    return rows.map((r) => ({
+    return rows.map(r => ({
       source: this.extractId(r.in),
       target: this.extractId(r.out),
       attrs: r.attrs,
@@ -158,20 +161,21 @@ export class SurrealGraphStore implements GraphStore {
   async getNeighbors(
     id: string,
     direction: 'in' | 'out' | 'both',
-    edgeType?: string
+    edgeType?: string,
   ): Promise<string[]> {
     const results = new Set<string>()
     const typeClause = edgeType ? ' AND type = $type' : ''
     const bindings: Record<string, unknown> = {
       id: new RecordId('node', id),
     }
-    if (edgeType) bindings.type = edgeType
+    if (edgeType)
+      bindings.type = edgeType
 
     if (direction === 'out' || direction === 'both') {
       const [rows] = await this.db
         .query<[Array<{ out: RecordId | string }>]>(
           `SELECT out FROM edge WHERE in = $id${typeClause}`,
-          bindings
+          bindings,
         )
         .collect()
       for (const r of rows) results.add(this.extractId(r.out))
@@ -181,7 +185,7 @@ export class SurrealGraphStore implements GraphStore {
       const [rows] = await this.db
         .query<[Array<{ in: RecordId | string }>]>(
           `SELECT in FROM edge WHERE out = $id${typeClause}`,
-          bindings
+          bindings,
         )
         .collect()
       for (const r of rows) results.add(this.extractId(r.in))
@@ -196,17 +200,18 @@ export class SurrealGraphStore implements GraphStore {
     const { direction, maxDepth, edgeType } = opts
 
     const visited = new Set<string>([startId])
-    const nodes: Array<{ id: string; attrs: NodeAttrs }> = []
-    const edges: Array<{ source: string; target: string; attrs: EdgeAttrs }> = []
+    const nodes: Array<{ id: string, attrs: NodeAttrs }> = []
+    const edges: Array<{ source: string, target: string, attrs: EdgeAttrs }> = []
     let maxDepthReached = 0
     let frontier = [startId]
 
     for (let depth = 1; depth <= maxDepth && frontier.length > 0; depth++) {
       const nextFrontier: string[] = []
-      const frontierIds = frontier.map((id) => new RecordId('node', id))
+      const frontierIds = frontier.map(id => new RecordId('node', id))
       const typeClause = edgeType ? ' AND type = $type' : ''
       const bindings: Record<string, unknown> = { ids: frontierIds }
-      if (edgeType) bindings.type = edgeType
+      if (edgeType)
+        bindings.type = edgeType
 
       if (direction === 'out' || direction === 'both') {
         const [outEdges] = await this.db
@@ -248,7 +253,7 @@ export class SurrealGraphStore implements GraphStore {
 
       if (nextFrontier.length > 0) {
         maxDepthReached = depth
-        const newNodeIds = nextFrontier.map((id) => new RecordId('node', id))
+        const newNodeIds = nextFrontier.map(id => new RecordId('node', id))
         const [newNodes] = await this.db
           .query<[NodeRecord[]]>('SELECT * FROM node WHERE id IN $ids', { ids: newNodeIds })
           .collect()
@@ -279,7 +284,7 @@ export class SurrealGraphStore implements GraphStore {
   // ==================== Subgraph / Serialization ====================
 
   async subgraph(nodeIds: string[]): Promise<SerializedGraph> {
-    const rids = nodeIds.map((id) => new RecordId('node', id))
+    const rids = nodeIds.map(id => new RecordId('node', id))
 
     const [nodeRows] = await this.db
       .query<[NodeRecord[]]>('SELECT * FROM node WHERE id IN $ids', { ids: rids })
@@ -290,8 +295,8 @@ export class SurrealGraphStore implements GraphStore {
       .collect()
 
     return {
-      nodes: nodeRows.map((r) => ({ id: this.extractId(r.id), attrs: r.attrs })),
-      edges: edgeRows.map((r) => ({
+      nodes: nodeRows.map(r => ({ id: this.extractId(r.id), attrs: r.attrs })),
+      edges: edgeRows.map(r => ({
         source: this.extractId(r.in),
         target: this.extractId(r.out),
         attrs: r.attrs,
@@ -304,8 +309,8 @@ export class SurrealGraphStore implements GraphStore {
     const [edgeRows] = await this.db.query<[EdgeRecord[]]>('SELECT * FROM edge').collect()
 
     return {
-      nodes: nodeRows.map((r) => ({ id: this.extractId(r.id), attrs: r.attrs })),
-      edges: edgeRows.map((r) => ({
+      nodes: nodeRows.map(r => ({ id: this.extractId(r.id), attrs: r.attrs })),
+      edges: edgeRows.map(r => ({
         source: this.extractId(r.in),
         target: this.extractId(r.out),
         attrs: r.attrs,

@@ -1,6 +1,6 @@
-import { afterEach, beforeEach, describe, expect, test } from 'vitest'
 import type { GraphStore } from '../../src/store/graph-store'
 import type { EdgeAttrs, NodeAttrs } from '../../src/store/types'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { SQLiteGraphStore } from '../../src/store/sqlite/graph-store'
 import { SurrealGraphStore } from '../../src/store/surreal/graph-store'
 
@@ -35,8 +35,8 @@ function runGraphStoreTests(name: string, createStore: () => GraphStore) {
 
     // ==================== Node CRUD ====================
 
-    describe('Node CRUD', () => {
-      test('addNode and getNode', async () => {
+    describe('node CRUD', () => {
+      it('addNode and getNode', async () => {
         await store.addNode('n1', makeNodeAttrs('high_level', 'test node'))
         const attrs = await store.getNode('n1')
         expect(attrs).not.toBeNull()
@@ -44,17 +44,17 @@ function runGraphStoreTests(name: string, createStore: () => GraphStore) {
         expect(attrs!.feature_desc).toBe('test node')
       })
 
-      test('getNode returns null for missing', async () => {
+      it('getNode returns null for missing', async () => {
         expect(await store.getNode('missing')).toBeNull()
       })
 
-      test('hasNode', async () => {
+      it('hasNode', async () => {
         await store.addNode('x', makeNodeAttrs('low_level', 'x'))
         expect(await store.hasNode('x')).toBe(true)
         expect(await store.hasNode('y')).toBe(false)
       })
 
-      test('updateNode merges attrs', async () => {
+      it('updateNode merges attrs', async () => {
         await store.addNode('n1', makeNodeAttrs('low_level', 'original'))
         await store.updateNode('n1', { feature_desc: 'updated' })
         const attrs = await store.getNode('n1')
@@ -62,13 +62,13 @@ function runGraphStoreTests(name: string, createStore: () => GraphStore) {
         expect(attrs!.type).toBe('low_level')
       })
 
-      test('removeNode', async () => {
+      it('removeNode', async () => {
         await store.addNode('del', makeNodeAttrs('high_level', 'delete me'))
         await store.removeNode('del')
         expect(await store.hasNode('del')).toBe(false)
       })
 
-      test('getNodes with filter', async () => {
+      it('getNodes with filter', async () => {
         await store.addNode('hl1', makeNodeAttrs('high_level', 'A'))
         await store.addNode('hl2', makeNodeAttrs('high_level', 'B'))
         await store.addNode('ll1', makeNodeAttrs('low_level', 'C'))
@@ -80,7 +80,7 @@ function runGraphStoreTests(name: string, createStore: () => GraphStore) {
         expect(ll).toHaveLength(1)
       })
 
-      test('getNodes returns all without filter', async () => {
+      it('getNodes returns all without filter', async () => {
         await store.addNode('a', makeNodeAttrs('high_level', 'A'))
         await store.addNode('b', makeNodeAttrs('low_level', 'B'))
         const all = await store.getNodes()
@@ -90,14 +90,14 @@ function runGraphStoreTests(name: string, createStore: () => GraphStore) {
 
     // ==================== Edge CRUD ====================
 
-    describe('Edge CRUD', () => {
+    describe('edge CRUD', () => {
       beforeEach(async () => {
         await store.addNode('p', makeNodeAttrs('high_level', 'parent'))
         await store.addNode('c1', makeNodeAttrs('low_level', 'child1'))
         await store.addNode('c2', makeNodeAttrs('low_level', 'child2'))
       })
 
-      test('addEdge and getEdges', async () => {
+      it('addEdge and getEdges', async () => {
         await store.addEdge('p', 'c1', makeFuncEdgeAttrs(0))
         const edges = await store.getEdges({ type: 'functional' })
         expect(edges).toHaveLength(1)
@@ -105,28 +105,28 @@ function runGraphStoreTests(name: string, createStore: () => GraphStore) {
         expect(edges[0].target).toBe('c1')
       })
 
-      test('addEdge dependency', async () => {
+      it('addEdge dependency', async () => {
         await store.addEdge('c1', 'c2', makeDepEdgeAttrs('import'))
         const edges = await store.getEdges({ type: 'dependency' })
         expect(edges).toHaveLength(1)
         expect(edges[0].attrs.dep_type).toBe('import')
       })
 
-      test('removeEdge', async () => {
+      it('removeEdge', async () => {
         await store.addEdge('p', 'c1', makeFuncEdgeAttrs())
         await store.removeEdge('p', 'c1', 'functional')
         const edges = await store.getEdges({ type: 'functional' })
         expect(edges).toHaveLength(0)
       })
 
-      test('getEdges with source filter', async () => {
+      it('getEdges with source filter', async () => {
         await store.addEdge('p', 'c1', makeFuncEdgeAttrs(0))
         await store.addEdge('p', 'c2', makeFuncEdgeAttrs(1))
         const edges = await store.getEdges({ source: 'p', type: 'functional' })
         expect(edges).toHaveLength(2)
       })
 
-      test('getEdges with target filter', async () => {
+      it('getEdges with target filter', async () => {
         await store.addEdge('p', 'c1', makeFuncEdgeAttrs())
         const edges = await store.getEdges({ target: 'c1', type: 'functional' })
         expect(edges).toHaveLength(1)
@@ -136,7 +136,7 @@ function runGraphStoreTests(name: string, createStore: () => GraphStore) {
 
     // ==================== Neighbor Queries ====================
 
-    describe('Neighbors', () => {
+    describe('neighbors', () => {
       beforeEach(async () => {
         await store.addNode('root', makeNodeAttrs('high_level', 'root'))
         await store.addNode('a', makeNodeAttrs('high_level', 'A'))
@@ -147,17 +147,17 @@ function runGraphStoreTests(name: string, createStore: () => GraphStore) {
         await store.addEdge('a', 'b', makeDepEdgeAttrs())
       })
 
-      test('getNeighbors out', async () => {
+      it('getNeighbors out', async () => {
         const neighbors = await store.getNeighbors('root', 'out', 'functional')
         expect(neighbors.sort()).toEqual(['a', 'b'])
       })
 
-      test('getNeighbors in', async () => {
+      it('getNeighbors in', async () => {
         const neighbors = await store.getNeighbors('a', 'in', 'functional')
         expect(neighbors).toEqual(['root'])
       })
 
-      test('getNeighbors both', async () => {
+      it('getNeighbors both', async () => {
         const neighbors = await store.getNeighbors('a', 'both')
         expect(neighbors.sort()).toEqual(['b', 'root'])
       })
@@ -165,7 +165,7 @@ function runGraphStoreTests(name: string, createStore: () => GraphStore) {
 
     // ==================== Traversal ====================
 
-    describe('Traversal', () => {
+    describe('traversal', () => {
       beforeEach(async () => {
         await store.addNode('root', makeNodeAttrs('high_level', 'root'))
         await store.addNode('a', makeNodeAttrs('high_level', 'A'))
@@ -177,25 +177,25 @@ function runGraphStoreTests(name: string, createStore: () => GraphStore) {
         await store.addEdge('b', 'c', makeDepEdgeAttrs())
       })
 
-      test('traverse out with functional edges', async () => {
+      it('traverse out with functional edges', async () => {
         const result = await store.traverse('root', {
           direction: 'out',
           edgeType: 'functional',
           maxDepth: 2,
         })
-        const ids = result.nodes.map((n) => n.id).sort()
+        const ids = result.nodes.map(n => n.id).sort()
         expect(ids).toContain('a')
         expect(ids).toContain('b')
         expect(result.maxDepthReached).toBe(2)
       })
 
-      test('traverse respects maxDepth', async () => {
+      it('traverse respects maxDepth', async () => {
         const result = await store.traverse('root', {
           direction: 'out',
           edgeType: 'functional',
           maxDepth: 1,
         })
-        const ids = result.nodes.map((n) => n.id)
+        const ids = result.nodes.map(n => n.id)
         expect(ids).toContain('a')
         expect(ids).not.toContain('b')
       })
@@ -203,8 +203,8 @@ function runGraphStoreTests(name: string, createStore: () => GraphStore) {
 
     // ==================== Serialization ====================
 
-    describe('Import/Export', () => {
-      test('export and import roundtrip', async () => {
+    describe('import/Export', () => {
+      it('export and import roundtrip', async () => {
         await store.addNode('n1', makeNodeAttrs('high_level', 'module'))
         await store.addNode('n2', makeNodeAttrs('low_level', 'file'))
         await store.addEdge('n1', 'n2', makeFuncEdgeAttrs(0))
@@ -229,8 +229,8 @@ function runGraphStoreTests(name: string, createStore: () => GraphStore) {
 
     // ==================== Subgraph ====================
 
-    describe('Subgraph', () => {
-      test('subgraph extracts node subset with internal edges', async () => {
+    describe('subgraph', () => {
+      it('subgraph extracts node subset with internal edges', async () => {
         await store.addNode('a', makeNodeAttrs('high_level', 'A'))
         await store.addNode('b', makeNodeAttrs('low_level', 'B'))
         await store.addNode('c', makeNodeAttrs('low_level', 'C'))

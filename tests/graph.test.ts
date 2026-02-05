@@ -1,20 +1,20 @@
-import { describe, expect, test } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import {
-  EdgeType,
-  NodeType,
-  RepositoryPlanningGraph,
   createDependencyEdge,
   createFunctionalEdge,
   createHighLevelNode,
   createLowLevelNode,
+  EdgeType,
   isDependencyEdge,
   isFunctionalEdge,
   isHighLevelNode,
   isLowLevelNode,
+  NodeType,
+  RepositoryPlanningGraph,
 } from '../src/graph'
 
-describe('Node', () => {
-  test('createHighLevelNode creates valid node', () => {
+describe('node', () => {
+  it('createHighLevelNode creates valid node', () => {
     const node = createHighLevelNode({
       id: 'test-node',
       feature: { description: 'handle authentication' },
@@ -27,7 +27,7 @@ describe('Node', () => {
     expect(node.directoryPath).toBe('/src/auth')
   })
 
-  test('createLowLevelNode creates valid node', () => {
+  it('createLowLevelNode creates valid node', () => {
     const node = createLowLevelNode({
       id: 'func-node',
       feature: {
@@ -48,7 +48,7 @@ describe('Node', () => {
     expect(node.metadata.path).toBe('/src/auth/login.ts')
   })
 
-  test('isHighLevelNode returns correct type guard', () => {
+  it('isHighLevelNode returns correct type guard', () => {
     const highLevel = createHighLevelNode({
       id: 'high',
       feature: { description: 'module' },
@@ -66,8 +66,8 @@ describe('Node', () => {
   })
 })
 
-describe('Edge', () => {
-  test('createFunctionalEdge creates valid edge', () => {
+describe('edge', () => {
+  it('createFunctionalEdge creates valid edge', () => {
     const edge = createFunctionalEdge({
       source: 'parent',
       target: 'child',
@@ -80,7 +80,7 @@ describe('Edge', () => {
     expect(edge.level).toBe(1)
   })
 
-  test('createDependencyEdge creates valid edge', () => {
+  it('createDependencyEdge creates valid edge', () => {
     const edge = createDependencyEdge({
       source: 'a',
       target: 'b',
@@ -95,7 +95,7 @@ describe('Edge', () => {
     expect(edge.line).toBe(5)
   })
 
-  test('isFunctionalEdge returns correct type guard', () => {
+  it('isFunctionalEdge returns correct type guard', () => {
     const functional = createFunctionalEdge({ source: 'a', target: 'b' })
     const dependency = createDependencyEdge({
       source: 'a',
@@ -110,8 +110,8 @@ describe('Edge', () => {
   })
 })
 
-describe('RepositoryPlanningGraph', () => {
-  test('creates empty graph', async () => {
+describe('repositoryPlanningGraph', () => {
+  it('creates empty graph', async () => {
     const rpg = await RepositoryPlanningGraph.create({ name: 'test-repo' })
     const stats = await rpg.getStats()
 
@@ -119,7 +119,7 @@ describe('RepositoryPlanningGraph', () => {
     expect(stats.edgeCount).toBe(0)
   })
 
-  test('adds and retrieves nodes', async () => {
+  it('adds and retrieves nodes', async () => {
     const rpg = await RepositoryPlanningGraph.create({ name: 'test-repo' })
 
     await rpg.addHighLevelNode({
@@ -141,7 +141,7 @@ describe('RepositoryPlanningGraph', () => {
     expect(node?.feature.description).toBe('auth module')
   })
 
-  test('adds and retrieves edges', async () => {
+  it('adds and retrieves edges', async () => {
     const rpg = await RepositoryPlanningGraph.create({ name: 'test-repo' })
 
     await rpg.addHighLevelNode({ id: 'parent', feature: { description: 'parent' } })
@@ -168,7 +168,7 @@ describe('RepositoryPlanningGraph', () => {
     expect(depEdges.length).toBe(1)
   })
 
-  test('gets children and parent', async () => {
+  it('gets children and parent', async () => {
     const rpg = await RepositoryPlanningGraph.create({ name: 'test-repo' })
 
     await rpg.addHighLevelNode({ id: 'root', feature: { description: 'root' } })
@@ -185,7 +185,7 @@ describe('RepositoryPlanningGraph', () => {
     expect(parent?.id).toBe('root')
   })
 
-  test('searches by feature', async () => {
+  it('searches by feature', async () => {
     const rpg = await RepositoryPlanningGraph.create({ name: 'test-repo' })
 
     await rpg.addHighLevelNode({ id: 'auth', feature: { description: 'handle authentication' } })
@@ -196,7 +196,7 @@ describe('RepositoryPlanningGraph', () => {
     expect(results[0]?.id).toBe('auth')
   })
 
-  test('serializes and deserializes', async () => {
+  it('serializes and deserializes', async () => {
     const rpg = await RepositoryPlanningGraph.create({
       name: 'test-repo',
       description: 'Test repository',

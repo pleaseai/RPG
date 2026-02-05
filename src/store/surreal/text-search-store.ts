@@ -1,7 +1,7 @@
-import { RecordId, Surreal } from 'surrealdb'
-import { createNodeEngines } from '@surrealdb/node'
 import type { TextSearchStore } from '../text-search-store'
 import type { TextSearchOpts, TextSearchResult } from '../types'
+import { createNodeEngines } from '@surrealdb/node'
+import { RecordId, Surreal } from 'surrealdb'
 
 const SCHEMA = `
 DEFINE TABLE IF NOT EXISTS text_doc SCHEMAFULL;
@@ -64,13 +64,17 @@ export class SurrealTextSearchStore implements TextSearchStore {
   async index(
     id: string,
     fields: Record<string, string>,
-    _metadata?: Record<string, unknown>
+    _metadata?: Record<string, unknown>,
   ): Promise<void> {
     const content: Record<string, unknown> = {}
-    if (fields.feature_desc) content.feature_desc = fields.feature_desc
-    if (fields.feature_keywords) content.feature_keywords = fields.feature_keywords
-    if (fields.path) content.path = fields.path
-    if (fields.qualified_name) content.qualified_name = fields.qualified_name
+    if (fields.feature_desc)
+      content.feature_desc = fields.feature_desc
+    if (fields.feature_keywords)
+      content.feature_keywords = fields.feature_keywords
+    if (fields.path)
+      content.path = fields.path
+    if (fields.qualified_name)
+      content.qualified_name = fields.qualified_name
 
     // Delete then re-create to simulate upsert (SurrealDB SCHEMAFULL)
     // Use query-based DELETE to avoid "ONLY" error when record doesn't exist
@@ -93,11 +97,11 @@ export class SurrealTextSearchStore implements TextSearchStore {
         `SELECT *, search::score(1) AS score FROM text_doc
          WHERE ${field} @1@ $query
          ORDER BY score DESC LIMIT $limit`,
-        { query, limit }
+        { query, limit },
       )
       .collect()
 
-    return rows.map((r) => ({
+    return rows.map(r => ({
       id: this.extractId(r.id),
       score: r.score,
       fields: {
@@ -109,7 +113,7 @@ export class SurrealTextSearchStore implements TextSearchStore {
     }))
   }
 
-  async indexBatch(docs: Array<{ id: string; fields: Record<string, string> }>): Promise<void> {
+  async indexBatch(docs: Array<{ id: string, fields: Record<string, string> }>): Promise<void> {
     for (const doc of docs) {
       await this.index(doc.id, doc.fields)
     }

@@ -1,5 +1,5 @@
-import { VectorStore } from '../utils/vector'
 import type { Embedding } from './embedding'
+import { VectorStore } from '../utils/vector'
 
 /**
  * Semantic search options
@@ -93,7 +93,7 @@ export class SemanticSearch {
     }
 
     // Generate embeddings in batch
-    const contents = documents.map((doc) => doc.content)
+    const contents = documents.map(doc => doc.content)
     const embeddingResults = await this.embedding.embedBatch(contents)
 
     // Prepare documents for vector store
@@ -123,7 +123,7 @@ export class SemanticSearch {
     // Search vector store
     const results = await this.vectorStore.search(queryEmbedding.vector, topK)
 
-    return results.map((result) => ({
+    return results.map(result => ({
       id: result.id,
       score: result.score,
       content: result.text,
@@ -137,7 +137,7 @@ export class SemanticSearch {
   async searchByVector(queryVector: number[], topK = 10): Promise<SemanticSearchResult[]> {
     const results = await this.vectorStore.search(queryVector, topK)
 
-    return results.map((result) => ({
+    return results.map(result => ({
       id: result.id,
       score: result.score,
       content: result.text,
@@ -152,7 +152,7 @@ export class SemanticSearch {
   async searchHybrid(
     query: string,
     topK = 10,
-    vectorWeight = 0.7
+    vectorWeight = 0.7,
   ): Promise<SemanticSearchResult[]> {
     const queryEmbedding = await this.embedding.embed(query)
 
@@ -164,7 +164,7 @@ export class SemanticSearch {
       vectorWeight,
     })
 
-    return results.map((result) => ({
+    return results.map(result => ({
       id: result.id,
       score: result.score,
       content: result.text,
@@ -178,7 +178,7 @@ export class SemanticSearch {
   async searchFts(query: string, topK = 10): Promise<SemanticSearchResult[]> {
     const results = await this.vectorStore.searchFts(query, topK)
 
-    return results.map((result) => ({
+    return results.map(result => ({
       id: result.id,
       score: result.score,
       content: result.text,
@@ -206,7 +206,8 @@ export class SemanticSearch {
   async count(): Promise<number> {
     try {
       return await this.vectorStore.count()
-    } catch {
+    }
+    catch {
       // Table doesn't exist yet
       return 0
     }

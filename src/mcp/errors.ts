@@ -17,7 +17,7 @@ export type RPGErrorCode = (typeof RPGErrorCode)[keyof typeof RPGErrorCode]
 export class RPGError extends Error {
   constructor(
     public code: RPGErrorCode,
-    message: string
+    message: string,
   ) {
     super(message)
     this.name = 'RPGError'
@@ -30,7 +30,7 @@ export class RPGError extends Error {
 export function rpgNotLoadedError(): RPGError {
   return new RPGError(
     RPGErrorCode.RPG_NOT_LOADED,
-    'RPG is not loaded. Server requires an RPG file path at startup.'
+    'RPG is not loaded. Server requires an RPG file path at startup.',
   )
 }
 

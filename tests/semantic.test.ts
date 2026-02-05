@@ -1,11 +1,12 @@
-import { describe, expect, test } from 'vitest'
-import { SemanticExtractor, type EntityInput } from '../src/encoder/semantic'
+import type { EntityInput } from '../src/encoder/semantic'
+import { describe, expect, it } from 'vitest'
+import { SemanticExtractor } from '../src/encoder/semantic'
 
-describe('SemanticExtractor', () => {
+describe('semanticExtractor', () => {
   const extractor = new SemanticExtractor({ useLLM: false })
 
   describe('heuristic extraction', () => {
-    test('extracts semantic features for function', async () => {
+    it('extracts semantic features for function', async () => {
       const input: EntityInput = {
         type: 'function',
         name: 'validateUserInput',
@@ -19,7 +20,7 @@ describe('SemanticExtractor', () => {
       expect(feature.keywords.length).toBeGreaterThan(0)
     })
 
-    test('extracts semantic features for class', async () => {
+    it('extracts semantic features for class', async () => {
       const input: EntityInput = {
         type: 'class',
         name: 'UserService',
@@ -33,7 +34,7 @@ describe('SemanticExtractor', () => {
       expect(feature.keywords).toContain('user')
     })
 
-    test('extracts semantic features for method', async () => {
+    it('extracts semantic features for method', async () => {
       const input: EntityInput = {
         type: 'method',
         name: 'fetchData',
@@ -48,7 +49,7 @@ describe('SemanticExtractor', () => {
       expect(feature.keywords).toContain('apiclient')
     })
 
-    test('extracts semantic features for file', async () => {
+    it('extracts semantic features for file', async () => {
       const input: EntityInput = {
         type: 'file',
         name: 'encoder',
@@ -61,7 +62,7 @@ describe('SemanticExtractor', () => {
       expect(feature.keywords).toContain('file')
     })
 
-    test('handles common function prefixes', async () => {
+    it('handles common function prefixes', async () => {
       const prefixTests = [
         { name: 'getData', expected: 'retrieve' },
         { name: 'setConfig', expected: 'set' },
@@ -85,7 +86,7 @@ describe('SemanticExtractor', () => {
       }
     })
 
-    test('extracts keywords from camelCase names', async () => {
+    it('extracts keywords from camelCase names', async () => {
       const input: EntityInput = {
         type: 'function',
         name: 'getUserDataFromDatabase',
@@ -99,7 +100,7 @@ describe('SemanticExtractor', () => {
       expect(feature.keywords).toContain('database')
     })
 
-    test('extracts keywords from file path', async () => {
+    it('extracts keywords from file path', async () => {
       const input: EntityInput = {
         type: 'function',
         name: 'test',
@@ -115,7 +116,7 @@ describe('SemanticExtractor', () => {
   })
 
   describe('batch extraction', () => {
-    test('extracts features for multiple entities', async () => {
+    it('extracts features for multiple entities', async () => {
       const inputs: EntityInput[] = [
         { type: 'function', name: 'foo', filePath: 'a.ts' },
         { type: 'function', name: 'bar', filePath: 'b.ts' },
@@ -132,7 +133,7 @@ describe('SemanticExtractor', () => {
   })
 
   describe('edge cases', () => {
-    test('handles empty name', async () => {
+    it('handles empty name', async () => {
       const input: EntityInput = {
         type: 'function',
         name: '',
@@ -145,7 +146,7 @@ describe('SemanticExtractor', () => {
       expect(feature.keywords).toContain('function')
     })
 
-    test('handles snake_case names', async () => {
+    it('handles snake_case names', async () => {
       const input: EntityInput = {
         type: 'function',
         name: 'get_user_data',
@@ -158,7 +159,7 @@ describe('SemanticExtractor', () => {
       expect(feature.keywords).toContain('data')
     })
 
-    test('handles short names', async () => {
+    it('handles short names', async () => {
       const input: EntityInput = {
         type: 'function',
         name: 'fn',

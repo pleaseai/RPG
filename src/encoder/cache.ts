@@ -1,8 +1,8 @@
+import type { EntityInput, SemanticFeature } from './semantic'
 import { createHash } from 'node:crypto'
 import { existsSync } from 'node:fs'
 import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
-import type { EntityInput, SemanticFeature } from './semantic'
 
 /**
  * Cache options
@@ -59,7 +59,8 @@ export class SemanticCache {
    * Get cached feature for entity
    */
   async get(input: EntityInput): Promise<SemanticFeature | null> {
-    if (!this.options.enabled) return null
+    if (!this.options.enabled)
+      return null
 
     await this.ensureLoaded()
 
@@ -67,7 +68,8 @@ export class SemanticCache {
     const hash = this.generateHash(input)
 
     const entry = this.cache.get(key)
-    if (!entry) return null
+    if (!entry)
+      return null
 
     // Check if hash matches (source hasn't changed)
     if (entry.hash !== hash) {
@@ -90,7 +92,8 @@ export class SemanticCache {
    * Store feature in cache
    */
   async set(input: EntityInput, feature: SemanticFeature): Promise<void> {
-    if (!this.options.enabled) return
+    if (!this.options.enabled)
+      return
 
     await this.ensureLoaded()
 
@@ -127,7 +130,8 @@ export class SemanticCache {
    * Save cache to disk
    */
   async save(): Promise<void> {
-    if (!this.options.enabled || !this.dirty) return
+    if (!this.options.enabled || !this.dirty)
+      return
 
     const cacheFile: CacheFile = {
       version: CACHE_VERSION,
@@ -148,7 +152,7 @@ export class SemanticCache {
   /**
    * Get cache statistics
    */
-  getStats(): { size: number; enabled: boolean } {
+  getStats(): { size: number, enabled: boolean } {
     return {
       size: this.cache.size,
       enabled: this.options.enabled,
@@ -190,7 +194,8 @@ export class SemanticCache {
    */
   private loaded = false
   private async ensureLoaded(): Promise<void> {
-    if (this.loaded) return
+    if (this.loaded)
+      return
 
     const filePath = this.getCacheFilePath()
 
@@ -203,7 +208,8 @@ export class SemanticCache {
         if (cacheFile.version === CACHE_VERSION) {
           this.cache = new Map(Object.entries(cacheFile.entries))
         }
-      } catch {
+      }
+      catch {
         // Ignore errors, start with empty cache
       }
     }
@@ -217,7 +223,7 @@ export class SemanticCache {
  */
 export function createCachedExtractor<T extends (input: EntityInput) => Promise<SemanticFeature>>(
   extractor: T,
-  cache: SemanticCache
+  cache: SemanticCache,
 ): T {
   return (async (input: EntityInput) => {
     // Try cache first

@@ -1,13 +1,13 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { rm, mkdir, writeFile } from 'node:fs/promises'
+import { mkdir, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { RPGEncoder } from '../../src/encoder'
 import { MockEmbedding } from '../../src/encoder/embedding'
 import { SemanticSearch } from '../../src/encoder/semantic-search'
 import { RepositoryPlanningGraph } from '../../src/graph'
 
-describe('Encoder Integration Tests', () => {
+describe('encoder Integration Tests', () => {
   let testDir: string
 
   beforeEach(async () => {
@@ -18,12 +18,13 @@ describe('Encoder Integration Tests', () => {
   afterEach(async () => {
     try {
       await rm(testDir, { recursive: true, force: true })
-    } catch {
+    }
+    catch {
       // Ignore cleanup errors
     }
   })
 
-  describe('Full Encoding Pipeline', () => {
+  describe('full Encoding Pipeline', () => {
     it('should encode a TypeScript project and produce valid RPG', async () => {
       // Create a simple TypeScript project
       await mkdir(join(testDir, 'src'), { recursive: true })
@@ -36,7 +37,7 @@ import { greet } from './utils'
 export function main(): void {
   console.log(greet('World'))
 }
-`
+`,
       )
 
       await writeFile(
@@ -57,7 +58,7 @@ export class Greeter {
     return \`\${this.prefix}, \${name}!\`
   }
 }
-`
+`,
       )
 
       // Encode the project
@@ -74,12 +75,12 @@ export class Greeter {
 
       // Verify nodes
       const nodes = await result.rpg.getNodes()
-      const fileNodes = nodes.filter((n) => n.metadata?.entityType === 'file')
+      const fileNodes = nodes.filter(n => n.metadata?.entityType === 'file')
       expect(fileNodes.length).toBe(2)
 
       // Verify entities were extracted
-      const functionNodes = nodes.filter((n) => n.metadata?.entityType === 'function')
-      const classNodes = nodes.filter((n) => n.metadata?.entityType === 'class')
+      const functionNodes = nodes.filter(n => n.metadata?.entityType === 'function')
+      const classNodes = nodes.filter(n => n.metadata?.entityType === 'class')
       expect(functionNodes.length).toBeGreaterThanOrEqual(2) // main, greet
       expect(classNodes.length).toBeGreaterThanOrEqual(1) // Greeter
 
@@ -95,10 +96,10 @@ export class Greeter {
           const sourceNode = await result.rpg.getNode(e.source)
           const targetNode = await result.rpg.getNode(e.target)
           return (
-            sourceNode?.metadata?.path?.includes('index.ts') &&
-            targetNode?.metadata?.path?.includes('utils.ts')
+            sourceNode?.metadata?.path?.includes('index.ts')
+            && targetNode?.metadata?.path?.includes('utils.ts')
           )
-        })
+        }),
       )
       const importEdge = dependencyEdges.find((_, i) => importEdgeChecks[i])
       expect(importEdge).toBeDefined()
@@ -117,7 +118,7 @@ def main():
 
 if __name__ == "__main__":
     main()
-`
+`,
       )
 
       await writeFile(
@@ -132,7 +133,7 @@ class Greeter:
 
     def greet(self, name: str) -> str:
         return f"{self.prefix}, {name}!"
-`
+`,
       )
 
       const encoder = new RPGEncoder(testDir, {
@@ -146,15 +147,15 @@ class Greeter:
 
       // Verify Python entities were extracted
       const pyNodes = await result.rpg.getNodes()
-      const fileNodes = pyNodes.filter((n) => n.metadata?.entityType === 'file')
+      const fileNodes = pyNodes.filter(n => n.metadata?.entityType === 'file')
       expect(fileNodes.length).toBe(2)
 
-      const functionNodes = pyNodes.filter((n) => n.metadata?.entityType === 'function')
+      const functionNodes = pyNodes.filter(n => n.metadata?.entityType === 'function')
       expect(functionNodes.length).toBeGreaterThanOrEqual(2) // main, greet
     })
   })
 
-  describe('RPG Serialization', () => {
+  describe('rPG Serialization', () => {
     it('should serialize and deserialize RPG correctly', async () => {
       await mkdir(join(testDir, 'src'), { recursive: true })
 
@@ -164,7 +165,7 @@ class Greeter:
 export function run(): void {
   console.log('Running')
 }
-`
+`,
       )
 
       const encoder = new RPGEncoder(testDir, {
@@ -184,7 +185,7 @@ export function run(): void {
       expect(restored.getConfig().name).toBe(result.rpg.getConfig().name)
       expect((await restored.getNodes()).length).toBe((await result.rpg.getNodes()).length)
       expect((await restored.getFunctionalEdges()).length).toBe(
-        (await result.rpg.getFunctionalEdges()).length
+        (await result.rpg.getFunctionalEdges()).length,
       )
 
       // Verify node content is preserved
@@ -197,7 +198,7 @@ export function run(): void {
     })
   })
 
-  describe('Semantic Search Integration', () => {
+  describe('semantic Search Integration', () => {
     let search: SemanticSearch
     let searchDbPath: string
 
@@ -228,7 +229,7 @@ export function login(username: string, password: string): boolean {
 export function logout(): void {
   // Clear user session
 }
-`
+`,
       )
 
       await writeFile(
@@ -242,7 +243,7 @@ export function query(sql: string): unknown[] {
   // Execute SQL query and return results
   return []
 }
-`
+`,
       )
 
       // Encode the project
@@ -255,7 +256,7 @@ export function query(sql: string): unknown[] {
 
       // Index all nodes in semantic search
       const nodes = await result.rpg.getNodes()
-      const documents = nodes.map((node) => ({
+      const documents = nodes.map(node => ({
         id: node.id,
         content: node.feature.description,
         metadata: {
@@ -304,7 +305,7 @@ export function deleteUser(id: string): Promise<void> {
   // Remove user from system
   return Promise.resolve()
 }
-`
+`,
       )
 
       const encoder = new RPGEncoder(testDir, {
@@ -316,7 +317,7 @@ export function deleteUser(id: string): Promise<void> {
 
       // Index nodes
       const nodes = await result.rpg.getNodes()
-      const documents = nodes.map((node) => ({
+      const documents = nodes.map(node => ({
         id: node.id,
         content: node.feature.description,
       }))
@@ -331,7 +332,7 @@ export function deleteUser(id: string): Promise<void> {
     })
   })
 
-  describe('Edge Cases', () => {
+  describe('edge Cases', () => {
     it('should handle empty repository', async () => {
       const encoder = new RPGEncoder(testDir, {
         include: ['src/**/*.ts'],
@@ -355,7 +356,7 @@ export function deleteUser(id: string): Promise<void> {
 export function broken( {
   // Missing closing parenthesis
 }
-`
+`,
       )
 
       const encoder = new RPGEncoder(testDir, {
@@ -378,7 +379,7 @@ export function broken( {
 export function deepFunction(): void {
   // Very deeply nested
 }
-`
+`,
       )
 
       const encoder = new RPGEncoder(testDir, {

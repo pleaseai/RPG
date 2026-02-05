@@ -1,4 +1,5 @@
-import { type Edge, EdgeType, type Node, type RepositoryPlanningGraph } from '../graph'
+import type { Edge, Node, RepositoryPlanningGraph } from '../graph'
+import { EdgeType } from '../graph'
 
 /**
  * Edge type for exploration
@@ -26,7 +27,7 @@ export interface ExploreResult {
   /** Nodes discovered */
   nodes: Node[]
   /** Edges traversed */
-  edges: Array<{ source: string; target: string; type: string }>
+  edges: Array<{ source: string, target: string, type: string }>
   /** Depth reached */
   maxDepthReached: number
 }
@@ -37,7 +38,7 @@ export interface ExploreResult {
 interface ExploreState {
   visited: Set<string>
   nodes: Node[]
-  edges: Array<{ source: string; target: string; type: string }>
+  edges: Array<{ source: string, target: string, type: string }>
   maxDepthReached: number
 }
 
@@ -96,7 +97,7 @@ export class ExploreRPG {
     maxDepth: number,
     direction: 'out' | 'in' | 'both',
     edgeTypes: EdgeType[],
-    state: ExploreState
+    state: ExploreState,
   ): Promise<void> {
     if (depth > maxDepth || state.visited.has(nodeId)) {
       return
@@ -125,7 +126,7 @@ export class ExploreRPG {
     maxDepth: number,
     direction: 'out' | 'in' | 'both',
     edgeType: EdgeType,
-    state: ExploreState
+    state: ExploreState,
   ): Promise<void> {
     if (direction === 'out' || direction === 'both') {
       await this.processOutEdges(nodeId, depth, maxDepth, direction, edgeType, state)
@@ -145,7 +146,7 @@ export class ExploreRPG {
     maxDepth: number,
     direction: 'out' | 'in' | 'both',
     edgeType: EdgeType,
-    state: ExploreState
+    state: ExploreState,
   ): Promise<void> {
     const edgeTypes = [edgeType]
     for (const edge of await this.rpg.getOutEdges(nodeId, edgeType)) {
@@ -163,7 +164,7 @@ export class ExploreRPG {
     maxDepth: number,
     direction: 'out' | 'in' | 'both',
     edgeType: EdgeType,
-    state: ExploreState
+    state: ExploreState,
   ): Promise<void> {
     const edgeTypes = [edgeType]
     for (const edge of await this.rpg.getInEdges(nodeId, edgeType)) {

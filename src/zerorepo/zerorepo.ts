@@ -66,7 +66,7 @@ export class ZeroRepo {
    * Stage B: Build implementation-level graph
    */
   async buildImplementationGraph(
-    proposalGraph: RepositoryPlanningGraph
+    proposalGraph: RepositoryPlanningGraph,
   ): Promise<RepositoryPlanningGraph> {
     // TODO: Implement
     // 1. File structure encoding
@@ -81,7 +81,7 @@ export class ZeroRepo {
    */
   async generateRepository(
     _rpg: RepositoryPlanningGraph,
-    outputDir: string
+    outputDir: string,
   ): Promise<GenerationResult> {
     // TODO: Implement
     // 1. Topological traversal

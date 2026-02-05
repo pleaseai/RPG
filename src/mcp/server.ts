@@ -6,20 +6,20 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { HuggingFaceEmbedding } from '../encoder/embedding'
 import { SemanticSearch } from '../encoder/semantic-search'
 import { RepositoryPlanningGraph } from '../graph'
-import { RPGError, invalidPathError } from './errors'
+import { invalidPathError, RPGError } from './errors'
 import {
   EncodeInputSchema,
+  executeEncode,
+  executeExplore,
+  executeFetch,
+  executeSearch,
+  executeStats,
   ExploreInputSchema,
   FetchInputBaseSchema,
   FetchInputSchema,
   RPG_TOOLS,
   SearchInputSchema,
   StatsInputSchema,
-  executeEncode,
-  executeExplore,
-  executeFetch,
-  executeSearch,
-  executeStats,
 } from './tools'
 
 /**
@@ -27,7 +27,7 @@ import {
  */
 export function createMcpServer(
   rpg: RepositoryPlanningGraph | null,
-  semanticSearch?: SemanticSearch | null
+  semanticSearch?: SemanticSearch | null,
 ): McpServer {
   const server = new McpServer({
     name: 'rpg-mcp-server',
@@ -39,36 +39,36 @@ export function createMcpServer(
     RPG_TOOLS.rpg_search.name,
     RPG_TOOLS.rpg_search.description,
     SearchInputSchema.shape,
-    async (args) =>
-      wrapHandler(() => executeSearch(rpg, SearchInputSchema.parse(args), semanticSearch))
+    async args =>
+      wrapHandler(() => executeSearch(rpg, SearchInputSchema.parse(args), semanticSearch)),
   )
 
   server.tool(
     RPG_TOOLS.rpg_fetch.name,
     RPG_TOOLS.rpg_fetch.description,
     FetchInputBaseSchema.shape,
-    async (args: unknown) => wrapHandler(() => executeFetch(rpg, FetchInputSchema.parse(args)))
+    async (args: unknown) => wrapHandler(() => executeFetch(rpg, FetchInputSchema.parse(args))),
   )
 
   server.tool(
     RPG_TOOLS.rpg_explore.name,
     RPG_TOOLS.rpg_explore.description,
     ExploreInputSchema.shape,
-    async (args) => wrapHandler(() => executeExplore(rpg, ExploreInputSchema.parse(args)))
+    async args => wrapHandler(() => executeExplore(rpg, ExploreInputSchema.parse(args))),
   )
 
   server.tool(
     RPG_TOOLS.rpg_encode.name,
     RPG_TOOLS.rpg_encode.description,
     EncodeInputSchema.shape,
-    async (args) => wrapHandler(() => executeEncode(EncodeInputSchema.parse(args)))
+    async args => wrapHandler(() => executeEncode(EncodeInputSchema.parse(args))),
   )
 
   server.tool(
     RPG_TOOLS.rpg_stats.name,
     RPG_TOOLS.rpg_stats.description,
     StatsInputSchema.shape,
-    async () => wrapHandler(() => executeStats(rpg))
+    async () => wrapHandler(() => executeStats(rpg)),
   )
 
   return server
@@ -78,12 +78,13 @@ export function createMcpServer(
  * Wrap a handler function with standard MCP response formatting
  */
 async function wrapHandler<T>(
-  handler: () => T | Promise<T>
-): Promise<{ content: Array<{ type: 'text'; text: string }>; isError?: true }> {
+  handler: () => T | Promise<T>,
+): Promise<{ content: Array<{ type: 'text', text: string }>, isError?: true }> {
   try {
     const result = await handler()
     return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] }
-  } catch (error) {
+  }
+  catch (error) {
     return formatError(error)
   }
 }
@@ -92,7 +93,7 @@ async function wrapHandler<T>(
  * Format error for MCP response
  */
 function formatError(error: unknown): {
-  content: Array<{ type: 'text'; text: string }>
+  content: Array<{ type: 'text', text: string }>
   isError: true
 } {
   if (error instanceof RPGError) {
@@ -126,7 +127,8 @@ export async function loadRPG(filePath: string): Promise<RepositoryPlanningGraph
   try {
     const content = await readFile(filePath, 'utf-8')
     return await RepositoryPlanningGraph.fromJSON(content)
-  } catch (error) {
+  }
+  catch {
     throw invalidPathError(filePath)
   }
 }
@@ -137,7 +139,7 @@ export async function loadRPG(filePath: string): Promise<RepositoryPlanningGraph
 export async function main(): Promise<void> {
   const args = process.argv.slice(2)
   const noSearch = args.includes('--no-search')
-  const filteredArgs = args.filter((a) => a !== '--no-search')
+  const filteredArgs = args.filter(a => a !== '--no-search')
 
   let rpg: RepositoryPlanningGraph | null = null
   let semanticSearch: SemanticSearch | null = null
@@ -148,7 +150,8 @@ export async function main(): Promise<void> {
       console.error(`Loading RPG from: ${rpgPath}`)
       rpg = await loadRPG(rpgPath)
       console.error(`RPG loaded: ${rpg.getConfig().name}`)
-    } catch (error) {
+    }
+    catch (error) {
       console.error(`Failed to load RPG: ${error instanceof Error ? error.message : String(error)}`)
       process.exit(1)
     }
@@ -157,19 +160,22 @@ export async function main(): Promise<void> {
     if (!noSearch) {
       try {
         semanticSearch = await initSemanticSearch(rpg, rpgPath)
-      } catch (error) {
+      }
+      catch (error) {
         console.error(
-          `Semantic search initialization failed, continuing without it: ${error instanceof Error ? error.message : String(error)}`
+          `Semantic search initialization failed, continuing without it: ${error instanceof Error ? error.message : String(error)}`,
         )
       }
-    } else {
+    }
+    else {
       console.error('Semantic search disabled (--no-search)')
     }
-  } else {
+  }
+  else {
     console.error('No RPG file path provided. Server will start without a pre-loaded RPG.')
     console.error('Usage: bun run src/mcp/server.ts <rpg-file.json> [--no-search]')
     console.error(
-      'Note: rpg_encode tool will still work, but other tools require an RPG to be loaded.'
+      'Note: rpg_encode tool will still work, but other tools require an RPG to be loaded.',
     )
   }
 
@@ -185,7 +191,7 @@ export async function main(): Promise<void> {
  */
 async function initSemanticSearch(
   rpg: RepositoryPlanningGraph,
-  rpgPath: string
+  rpgPath: string,
 ): Promise<SemanticSearch> {
   const dbPath = join(dirname(rpgPath), `${rpgPath}.vectors`)
 
@@ -211,7 +217,7 @@ async function initSemanticSearch(
   const nodes = await rpg.getNodes()
   console.error(`Indexing ${nodes.length} nodes for semantic search...`)
 
-  const documents = nodes.map((node) => ({
+  const documents = nodes.map(node => ({
     id: node.id,
     content: `${node.feature.description} ${(node.feature.keywords ?? []).join(' ')} ${node.metadata?.path ?? ''}`,
     metadata: {

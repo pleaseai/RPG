@@ -84,7 +84,7 @@ export class SearchNode {
     }
 
     // Deduplicate by node ID
-    const uniqueNodes = Array.from(new Map(results.map((n) => [n.id, n])).values())
+    const uniqueNodes = Array.from(new Map(results.map(n => [n.id, n])).values())
 
     return {
       nodes: uniqueNodes,
@@ -110,8 +110,8 @@ export class SearchNode {
     // Use semantic search for vector/fts/hybrid strategies
     const results: Node[] = []
     for (const term of featureTerms) {
-      const searchResults =
-        strategy === 'hybrid'
+      const searchResults
+        = strategy === 'hybrid'
           ? await this.semanticSearch.searchHybrid(term)
           : strategy === 'fts'
             ? await this.semanticSearch.searchFts(term)

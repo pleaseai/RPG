@@ -42,9 +42,9 @@ export class DefaultContextStore implements ContextStore {
 
     // Create vector store
     const vectorStore = new LanceDBVectorStore()
-    const vectorPath =
-      config.vectorPath ??
-      (config.path === 'memory' ? '/tmp/rpg-vectors' : `${config.path}-vectors`)
+    const vectorPath
+      = config.vectorPath
+        ?? (config.path === 'memory' ? '/tmp/rpg-vectors' : `${config.path}-vectors`)
     await vectorStore.open({ path: vectorPath })
 
     this._graph = graphStore

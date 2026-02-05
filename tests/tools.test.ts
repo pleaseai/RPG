@@ -1,13 +1,13 @@
-import { afterEach, beforeEach, describe, expect, test } from 'vitest'
 import { rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { MockEmbedding } from '../src/encoder/embedding'
 import { SemanticSearch } from '../src/encoder/semantic-search'
 import { RepositoryPlanningGraph } from '../src/graph'
 import { ExploreRPG, FetchNode, SearchNode } from '../src/tools'
 
-describe('SearchNode', () => {
+describe('searchNode', () => {
   let rpg: RepositoryPlanningGraph
   let search: SearchNode
 
@@ -67,7 +67,7 @@ describe('SearchNode', () => {
     search = new SearchNode(rpg)
   })
 
-  test('searches by feature terms', async () => {
+  it('searches by feature terms', async () => {
     const results = await search.query({
       mode: 'features',
       featureTerms: ['authentication'],
@@ -77,7 +77,7 @@ describe('SearchNode', () => {
     expect(results.nodes[0]?.id).toBe('auth-module')
   })
 
-  test('searches by multiple feature terms', async () => {
+  it('searches by multiple feature terms', async () => {
     const results = await search.query({
       mode: 'features',
       featureTerms: ['auth', 'data'],
@@ -86,7 +86,7 @@ describe('SearchNode', () => {
     expect(results.totalMatches).toBe(2)
   })
 
-  test('searches by keywords', async () => {
+  it('searches by keywords', async () => {
     const results = await search.query({
       mode: 'features',
       featureTerms: ['login'],
@@ -95,7 +95,7 @@ describe('SearchNode', () => {
     expect(results.totalMatches).toBeGreaterThanOrEqual(1)
   })
 
-  test('searches by file pattern', async () => {
+  it('searches by file pattern', async () => {
     const results = await search.query({
       mode: 'snippets',
       filePattern: '/src/auth/%',
@@ -104,7 +104,7 @@ describe('SearchNode', () => {
     expect(results.totalMatches).toBe(2)
   })
 
-  test('auto mode searches both features and snippets', async () => {
+  it('auto mode searches both features and snippets', async () => {
     const results = await search.query({
       mode: 'auto',
       featureTerms: ['validate'],
@@ -114,7 +114,7 @@ describe('SearchNode', () => {
     expect(results.totalMatches).toBeGreaterThanOrEqual(1)
   })
 
-  test('returns empty for no matches', async () => {
+  it('returns empty for no matches', async () => {
     const results = await search.query({
       mode: 'features',
       featureTerms: ['nonexistent-feature'],
@@ -125,7 +125,7 @@ describe('SearchNode', () => {
   })
 })
 
-describe('SearchNode with SemanticSearch', () => {
+describe('searchNode with SemanticSearch', () => {
   let rpg: RepositoryPlanningGraph
   let semanticSearch: SemanticSearch
   let search: SearchNode
@@ -134,7 +134,7 @@ describe('SearchNode with SemanticSearch', () => {
   beforeEach(async () => {
     testDbPath = join(
       tmpdir(),
-      `rpg-search-test-${Date.now()}-${Math.random().toString(36).slice(2)}`
+      `rpg-search-test-${Date.now()}-${Math.random().toString(36).slice(2)}`,
     )
 
     rpg = await RepositoryPlanningGraph.create({ name: 'test-repo' })
@@ -185,12 +185,13 @@ describe('SearchNode with SemanticSearch', () => {
     await semanticSearch.close()
     try {
       await rm(testDbPath, { recursive: true, force: true })
-    } catch {
+    }
+    catch {
       // Ignore cleanup errors
     }
   })
 
-  test('uses hybrid search when semanticSearch is available', async () => {
+  it('uses hybrid search when semanticSearch is available', async () => {
     const results = await search.query({
       mode: 'features',
       featureTerms: ['authentication'],
@@ -199,7 +200,7 @@ describe('SearchNode with SemanticSearch', () => {
     expect(results.totalMatches).toBeGreaterThan(0)
   })
 
-  test('respects explicit string strategy', async () => {
+  it('respects explicit string strategy', async () => {
     const results = await search.query({
       mode: 'features',
       featureTerms: ['authentication'],
@@ -211,7 +212,7 @@ describe('SearchNode with SemanticSearch', () => {
     expect(results.nodes[0]?.id).toBe('auth-module')
   })
 
-  test('works with fts strategy', async () => {
+  it('works with fts strategy', async () => {
     const results = await search.query({
       mode: 'features',
       featureTerms: ['authentication'],
@@ -221,7 +222,7 @@ describe('SearchNode with SemanticSearch', () => {
     expect(results.totalMatches).toBeGreaterThan(0)
   })
 
-  test('works with vector strategy', async () => {
+  it('works with vector strategy', async () => {
     const results = await search.query({
       mode: 'features',
       featureTerms: ['authentication'],
@@ -232,7 +233,7 @@ describe('SearchNode with SemanticSearch', () => {
   })
 })
 
-describe('SearchNode fallback without SemanticSearch', () => {
+describe('searchNode fallback without SemanticSearch', () => {
   let rpg: RepositoryPlanningGraph
   let search: SearchNode
 
@@ -251,7 +252,7 @@ describe('SearchNode fallback without SemanticSearch', () => {
     search = new SearchNode(rpg)
   })
 
-  test('falls back to string match when no semanticSearch', async () => {
+  it('falls back to string match when no semanticSearch', async () => {
     const results = await search.query({
       mode: 'features',
       featureTerms: ['authentication'],
@@ -261,7 +262,7 @@ describe('SearchNode fallback without SemanticSearch', () => {
     expect(results.nodes[0]?.id).toBe('auth-module')
   })
 
-  test('falls back to string match even when hybrid strategy requested', async () => {
+  it('falls back to string match even when hybrid strategy requested', async () => {
     const results = await search.query({
       mode: 'features',
       featureTerms: ['authentication'],
@@ -273,7 +274,7 @@ describe('SearchNode fallback without SemanticSearch', () => {
   })
 })
 
-describe('FetchNode', () => {
+describe('fetchNode', () => {
   let rpg: RepositoryPlanningGraph
   let fetch: FetchNode
 
@@ -308,7 +309,7 @@ describe('FetchNode', () => {
     fetch = new FetchNode(rpg)
   })
 
-  test('fetches existing entities', async () => {
+  it('fetches existing entities', async () => {
     const result = await fetch.get({
       codeEntities: ['func'],
     })
@@ -319,7 +320,7 @@ describe('FetchNode', () => {
     expect(result.entities[0]?.sourceCode).toBe('function test() { return true; }')
   })
 
-  test('returns not found for missing entities', async () => {
+  it('returns not found for missing entities', async () => {
     const result = await fetch.get({
       codeEntities: ['nonexistent'],
     })
@@ -329,7 +330,7 @@ describe('FetchNode', () => {
     expect(result.notFound[0]).toBe('nonexistent')
   })
 
-  test('handles mixed existing and missing entities', async () => {
+  it('handles mixed existing and missing entities', async () => {
     const result = await fetch.get({
       codeEntities: ['func', 'nonexistent', 'root'],
     })
@@ -338,7 +339,7 @@ describe('FetchNode', () => {
     expect(result.notFound).toHaveLength(1)
   })
 
-  test('returns feature paths', async () => {
+  it('returns feature paths', async () => {
     const result = await fetch.get({
       codeEntities: ['func'],
     })
@@ -348,7 +349,7 @@ describe('FetchNode', () => {
   })
 })
 
-describe('ExploreRPG', () => {
+describe('exploreRPG', () => {
   let rpg: RepositoryPlanningGraph
   let explore: ExploreRPG
 
@@ -397,7 +398,7 @@ describe('ExploreRPG', () => {
     explore = new ExploreRPG(rpg)
   })
 
-  test('explores functional edges outward', async () => {
+  it('explores functional edges outward', async () => {
     const result = await explore.traverse({
       startNode: 'root',
       edgeType: 'functional',
@@ -409,7 +410,7 @@ describe('ExploreRPG', () => {
     expect(result.maxDepthReached).toBe(1)
   })
 
-  test('explores functional edges with deeper depth', async () => {
+  it('explores functional edges with deeper depth', async () => {
     const result = await explore.traverse({
       startNode: 'root',
       edgeType: 'functional',
@@ -421,7 +422,7 @@ describe('ExploreRPG', () => {
     expect(result.maxDepthReached).toBe(2)
   })
 
-  test('explores dependency edges', async () => {
+  it('explores dependency edges', async () => {
     const result = await explore.traverse({
       startNode: 'funcA1',
       edgeType: 'dependency',
@@ -430,10 +431,10 @@ describe('ExploreRPG', () => {
     })
 
     expect(result.nodes.length).toBe(2) // funcA1, funcB1
-    expect(result.edges.some((e) => e.target === 'funcB1')).toBe(true)
+    expect(result.edges.some(e => e.target === 'funcB1')).toBe(true)
   })
 
-  test('explores both edge types', async () => {
+  it('explores both edge types', async () => {
     const result = await explore.traverse({
       startNode: 'moduleA',
       edgeType: 'both',
@@ -445,7 +446,7 @@ describe('ExploreRPG', () => {
     expect(result.nodes.length).toBeGreaterThanOrEqual(3)
   })
 
-  test('explores inward direction', async () => {
+  it('explores inward direction', async () => {
     const result = await explore.traverse({
       startNode: 'funcA1',
       edgeType: 'functional',
@@ -454,11 +455,11 @@ describe('ExploreRPG', () => {
     })
 
     // funcA1 <- moduleA <- root
-    expect(result.nodes.some((n) => n.id === 'moduleA')).toBe(true)
-    expect(result.nodes.some((n) => n.id === 'root')).toBe(true)
+    expect(result.nodes.some(n => n.id === 'moduleA')).toBe(true)
+    expect(result.nodes.some(n => n.id === 'root')).toBe(true)
   })
 
-  test('respects max depth limit', async () => {
+  it('respects max depth limit', async () => {
     const result = await explore.traverse({
       startNode: 'root',
       edgeType: 'functional',
@@ -470,7 +471,7 @@ describe('ExploreRPG', () => {
     expect(result.maxDepthReached).toBe(0)
   })
 
-  test('handles nonexistent start node', async () => {
+  it('handles nonexistent start node', async () => {
     const result = await explore.traverse({
       startNode: 'nonexistent',
       edgeType: 'functional',

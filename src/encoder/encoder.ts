@@ -1,10 +1,14 @@
+import type { RPGConfig } from '../graph'
+import type { CodeEntity } from '../utils/ast'
+import type { CacheOptions } from './cache'
+import type { EntityInput, SemanticOptions } from './semantic'
 import fs from 'node:fs'
-import { readFile, readdir, stat } from 'node:fs/promises'
+import { readdir, readFile, stat } from 'node:fs/promises'
 import path from 'node:path'
-import { type RPGConfig, RepositoryPlanningGraph } from '../graph'
-import { ASTParser, type CodeEntity } from '../utils/ast'
-import { type CacheOptions, SemanticCache } from './cache'
-import { type EntityInput, SemanticExtractor, type SemanticOptions } from './semantic'
+import { RepositoryPlanningGraph } from '../graph'
+import { ASTParser } from '../utils/ast'
+import { SemanticCache } from './cache'
+import { SemanticExtractor } from './semantic'
 
 /**
  * Options for encoding a repository
@@ -53,7 +57,7 @@ export interface EncodingResult {
  */
 interface ExtractedEntity {
   id: string
-  feature: { description: string; keywords?: string[] }
+  feature: { description: string, keywords?: string[] }
   metadata: {
     entityType: 'file' | 'class' | 'function' | 'method'
     path: string
@@ -172,15 +176,17 @@ export class RPGEncoder {
     files: string[],
     includePatterns: string[],
     excludePatterns: string[],
-    depth: number
+    depth: number,
   ): Promise<void> {
     const maxDepth = this.options.maxDepth ?? 10
-    if (depth > maxDepth) return
+    if (depth > maxDepth)
+      return
 
     let entries: string[]
     try {
       entries = await readdir(dir)
-    } catch {
+    }
+    catch {
       return
     }
 
@@ -196,13 +202,15 @@ export class RPGEncoder {
       let stats: fs.Stats
       try {
         stats = await stat(fullPath)
-      } catch {
+      }
+      catch {
         continue
       }
 
       if (stats.isDirectory()) {
         await this.walkDirectory(fullPath, files, includePatterns, excludePatterns, depth + 1)
-      } else if (stats.isFile()) {
+      }
+      else if (stats.isFile()) {
         if (this.matchesPattern(relativePath, includePatterns)) {
           files.push(fullPath)
         }
@@ -214,7 +222,7 @@ export class RPGEncoder {
    * Check if path matches any of the glob patterns
    */
   private matchesPattern(filePath: string, patterns: string[]): boolean {
-    return patterns.some((pattern) => this.globMatch(filePath, pattern))
+    return patterns.some(pattern => this.globMatch(filePath, pattern))
   }
 
   /**
@@ -239,7 +247,7 @@ export class RPGEncoder {
     pathSegs: string[],
     patternSegs: string[],
     pathIdx: number,
-    patternIdx: number
+    patternIdx: number,
   ): boolean {
     // Both exhausted - match
     if (pathIdx === pathSegs.length && patternIdx === patternSegs.length) {
@@ -252,7 +260,8 @@ export class RPGEncoder {
     }
 
     const patternSeg = patternSegs[patternIdx]
-    if (patternSeg === undefined) return false
+    if (patternSeg === undefined)
+      return false
 
     // Handle ** (globstar)
     if (patternSeg === '**') {
@@ -304,7 +313,8 @@ export class RPGEncoder {
     let sourceCode: string | undefined
     try {
       sourceCode = await readFile(file, 'utf-8')
-    } catch {
+    }
+    catch {
       // Ignore read errors
     }
 
@@ -333,13 +343,13 @@ export class RPGEncoder {
         relativePath,
         entity.type,
         entity.name,
-        entity.startLine
+        entity.startLine,
       )
       const extractedEntity = await this.convertCodeEntity(
         entity,
         relativePath,
         entityId,
-        sourceCode
+        sourceCode,
       )
       if (extractedEntity) {
         entities.push(extractedEntity)
@@ -356,7 +366,7 @@ export class RPGEncoder {
     filePath: string,
     entityType: string,
     entityName?: string,
-    startLine?: number
+    startLine?: number,
   ): string {
     const parts = [filePath, entityType]
     if (entityName) {
@@ -375,10 +385,11 @@ export class RPGEncoder {
     entity: CodeEntity,
     filePath: string,
     entityId: string,
-    fileSourceCode?: string
+    fileSourceCode?: string,
   ): Promise<ExtractedEntity | null> {
     const entityType = this.mapEntityType(entity.type)
-    if (!entityType) return null
+    if (!entityType)
+      return null
 
     // Extract entity source code from file
     let entitySourceCode: string | undefined
@@ -413,8 +424,8 @@ export class RPGEncoder {
    * Extract semantic feature with caching
    */
   private async extractSemanticFeature(
-    input: EntityInput
-  ): Promise<{ description: string; keywords?: string[] }> {
+    input: EntityInput,
+  ): Promise<{ description: string, keywords?: string[] }> {
     // Check cache first
     const cached = await this.cache.get(input)
     if (cached) {
@@ -440,7 +451,7 @@ export class RPGEncoder {
    * Map AST entity type to RPG entity type
    */
   private mapEntityType(
-    type: CodeEntity['type']
+    type: CodeEntity['type'],
   ): ExtractedEntity['metadata']['entityType'] | null {
     const typeMap: Record<string, ExtractedEntity['metadata']['entityType']> = {
       function: 'function',
@@ -474,12 +485,13 @@ export class RPGEncoder {
    */
   private async createDirectoryNodes(
     rpg: RepositoryPlanningGraph,
-    directoryGroups: Map<string, Array<{ id: string; metadata?: { path?: string } }>>
+    directoryGroups: Map<string, Array<{ id: string, metadata?: { path?: string } }>>,
   ): Promise<Map<string, string>> {
     const directoryNodeIds = new Map<string, string>()
 
     for (const dirPath of directoryGroups.keys()) {
-      if (dirPath === '.' || dirPath === '') continue
+      if (dirPath === '.' || dirPath === '')
+        continue
 
       const dirId = `dir:${dirPath}`
       const feature = await this.extractSemanticFeature({
@@ -506,10 +518,10 @@ export class RPGEncoder {
    */
   private async createDirectoryHierarchyEdges(
     rpg: RepositoryPlanningGraph,
-    directoryNodeIds: Map<string, string>
+    directoryNodeIds: Map<string, string>,
   ): Promise<void> {
     const sortedDirs = [...directoryNodeIds.keys()].sort(
-      (a, b) => a.split('/').length - b.split('/').length
+      (a, b) => a.split('/').length - b.split('/').length,
     )
 
     for (const dirPath of sortedDirs) {
@@ -528,12 +540,13 @@ export class RPGEncoder {
    */
   private async createDirectoryToFileEdges(
     rpg: RepositoryPlanningGraph,
-    directoryGroups: Map<string, Array<{ id: string; metadata?: { entityType?: string } }>>,
-    directoryNodeIds: Map<string, string>
+    directoryGroups: Map<string, Array<{ id: string, metadata?: { entityType?: string } }>>,
+    directoryNodeIds: Map<string, string>,
   ): Promise<void> {
     for (const [dirPath, nodes] of directoryGroups.entries()) {
       const dirId = directoryNodeIds.get(dirPath)
-      if (!dirId) continue
+      if (!dirId)
+        continue
 
       for (const node of nodes) {
         if (node.metadata?.entityType === 'file') {
@@ -548,7 +561,7 @@ export class RPGEncoder {
    */
   private async createFileToEntityEdges(
     rpg: RepositoryPlanningGraph,
-    lowLevelNodes: Array<{ id: string; metadata?: { entityType?: string; path?: string } }>
+    lowLevelNodes: Array<{ id: string, metadata?: { entityType?: string, path?: string } }>,
   ): Promise<void> {
     for (const node of lowLevelNodes) {
       if (node.metadata?.entityType !== 'file' && node.metadata?.path) {
@@ -564,20 +577,22 @@ export class RPGEncoder {
    * Group low-level nodes by their directory path
    */
   private groupNodesByDirectory(
-    nodes: Array<{ id: string; metadata?: { path?: string; entityType?: string } }>
+    nodes: Array<{ id: string, metadata?: { path?: string, entityType?: string } }>,
   ): Map<string, typeof nodes> {
     const groups = new Map<string, typeof nodes>()
 
     for (const node of nodes) {
       const nodePath = node.metadata?.path
-      if (!nodePath) continue
+      if (!nodePath)
+        continue
 
       const dirPath = path.dirname(nodePath)
 
       const group = groups.get(dirPath)
       if (group) {
         group.push(node)
-      } else {
+      }
+      else {
         groups.set(dirPath, [node])
       }
     }
@@ -593,7 +608,7 @@ export class RPGEncoder {
    */
   private async injectDependencies(rpg: RepositoryPlanningGraph): Promise<void> {
     const lowLevelNodes = await rpg.getLowLevelNodes()
-    const fileNodes = lowLevelNodes.filter((n) => n.metadata?.entityType === 'file')
+    const fileNodes = lowLevelNodes.filter(n => n.metadata?.entityType === 'file')
 
     // Build a map of file paths to node IDs for quick lookup
     const filePathToNodeId = this.buildFilePathMap(fileNodes)
@@ -611,7 +626,7 @@ export class RPGEncoder {
    * Build a map of file paths to node IDs
    */
   private buildFilePathMap(
-    fileNodes: Array<{ id: string; metadata?: { path?: string } }>
+    fileNodes: Array<{ id: string, metadata?: { path?: string } }>,
   ): Map<string, string> {
     const map = new Map<string, string>()
     for (const node of fileNodes) {
@@ -627,26 +642,30 @@ export class RPGEncoder {
    */
   private async extractFileDependencies(
     rpg: RepositoryPlanningGraph,
-    node: { id: string; metadata?: { path?: string } },
+    node: { id: string, metadata?: { path?: string } },
     filePathToNodeId: Map<string, string>,
-    createdEdges: Set<string>
+    createdEdges: Set<string>,
   ): Promise<void> {
     const filePath = node.metadata?.path
-    if (!filePath) return
+    if (!filePath)
+      return
 
     const fullPath = path.join(this.repoPath, filePath)
     const parseResult = await this.astParser.parseFile(fullPath)
 
     for (const importInfo of parseResult.imports) {
       const targetPath = this.resolveImportPath(filePath, importInfo.module)
-      if (!targetPath) continue
+      if (!targetPath)
+        continue
 
       const targetNodeId = filePathToNodeId.get(targetPath)
-      if (!targetNodeId || targetNodeId === node.id) continue
+      if (!targetNodeId || targetNodeId === node.id)
+        continue
 
       // Avoid duplicate edges
       const edgeKey = `${node.id}->${targetNodeId}`
-      if (createdEdges.has(edgeKey)) continue
+      if (createdEdges.has(edgeKey))
+        continue
       createdEdges.add(edgeKey)
 
       await rpg.addDependencyEdge({

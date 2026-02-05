@@ -3,28 +3,28 @@ import { join } from 'node:path'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { RepositoryPlanningGraph } from '../src/graph'
 import {
-  RPGError,
-  RPGErrorCode,
   encodeFailedError,
   invalidInputError,
   invalidPathError,
   nodeNotFoundError,
+  RPGError,
+  RPGErrorCode,
   rpgNotLoadedError,
 } from '../src/mcp/errors'
 import {
   EncodeInputSchema,
-  ExploreInputSchema,
-  FetchInputSchema,
-  SearchInputSchema,
-  StatsInputSchema,
   executeExplore,
   executeFetch,
   executeSearch,
   executeStats,
+  ExploreInputSchema,
+  FetchInputSchema,
+  SearchInputSchema,
+  StatsInputSchema,
 } from '../src/mcp/tools'
 
-describe('MCP Tool Schemas', () => {
-  describe('SearchInputSchema', () => {
+describe('mCP Tool Schemas', () => {
+  describe('searchInputSchema', () => {
     it('should accept valid search input with all fields', () => {
       const input = {
         mode: 'features',
@@ -55,7 +55,7 @@ describe('MCP Tool Schemas', () => {
     })
   })
 
-  describe('FetchInputSchema', () => {
+  describe('fetchInputSchema', () => {
     it('should accept valid fetch input', () => {
       const input = {
         codeEntities: ['file1.ts', 'class::MyClass'],
@@ -84,7 +84,7 @@ describe('MCP Tool Schemas', () => {
     })
   })
 
-  describe('ExploreInputSchema', () => {
+  describe('exploreInputSchema', () => {
     it('should accept valid explore input with all fields', () => {
       const input = {
         startNode: 'node1',
@@ -113,7 +113,7 @@ describe('MCP Tool Schemas', () => {
     })
   })
 
-  describe('EncodeInputSchema', () => {
+  describe('encodeInputSchema', () => {
     it('should accept valid encode input', () => {
       const input = {
         repoPath: '/path/to/repo',
@@ -138,7 +138,7 @@ describe('MCP Tool Schemas', () => {
     })
   })
 
-  describe('StatsInputSchema', () => {
+  describe('statsInputSchema', () => {
     it('should accept empty input', () => {
       const input = {}
       const result = StatsInputSchema.parse(input)
@@ -147,8 +147,8 @@ describe('MCP Tool Schemas', () => {
   })
 })
 
-describe('MCP Error Handling', () => {
-  describe('RPGError', () => {
+describe('mCP Error Handling', () => {
+  describe('rPGError', () => {
     it('should create error with code and message', () => {
       const error = new RPGError(RPGErrorCode.RPG_NOT_LOADED, 'Test message')
       expect(error.code).toBe(RPGErrorCode.RPG_NOT_LOADED)
@@ -157,7 +157,7 @@ describe('MCP Error Handling', () => {
     })
   })
 
-  describe('Error factory functions', () => {
+  describe('error factory functions', () => {
     it('should create rpgNotLoadedError', () => {
       const error = rpgNotLoadedError()
       expect(error.code).toBe(RPGErrorCode.RPG_NOT_LOADED)
@@ -190,7 +190,7 @@ describe('MCP Error Handling', () => {
   })
 })
 
-describe('MCP Tool Execution', () => {
+describe('mCP Tool Execution', () => {
   let rpg: RepositoryPlanningGraph
 
   beforeEach(async () => {
@@ -267,7 +267,7 @@ describe('MCP Tool Execution', () => {
   describe('executeExplore', () => {
     it('should throw when RPG is null', async () => {
       await expect(
-        executeExplore(null, { startNode: 'root', edgeType: 'both', maxDepth: 3, direction: 'out' })
+        executeExplore(null, { startNode: 'root', edgeType: 'both', maxDepth: 3, direction: 'out' }),
       ).rejects.toThrow(RPGError)
     })
 
@@ -278,7 +278,7 @@ describe('MCP Tool Execution', () => {
           edgeType: 'both',
           maxDepth: 3,
           direction: 'out',
-        })
+        }),
       ).rejects.toThrow(RPGError)
     })
 

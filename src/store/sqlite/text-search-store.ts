@@ -1,6 +1,6 @@
-import Database from 'better-sqlite3'
 import type { TextSearchStore } from '../text-search-store'
 import type { TextSearchOpts, TextSearchResult } from '../types'
+import Database from 'better-sqlite3'
 
 const SCHEMA = `
 CREATE TABLE IF NOT EXISTS text_docs (
@@ -99,7 +99,7 @@ export class SQLiteTextSearchStore implements TextSearchStore {
   async index(
     id: string,
     fields: Record<string, string>,
-    _metadata?: Record<string, unknown>
+    _metadata?: Record<string, unknown>,
   ): Promise<void> {
     this.db
       .prepare('INSERT OR REPLACE INTO text_docs (id, fields) VALUES (?, ?)')
@@ -112,7 +112,8 @@ export class SQLiteTextSearchStore implements TextSearchStore {
 
   async search(query: string, opts?: TextSearchOpts): Promise<TextSearchResult[]> {
     const ftsQuery = this.toFtsQuery(query, opts?.fields)
-    if (!ftsQuery) return []
+    if (!ftsQuery)
+      return []
 
     const limit = opts?.topK ?? 50
 
@@ -131,14 +132,14 @@ export class SQLiteTextSearchStore implements TextSearchStore {
       rank: number
     }>
 
-    return rows.map((r) => ({
+    return rows.map(r => ({
       id: r.id,
       score: -r.rank, // FTS5 rank is negative (lower = better)
       fields: JSON.parse(r.fields),
     }))
   }
 
-  async indexBatch(docs: Array<{ id: string; fields: Record<string, string> }>): Promise<void> {
+  async indexBatch(docs: Array<{ id: string, fields: Record<string, string> }>): Promise<void> {
     const stmt = this.db.prepare('INSERT OR REPLACE INTO text_docs (id, fields) VALUES (?, ?)')
     const transaction = this.db.transaction(() => {
       for (const doc of docs) {
@@ -153,12 +154,13 @@ export class SQLiteTextSearchStore implements TextSearchStore {
    * Optionally restrict to specific columns.
    */
   private toFtsQuery(query: string, fields?: string[]): string | null {
-    const words = query.match(/[a-zA-Z0-9_]+/g)
-    if (!words || words.length === 0) return null
+    const words = query.match(/\w+/g)
+    if (!words || words.length === 0)
+      return null
 
     // Default: search feature columns only (matches original behavior)
     const cols = fields ? `{${fields.join(' ')}}` : '{feature_desc feature_keywords}'
 
-    return words.map((w) => `${cols} : "${w}" *`).join(' OR ')
+    return words.map(w => `${cols} : "${w}" *`).join(' OR ')
   }
 }

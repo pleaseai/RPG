@@ -1,12 +1,12 @@
-import { afterEach, beforeEach, describe, expect, test } from 'vitest'
-import { SemanticCache, createCachedExtractor } from '../src/encoder/cache'
 import type { EntityInput, SemanticFeature } from '../src/encoder/semantic'
-import { rm } from 'node:fs/promises'
 import { existsSync } from 'node:fs'
+import { rm } from 'node:fs/promises'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { createCachedExtractor, SemanticCache } from '../src/encoder/cache'
 
 const TEST_CACHE_DIR = '.test-cache'
 
-describe('SemanticCache', () => {
+describe('semanticCache', () => {
   let cache: SemanticCache
 
   beforeEach(() => {
@@ -23,7 +23,7 @@ describe('SemanticCache', () => {
     }
   })
 
-  test('stores and retrieves features', async () => {
+  it('stores and retrieves features', async () => {
     const input: EntityInput = {
       type: 'function',
       name: 'testFunc',
@@ -41,7 +41,7 @@ describe('SemanticCache', () => {
     expect(retrieved).toEqual(feature)
   })
 
-  test('returns null for uncached entries', async () => {
+  it('returns null for uncached entries', async () => {
     const input: EntityInput = {
       type: 'function',
       name: 'uncached',
@@ -53,7 +53,7 @@ describe('SemanticCache', () => {
     expect(result).toBeNull()
   })
 
-  test('invalidates cache when content changes', async () => {
+  it('invalidates cache when content changes', async () => {
     const input1: EntityInput = {
       type: 'function',
       name: 'testFunc',
@@ -82,7 +82,7 @@ describe('SemanticCache', () => {
     expect(uncached).toBeNull()
   })
 
-  test('checks if entry exists', async () => {
+  it('checks if entry exists', async () => {
     const input: EntityInput = {
       type: 'function',
       name: 'testFunc',
@@ -96,7 +96,7 @@ describe('SemanticCache', () => {
     expect(await cache.has(input)).toBe(true)
   })
 
-  test('clears all entries', async () => {
+  it('clears all entries', async () => {
     const input: EntityInput = {
       type: 'function',
       name: 'testFunc',
@@ -110,7 +110,7 @@ describe('SemanticCache', () => {
     expect(await cache.has(input)).toBe(false)
   })
 
-  test('persists cache to disk', async () => {
+  it('persists cache to disk', async () => {
     const input: EntityInput = {
       type: 'function',
       name: 'testFunc',
@@ -135,7 +135,7 @@ describe('SemanticCache', () => {
     expect(retrieved).toEqual(feature)
   })
 
-  test('returns stats', async () => {
+  it('returns stats', async () => {
     const stats = cache.getStats()
 
     expect(stats.enabled).toBe(true)
@@ -143,14 +143,14 @@ describe('SemanticCache', () => {
 
     await cache.set(
       { type: 'function', name: 'a', filePath: 'a.ts' },
-      { description: 'a', keywords: [] }
+      { description: 'a', keywords: [] },
     )
 
     const updatedStats = cache.getStats()
     expect(updatedStats.size).toBe(1)
   })
 
-  test('respects disabled flag', async () => {
+  it('respects disabled flag', async () => {
     const disabledCache = new SemanticCache({
       cacheDir: TEST_CACHE_DIR,
       enabled: false,
@@ -187,7 +187,7 @@ describe('createCachedExtractor', () => {
     }
   })
 
-  test('wraps extractor with caching', async () => {
+  it('wraps extractor with caching', async () => {
     const extractor = async (input: EntityInput): Promise<SemanticFeature> => {
       extractCount++
       return { description: `extracted ${input.name}`, keywords: [] }

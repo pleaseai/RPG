@@ -1,28 +1,26 @@
-import { z } from 'zod'
 import type { ContextStore } from '../store/context-store'
+import type { DependencyEdge, Edge, FunctionalEdge } from './edge'
+import type { HighLevelNode, LowLevelNode, Node, SemanticFeature, StructuralMetadata } from './node'
+import type { GraphStats, GraphStore } from './store'
+import { z } from 'zod'
 import { attrsToEdge, attrsToNode, edgeToAttrs, nodeToAttrs, nodeToSearchFields } from './adapters'
 import {
-  type DependencyEdge,
-  type Edge,
-  EdgeType,
-  type FunctionalEdge,
   createDependencyEdge,
   createFunctionalEdge,
+
+  EdgeType,
+
   isDependencyEdge,
   isFunctionalEdge,
 } from './edge'
 import {
-  type HighLevelNode,
-  type LowLevelNode,
-  type Node,
-  type SemanticFeature,
-  type StructuralMetadata,
   createHighLevelNode,
   createLowLevelNode,
+
   isHighLevelNode,
   isLowLevelNode,
+
 } from './node'
-import type { GraphStore, GraphStats } from './store'
 
 /**
  * Repository Planning Graph configuration
@@ -71,7 +69,8 @@ export class RepositoryPlanningGraph {
     this.config = config
     if (isContextStore(storeOrContext)) {
       this.context = storeOrContext
-    } else {
+    }
+    else {
       this.legacyStore = storeOrContext
     }
   }
@@ -83,7 +82,7 @@ export class RepositoryPlanningGraph {
    */
   static async create(
     config: RPGConfig,
-    storeOrContext?: GraphStore | ContextStore
+    storeOrContext?: GraphStore | ContextStore,
   ): Promise<RepositoryPlanningGraph> {
     if (storeOrContext) {
       return new RepositoryPlanningGraph(config, storeOrContext)
@@ -110,7 +109,8 @@ export class RepositoryPlanningGraph {
       }
       await this.context!.graph.addNode(node.id, nodeToAttrs(node))
       await this.context!.text.index(node.id, nodeToSearchFields(node))
-    } else {
+    }
+    else {
       if (await this.legacyStore!.hasNode(node.id)) {
         throw new Error(`Node with id "${node.id}" already exists`)
       }
@@ -156,11 +156,13 @@ export class RepositoryPlanningGraph {
       }
       // Merge updates into existing attrs
       const existing = await this.context!.graph.getNode(id)
-      if (!existing) return
+      if (!existing)
+        return
       const mergedNode = { ...attrsToNode(id, existing), ...updates } as Node
       await this.context!.graph.updateNode(id, nodeToAttrs(mergedNode))
       await this.context!.text.index(id, nodeToSearchFields(mergedNode))
-    } else {
+    }
+    else {
       if (!(await this.legacyStore!.hasNode(id))) {
         throw new Error(`Node with id "${id}" not found`)
       }
@@ -175,7 +177,8 @@ export class RepositoryPlanningGraph {
       }
       await this.context!.graph.removeNode(id)
       await this.context!.text.remove(id)
-    } else {
+    }
+    else {
       if (!(await this.legacyStore!.hasNode(id))) {
         throw new Error(`Node with id "${id}" not found`)
       }
@@ -193,7 +196,7 @@ export class RepositoryPlanningGraph {
   async getNodes(): Promise<Node[]> {
     if (this.isNewStore) {
       const results = await this.context!.graph.getNodes()
-      return results.map((r) => attrsToNode(r.id, r.attrs))
+      return results.map(r => attrsToNode(r.id, r.attrs))
     }
     return this.legacyStore!.getNodes()
   }
@@ -201,7 +204,7 @@ export class RepositoryPlanningGraph {
   async getHighLevelNodes(): Promise<HighLevelNode[]> {
     if (this.isNewStore) {
       const results = await this.context!.graph.getNodes({ type: 'high_level' })
-      return results.map((r) => attrsToNode(r.id, r.attrs)).filter(isHighLevelNode)
+      return results.map(r => attrsToNode(r.id, r.attrs)).filter(isHighLevelNode)
     }
     const nodes = await this.legacyStore!.getNodes({ type: 'high_level' })
     return nodes.filter(isHighLevelNode)
@@ -210,7 +213,7 @@ export class RepositoryPlanningGraph {
   async getLowLevelNodes(): Promise<LowLevelNode[]> {
     if (this.isNewStore) {
       const results = await this.context!.graph.getNodes({ type: 'low_level' })
-      return results.map((r) => attrsToNode(r.id, r.attrs)).filter(isLowLevelNode)
+      return results.map(r => attrsToNode(r.id, r.attrs)).filter(isLowLevelNode)
     }
     const nodes = await this.legacyStore!.getNodes({ type: 'low_level' })
     return nodes.filter(isLowLevelNode)
@@ -227,7 +230,8 @@ export class RepositoryPlanningGraph {
         throw new Error(`Target node "${edge.target}" not found`)
       }
       await this.context!.graph.addEdge(edge.source, edge.target, edgeToAttrs(edge))
-    } else {
+    }
+    else {
       if (!(await this.legacyStore!.hasNode(edge.source))) {
         throw new Error(`Source node "${edge.source}" not found`)
       }
@@ -264,7 +268,7 @@ export class RepositoryPlanningGraph {
   async getEdges(): Promise<Edge[]> {
     if (this.isNewStore) {
       const results = await this.context!.graph.getEdges()
-      return results.map((r) => attrsToEdge(r.source, r.target, r.attrs))
+      return results.map(r => attrsToEdge(r.source, r.target, r.attrs))
     }
     return this.legacyStore!.getEdges()
   }
@@ -272,7 +276,7 @@ export class RepositoryPlanningGraph {
   async getFunctionalEdges(): Promise<FunctionalEdge[]> {
     if (this.isNewStore) {
       const results = await this.context!.graph.getEdges({ type: 'functional' })
-      return results.map((r) => attrsToEdge(r.source, r.target, r.attrs)).filter(isFunctionalEdge)
+      return results.map(r => attrsToEdge(r.source, r.target, r.attrs)).filter(isFunctionalEdge)
     }
     const edges = await this.legacyStore!.getEdges({ type: EdgeType.Functional })
     return edges.filter(isFunctionalEdge)
@@ -281,7 +285,7 @@ export class RepositoryPlanningGraph {
   async getDependencyEdges(): Promise<DependencyEdge[]> {
     if (this.isNewStore) {
       const results = await this.context!.graph.getEdges({ type: 'dependency' })
-      return results.map((r) => attrsToEdge(r.source, r.target, r.attrs)).filter(isDependencyEdge)
+      return results.map(r => attrsToEdge(r.source, r.target, r.attrs)).filter(isDependencyEdge)
     }
     const edges = await this.legacyStore!.getEdges({ type: EdgeType.Dependency })
     return edges.filter(isDependencyEdge)
@@ -290,7 +294,7 @@ export class RepositoryPlanningGraph {
   async getOutEdges(nodeId: string, edgeType?: EdgeType): Promise<Edge[]> {
     if (this.isNewStore) {
       const results = await this.context!.graph.getEdges({ source: nodeId, type: edgeType })
-      return results.map((r) => attrsToEdge(r.source, r.target, r.attrs))
+      return results.map(r => attrsToEdge(r.source, r.target, r.attrs))
     }
     return this.legacyStore!.getOutEdges(nodeId, edgeType)
   }
@@ -298,7 +302,7 @@ export class RepositoryPlanningGraph {
   async getInEdges(nodeId: string, edgeType?: EdgeType): Promise<Edge[]> {
     if (this.isNewStore) {
       const results = await this.context!.graph.getEdges({ target: nodeId, type: edgeType })
-      return results.map((r) => attrsToEdge(r.source, r.target, r.attrs))
+      return results.map(r => attrsToEdge(r.source, r.target, r.attrs))
     }
     return this.legacyStore!.getInEdges(nodeId, edgeType)
   }
@@ -310,12 +314,13 @@ export class RepositoryPlanningGraph {
       // Sort by sibling_order
       edges.sort(
         (a, b) =>
-          ((a.attrs.sibling_order as number) ?? 0) - ((b.attrs.sibling_order as number) ?? 0)
+          ((a.attrs.sibling_order as number) ?? 0) - ((b.attrs.sibling_order as number) ?? 0),
       )
       const children: Node[] = []
       for (const edge of edges) {
         const attrs = await this.context!.graph.getNode(edge.target)
-        if (attrs) children.push(attrsToNode(edge.target, attrs))
+        if (attrs)
+          children.push(attrsToNode(edge.target, attrs))
       }
       return children
     }
@@ -326,7 +331,8 @@ export class RepositoryPlanningGraph {
     if (this.isNewStore) {
       const edges = await this.context!.graph.getEdges({ target: nodeId, type: 'functional' })
       const firstEdge = edges[0]
-      if (!firstEdge) return undefined
+      if (!firstEdge)
+        return undefined
       const attrs = await this.context!.graph.getNode(firstEdge.source)
       return attrs ? attrsToNode(firstEdge.source, attrs) : undefined
     }
@@ -340,7 +346,8 @@ export class RepositoryPlanningGraph {
       const nodes: Node[] = []
       for (const edge of edges) {
         const attrs = await this.context!.graph.getNode(edge.target)
-        if (attrs) nodes.push(attrsToNode(edge.target, attrs))
+        if (attrs)
+          nodes.push(attrsToNode(edge.target, attrs))
       }
       return nodes
     }
@@ -353,7 +360,8 @@ export class RepositoryPlanningGraph {
       const nodes: Node[] = []
       for (const edge of edges) {
         const attrs = await this.context!.graph.getNode(edge.source)
-        if (attrs) nodes.push(attrsToNode(edge.source, attrs))
+        if (attrs)
+          nodes.push(attrsToNode(edge.source, attrs))
       }
       return nodes
     }
@@ -383,21 +391,24 @@ export class RepositoryPlanningGraph {
 
       const queue: string[] = []
       for (const [id, deg] of inDegree) {
-        if (deg === 0) queue.push(id)
+        if (deg === 0)
+          queue.push(id)
       }
 
-      const nodeMap = new Map(allNodes.map((r) => [r.id, attrsToNode(r.id, r.attrs)]))
+      const nodeMap = new Map(allNodes.map(r => [r.id, attrsToNode(r.id, r.attrs)]))
       const ordered: Node[] = []
 
       while (queue.length > 0) {
         const nodeId = queue.shift()!
         const node = nodeMap.get(nodeId)
-        if (node) ordered.push(node)
+        if (node)
+          ordered.push(node)
 
         for (const neighbor of adjList.get(nodeId) ?? []) {
           const newDeg = (inDegree.get(neighbor) ?? 1) - 1
           inDegree.set(neighbor, newDeg)
-          if (newDeg === 0) queue.push(neighbor)
+          if (newDeg === 0)
+            queue.push(neighbor)
         }
       }
 
@@ -414,14 +425,16 @@ export class RepositoryPlanningGraph {
         const bfsQueue = [...scopes]
         while (bfsQueue.length > 0) {
           const current = bfsQueue.shift()!
-          if (subtreeIds.has(current)) continue
+          if (subtreeIds.has(current))
+            continue
           subtreeIds.add(current)
           const childEdges = await this.context!.graph.getEdges({
             source: current,
             type: 'functional',
           })
           for (const e of childEdges) {
-            if (!subtreeIds.has(e.target)) bfsQueue.push(e.target)
+            if (!subtreeIds.has(e.target))
+              bfsQueue.push(e.target)
           }
         }
 
@@ -429,11 +442,12 @@ export class RepositoryPlanningGraph {
         const hits = await this.context!.text.search(query, {
           fields: ['feature_desc', 'feature_keywords'],
         })
-        const filteredHits = hits.filter((h) => subtreeIds.has(h.id))
+        const filteredHits = hits.filter(h => subtreeIds.has(h.id))
         const nodes: Node[] = []
         for (const hit of filteredHits) {
           const attrs = await this.context!.graph.getNode(hit.id)
-          if (attrs) nodes.push(attrsToNode(hit.id, attrs))
+          if (attrs)
+            nodes.push(attrsToNode(hit.id, attrs))
         }
         return nodes
       }
@@ -444,12 +458,13 @@ export class RepositoryPlanningGraph {
       const nodes: Node[] = []
       for (const hit of hits) {
         const attrs = await this.context!.graph.getNode(hit.id)
-        if (attrs) nodes.push(attrsToNode(hit.id, attrs))
+        if (attrs)
+          nodes.push(attrsToNode(hit.id, attrs))
       }
       return nodes
     }
     const hits = await this.legacyStore!.searchByFeature(query, scopes)
-    return hits.map((h) => h.node)
+    return hits.map(h => h.node)
   }
 
   async searchByPath(pattern: string): Promise<Node[]> {
@@ -471,7 +486,7 @@ export class RepositoryPlanningGraph {
           const path = r.attrs.path as string | undefined
           return path && regex.test(path)
         })
-        .map((r) => attrsToNode(r.id, r.attrs))
+        .map(r => attrsToNode(r.id, r.attrs))
     }
     return this.legacyStore!.searchByPath(pattern)
   }
@@ -499,7 +514,7 @@ export class RepositoryPlanningGraph {
 
   static async deserialize(
     data: SerializedRPG,
-    storeOrContext?: GraphStore | ContextStore
+    storeOrContext?: GraphStore | ContextStore,
   ): Promise<RepositoryPlanningGraph> {
     const parsed = SerializedRPGSchema.parse(data)
     const rpg = await RepositoryPlanningGraph.create(parsed.config, storeOrContext)
@@ -519,7 +534,7 @@ export class RepositoryPlanningGraph {
 
   static async fromJSON(
     json: string,
-    storeOrContext?: GraphStore | ContextStore
+    storeOrContext?: GraphStore | ContextStore,
   ): Promise<RepositoryPlanningGraph> {
     return RepositoryPlanningGraph.deserialize(JSON.parse(json), storeOrContext)
   }
@@ -534,15 +549,19 @@ export class RepositoryPlanningGraph {
       let highLevelCount = 0
       let lowLevelCount = 0
       for (const { attrs } of allNodes) {
-        if (attrs.type === 'high_level') highLevelCount++
-        else if (attrs.type === 'low_level') lowLevelCount++
+        if (attrs.type === 'high_level')
+          highLevelCount++
+        else if (attrs.type === 'low_level')
+          lowLevelCount++
       }
 
       let functionalCount = 0
       let dependencyCount = 0
       for (const { attrs } of allEdges) {
-        if (attrs.type === 'functional') functionalCount++
-        else if (attrs.type === 'dependency') dependencyCount++
+        if (attrs.type === 'functional')
+          functionalCount++
+        else if (attrs.type === 'dependency')
+          dependencyCount++
       }
 
       return {
@@ -564,7 +583,8 @@ export class RepositoryPlanningGraph {
   async close(): Promise<void> {
     if (this.context) {
       await this.context.close()
-    } else if (this.legacyStore) {
+    }
+    else if (this.legacyStore) {
       await this.legacyStore.close()
     }
   }
@@ -573,10 +593,10 @@ export class RepositoryPlanningGraph {
 /** Type guard: distinguish ContextStore from legacy GraphStore */
 function isContextStore(obj: unknown): obj is ContextStore {
   return (
-    obj !== null &&
-    typeof obj === 'object' &&
-    'graph' in (obj as Record<string, unknown>) &&
-    'text' in (obj as Record<string, unknown>) &&
-    'vector' in (obj as Record<string, unknown>)
+    obj !== null
+    && typeof obj === 'object'
+    && 'graph' in (obj as Record<string, unknown>)
+    && 'text' in (obj as Record<string, unknown>)
+    && 'vector' in (obj as Record<string, unknown>)
   )
 }
