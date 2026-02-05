@@ -1,5 +1,5 @@
 {
-  "name": "rpg-please",
+  "name": "@pleaseai/rpg",
   "version": "0.1.0",
   "description": "Repository Planning Graph - A unified framework for repository understanding and generation",
   "type": "module",
@@ -12,7 +12,8 @@
   "scripts": {
     "dev": "bun run --watch src/cli.ts",
     "mcp": "bun run src/mcp/server.ts",
-    "build": "bun build src/index.ts --outdir dist --target node",
+    "build": "bun build src/index.ts src/cli.ts src/mcp/server.ts --outdir dist --target node --external @lancedb/lancedb --external better-sqlite3 --external @surrealdb/node --external tree-sitter --external tree-sitter-typescript --external tree-sitter-python && npm run build:fix-shebang",
+    "build:fix-shebang": "sed -i '' 's|#!/usr/bin/env bun|#!/usr/bin/env node|g' dist/cli.js dist/mcp/server.js",
     "test": "vitest run",
     "test:unit": "vitest run --project=unit",
     "test:integration": "vitest run --project=integration",
