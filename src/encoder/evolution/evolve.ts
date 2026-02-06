@@ -54,6 +54,7 @@ export class RPGEvolver {
       prunedNodes: 0,
       duration: 0,
       llmCalls: 0,
+      errors: [],
     }
 
     // 1. Parse git diff → DiffResult
@@ -125,13 +126,9 @@ export class RPGEvolver {
       }
     }
 
-    // Report any errors encountered during evolution
-    if (errors.length > 0) {
-      console.warn(`[evolution] ${errors.length} operation(s) failed:`, errors)
-    }
-
     // 5. Collect statistics
     result.llmCalls = this.semanticRouter.getLLMCalls()
+    result.errors = errors
     result.duration = Date.now() - startTime
 
     return result

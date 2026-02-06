@@ -155,7 +155,7 @@ class Greeter:
     })
   })
 
-  describe('rPG Serialization', () => {
+  describe('RPG Serialization', () => {
     it('should serialize and deserialize RPG correctly', async () => {
       await mkdir(join(testDir, 'src'), { recursive: true })
 

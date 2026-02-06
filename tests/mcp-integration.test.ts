@@ -4,7 +4,7 @@ import { RepositoryPlanningGraph } from '../src/graph'
 import { createMcpServer, loadRPG } from '../src/mcp/server'
 import { executeExplore, executeFetch, executeSearch, executeStats } from '../src/mcp/tools'
 
-describe('mCP Integration Tests', () => {
+describe('MCP Integration Tests', () => {
   let rpg: RepositoryPlanningGraph
 
   beforeAll(async () => {

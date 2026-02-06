@@ -728,6 +728,7 @@ export class RPGEncoder {
       repoPath: this.repoPath,
       useLLM: this.options.semantic?.useLLM,
       semantic: this.options.semantic,
+      includeSource: this.options.includeSource,
     })
     return evolver.evolve()
   }

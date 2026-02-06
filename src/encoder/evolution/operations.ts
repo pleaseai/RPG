@@ -321,8 +321,11 @@ async function computeDrift(
       ])
       return 1 - cosineSimilarity(oldEmbed.vector, newEmbed.vector)
     }
-    catch {
-      // Embedding failed — fall through to keyword-based drift
+    catch (error) {
+      console.warn(
+        '[computeDrift] Embedding failed, falling back to keyword-based drift:',
+        error instanceof Error ? error.message : String(error),
+      )
     }
   }
 

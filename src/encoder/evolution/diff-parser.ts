@@ -300,8 +300,8 @@ export class DiffParser {
   private parseCommitRange(commitRange: string): [string, string] {
     if (commitRange.includes('..')) {
       const parts = commitRange.split('..')
-      const oldRev = parts[0] ?? commitRange
-      const newRev = parts[1] ?? 'HEAD'
+      const oldRev = parts[0] || commitRange
+      const newRev = parts[1] || 'HEAD'
       return [oldRev, newRev]
     }
     // Single commit: compare with parent

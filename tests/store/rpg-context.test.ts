@@ -2,7 +2,7 @@ import type { HighLevelNode, Node } from '../../src/graph'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { RepositoryPlanningGraph } from '../../src/graph/rpg'
 
-describe('rPG with ContextStore (default)', () => {
+describe('RPG with ContextStore (default)', () => {
   let rpg: RepositoryPlanningGraph
 
   beforeEach(async () => {

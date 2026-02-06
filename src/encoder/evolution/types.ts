@@ -37,6 +37,8 @@ export interface EvolutionResult {
   duration: number
   /** Number of LLM calls made (for cost measurement) */
   llmCalls: number
+  /** Errors encountered during evolution (partial failures) */
+  errors: Array<{ entity: string, phase: string, error: string }>
 }
 
 /**

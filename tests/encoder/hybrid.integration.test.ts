@@ -146,7 +146,7 @@ describe('e2E: Hybrid Search Pipeline (superjson)', () => {
     })
   })
 
-  describe('fTS-only Search', () => {
+  describe('FTS-only Search', () => {
     it('should find nodes via FTS search strategy', async () => {
       const search = new SearchNode(rpg, semanticSearch)
       const result = await search.query({
@@ -172,7 +172,7 @@ describe('e2E: Hybrid Search Pipeline (superjson)', () => {
     })
   })
 
-  describe('mCP executeSearch Integration', () => {
+  describe('MCP executeSearch Integration', () => {
     it('should work through executeSearch with hybrid', async () => {
       const result = await executeSearch(
         rpg,

@@ -23,7 +23,7 @@ import {
   StatsInputSchema,
 } from '../src/mcp/tools'
 
-describe('mCP Tool Schemas', () => {
+describe('MCP Tool Schemas', () => {
   describe('searchInputSchema', () => {
     it('should accept valid search input with all fields', () => {
       const input = {
@@ -147,8 +147,8 @@ describe('mCP Tool Schemas', () => {
   })
 })
 
-describe('mCP Error Handling', () => {
-  describe('rPGError', () => {
+describe('MCP Error Handling', () => {
+  describe('RPGError', () => {
     it('should create error with code and message', () => {
       const error = new RPGError(RPGErrorCode.RPG_NOT_LOADED, 'Test message')
       expect(error.code).toBe(RPGErrorCode.RPG_NOT_LOADED)
@@ -190,7 +190,7 @@ describe('mCP Error Handling', () => {
   })
 })
 
-describe('mCP Tool Execution', () => {
+describe('MCP Tool Execution', () => {
   let rpg: RepositoryPlanningGraph
 
   beforeEach(async () => {

@@ -38,9 +38,11 @@ describe('evolution integration', () => {
     expect(result).toHaveProperty('prunedNodes')
     expect(result).toHaveProperty('duration')
     expect(result).toHaveProperty('llmCalls')
+    expect(result).toHaveProperty('errors')
 
     expect(result.duration).toBeGreaterThan(0)
     expect(result.llmCalls).toBe(0) // useLLM: false
+    expect(result.errors).toEqual([]) // no errors expected
 
     // Step 4: Verify graph consistency after evolution
     const statsAfter = await rpg.getStats()

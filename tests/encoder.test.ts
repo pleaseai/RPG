@@ -5,7 +5,7 @@ import { RPGEncoder } from '../src/encoder'
 // Get current project root for testing
 const PROJECT_ROOT = path.resolve(__dirname, '..')
 
-describe('rPGEncoder', () => {
+describe('RPGEncoder', () => {
   let encoder: RPGEncoder
 
   beforeEach(() => {
@@ -73,10 +73,11 @@ describe('rPGEncoder', () => {
     expect(result).toHaveProperty('prunedNodes')
     expect(result).toHaveProperty('duration')
     expect(result).toHaveProperty('llmCalls')
+    expect(result).toHaveProperty('errors')
   })
 })
 
-describe('rPGEncoder Options', () => {
+describe('RPGEncoder Options', () => {
   it('include patterns filter files', () => {
     const encoder = new RPGEncoder('/repo', {
       include: ['**/*.ts', '**/*.js'],
@@ -106,7 +107,7 @@ describe('rPGEncoder Options', () => {
   })
 })
 
-describe('rPGEncoder.discoverFiles', () => {
+describe('RPGEncoder.discoverFiles', () => {
   it('discovers TypeScript files in repository', async () => {
     const encoder = new RPGEncoder(PROJECT_ROOT, {
       include: ['src/**/*.ts'],
@@ -151,7 +152,7 @@ describe('rPGEncoder.discoverFiles', () => {
   })
 })
 
-describe('rPGEncoder.extractEntities', () => {
+describe('RPGEncoder.extractEntities', () => {
   it('extracts entities from TypeScript files', async () => {
     const encoder = new RPGEncoder(PROJECT_ROOT, {
       include: ['src/encoder/encoder.ts'],
@@ -207,7 +208,7 @@ describe('rPGEncoder.extractEntities', () => {
   })
 })
 
-describe('rPGEncoder.buildFunctionalHierarchy', () => {
+describe('RPGEncoder.buildFunctionalHierarchy', () => {
   it('creates high-level nodes for directories', async () => {
     const encoder = new RPGEncoder(PROJECT_ROOT, {
       include: ['src/encoder/**/*.ts'],
@@ -273,7 +274,7 @@ describe('rPGEncoder.buildFunctionalHierarchy', () => {
   })
 })
 
-describe('rPGEncoder.injectDependencies', () => {
+describe('RPGEncoder.injectDependencies', () => {
   it('creates dependency edges for imports', async () => {
     const encoder = new RPGEncoder(PROJECT_ROOT, {
       include: ['src/encoder/**/*.ts'],

@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { ASTParser } from '../src/utils/ast'
 
-describe('aSTParser', () => {
+describe('ASTParser', () => {
   let parser: ASTParser
 
   beforeEach(() => {
