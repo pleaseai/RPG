@@ -1,9 +1,19 @@
+import { execFileSync } from 'node:child_process'
 import path from 'node:path'
 import { beforeEach, describe, expect, it } from 'vitest'
 import { RPGEncoder } from '../src/encoder'
 
 // Get current project root for testing
 const PROJECT_ROOT = path.resolve(__dirname, '..')
+
+function hasGitAncestor(repoPath: string, ref: string): boolean {
+  try {
+    execFileSync('git', ['rev-parse', '--verify', ref], { cwd: repoPath, stdio: 'pipe' })
+    return true
+  } catch {
+    return false
+  }
+}
 
 describe('RPGEncoder', () => {
   let encoder: RPGEncoder
@@ -54,27 +64,31 @@ describe('RPGEncoder', () => {
 
     // /tmp/test-repo is not a git repository, so evolve should throw
     await expect(encoder.evolve(rpg, { commitRange: 'HEAD~5..HEAD' })).rejects.toThrow(
-      /Failed to parse git diff/,
+      /Failed to parse git diff/
     )
   })
 
-  it('evolve returns result structure on valid repo', async () => {
-    // Use the actual project root which is a real git repo
-    const realEncoder = new RPGEncoder(PROJECT_ROOT, {
-      include: ['src/encoder/evolution/types.ts'],
-    })
-    const { rpg } = await realEncoder.encode()
-    const result = await realEncoder.evolve(rpg, { commitRange: 'HEAD~1..HEAD' })
+  it.skipIf(!hasGitAncestor(PROJECT_ROOT, 'HEAD~1'))(
+    'evolve returns result structure on valid repo',
+    async () => {
+      // Use the actual project root which is a real git repo
+      // Skipped in shallow clones (e.g., CI with fetch-depth: 1) where HEAD~1 is unavailable
+      const realEncoder = new RPGEncoder(PROJECT_ROOT, {
+        include: ['src/encoder/evolution/types.ts'],
+      })
+      const { rpg } = await realEncoder.encode()
+      const result = await realEncoder.evolve(rpg, { commitRange: 'HEAD~1..HEAD' })
 
-    expect(result).toHaveProperty('inserted')
-    expect(result).toHaveProperty('deleted')
-    expect(result).toHaveProperty('modified')
-    expect(result).toHaveProperty('rerouted')
-    expect(result).toHaveProperty('prunedNodes')
-    expect(result).toHaveProperty('duration')
-    expect(result).toHaveProperty('llmCalls')
-    expect(result).toHaveProperty('errors')
-  })
+      expect(result).toHaveProperty('inserted')
+      expect(result).toHaveProperty('deleted')
+      expect(result).toHaveProperty('modified')
+      expect(result).toHaveProperty('rerouted')
+      expect(result).toHaveProperty('prunedNodes')
+      expect(result).toHaveProperty('duration')
+      expect(result).toHaveProperty('llmCalls')
+      expect(result).toHaveProperty('errors')
+    }
+  )
 })
 
 describe('RPGEncoder Options', () => {
@@ -172,7 +186,7 @@ describe('RPGEncoder.extractEntities', () => {
     const result = await encoder.encode()
 
     // Check that all node IDs are unique
-    const nodeIds = (await result.rpg.getNodes()).map(n => n.id)
+    const nodeIds = (await result.rpg.getNodes()).map((n) => n.id)
     const uniqueIds = new Set(nodeIds)
     expect(uniqueIds.size).toBe(nodeIds.length)
   })
@@ -185,7 +199,7 @@ describe('RPGEncoder.extractEntities', () => {
     const result = await encoder.encode()
 
     // Should have a file entity
-    const fileNodes = (await result.rpg.getNodes()).filter(n => n.metadata?.entityType === 'file')
+    const fileNodes = (await result.rpg.getNodes()).filter((n) => n.metadata?.entityType === 'file')
     expect(fileNodes.length).toBeGreaterThanOrEqual(1)
   })
 
@@ -198,9 +212,9 @@ describe('RPGEncoder.extractEntities', () => {
 
     // Should have class and function entities
     const nodes = await result.rpg.getNodes()
-    const classNodes = nodes.filter(n => n.metadata?.entityType === 'class')
+    const classNodes = nodes.filter((n) => n.metadata?.entityType === 'class')
     const functionNodes = nodes.filter(
-      n => n.metadata?.entityType === 'function' || n.metadata?.entityType === 'method',
+      (n) => n.metadata?.entityType === 'function' || n.metadata?.entityType === 'method'
     )
 
     expect(classNodes.length).toBeGreaterThanOrEqual(1) // RPGEncoder class
@@ -222,7 +236,7 @@ describe('RPGEncoder.buildFunctionalHierarchy', () => {
 
     // Check for directory node
     const encoderDir = highLevelNodes.find(
-      n => n.directoryPath === 'src/encoder' || n.metadata?.path === 'src/encoder',
+      (n) => n.directoryPath === 'src/encoder' || n.metadata?.path === 'src/encoder'
     )
     expect(encoderDir).toBeDefined()
   })
@@ -248,13 +262,13 @@ describe('RPGEncoder.buildFunctionalHierarchy', () => {
 
     // Find the file node
     const fileNode = (await result.rpg.getNodes()).find(
-      n => n.metadata?.entityType === 'file' && n.metadata?.path === 'src/encoder/encoder.ts',
+      (n) => n.metadata?.entityType === 'file' && n.metadata?.path === 'src/encoder/encoder.ts'
     )
     expect(fileNode).toBeDefined()
 
     // Find edges from file to its contained entities (class, methods)
     const edges = await result.rpg.getFunctionalEdges()
-    const fileEdges = edges.filter(e => e.source === fileNode?.id)
+    const fileEdges = edges.filter((e) => e.source === fileNode?.id)
     expect(fileEdges.length).toBeGreaterThan(0)
   })
 
