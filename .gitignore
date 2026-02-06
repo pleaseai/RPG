@@ -38,5 +38,6 @@ bun.lockb
 /.claude/settings.local.json
 
 # Please AI session state
+.please/cache/
 .please/memory/session-summary.md
 .please/tasklist.json
