@@ -104,6 +104,18 @@ describe('searchNode', () => {
     expect(results.totalMatches).toBe(2)
   })
 
+  it('auto mode without featureTerms falls back to snippet search', async () => {
+    const results = await search.query({
+      mode: 'auto',
+      filePattern: '/src/auth/%',
+    })
+
+    // No featureTerms provided, so feature search returns empty
+    // Snippet fallback runs and finds auth files by path
+    expect(results.totalMatches).toBeGreaterThanOrEqual(1)
+    expect(results.nodes.some(n => n.metadata?.path?.startsWith('/src/auth/'))).toBe(true)
+  })
+
   it('auto mode uses staged fallback (feature first, then snippet)', async () => {
     const results = await search.query({
       mode: 'auto',
@@ -193,6 +205,20 @@ describe('searchNode', () => {
     // Since validate keyword is only in login-func/logout-func (under auth-module),
     // it should be empty when scoped to data-module
     expect(scopedResults.totalMatches).toBe(0)
+  })
+
+  it('searchScopes with subtree includes nested children', async () => {
+    // auth-module -> login-func, logout-func
+    // Scoping to auth-module should include its children
+    const results = await search.query({
+      mode: 'features',
+      featureTerms: ['validate'],
+      searchScopes: ['auth-module'],
+    })
+
+    // login-func is under auth-module, so it should be included
+    expect(results.totalMatches).toBeGreaterThan(0)
+    expect(results.nodes.some(n => n.id === 'login-func')).toBe(true)
   })
 })
 
