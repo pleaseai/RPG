@@ -255,6 +255,8 @@ describe('MCP Tool Execution', () => {
         featureTerms: ['math'],
         searchScopes: ['utils'],
       })
+      // Should find at least one result
+      expect(result.nodes.length).toBeGreaterThan(0)
       // All results should be within the utils subtree
       expect(result.nodes.every(n => n.id.startsWith('utils'))).toBe(true)
     })
