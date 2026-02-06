@@ -1,0 +1,129 @@
+{
+  "feature": "SearchNode search_scopes & Auto Mode Staged Fallback",
+  "issue_number": 15,
+  "plan_path": ".please/plans/2026-02-07-search-scopes-auto-fallback.md",
+  "spec": null,
+  "stage": 1,
+  "created_at": "2026-02-07T00:00:00.000Z",
+  "updated_at": "2026-02-07T00:00:00.000Z",
+  "tasks": [
+    {
+      "id": "T001",
+      "title": "Wire searchScopes through SearchNode.searchFeatures()",
+      "phase": 1,
+      "status": "pending",
+      "parallel": true,
+      "dependencies": [],
+      "files_affected": [
+        "src/tools/search.ts"
+      ]
+    },
+    {
+      "id": "T002",
+      "title": "Add searchScopes to MCP SearchInputSchema",
+      "phase": 1,
+      "status": "pending",
+      "parallel": true,
+      "dependencies": [],
+      "files_affected": [
+        "src/mcp/tools.ts"
+      ]
+    },
+    {
+      "id": "T003",
+      "title": "Implement staged auto mode fallback",
+      "phase": 2,
+      "status": "pending",
+      "parallel": false,
+      "dependencies": [
+        "T001"
+      ],
+      "files_affected": [
+        "src/tools/search.ts"
+      ]
+    },
+    {
+      "id": "T004",
+      "title": "Pass searchScopes through executeSearch()",
+      "phase": 2,
+      "status": "pending",
+      "parallel": false,
+      "dependencies": [
+        "T002"
+      ],
+      "files_affected": [
+        "src/mcp/tools.ts"
+      ]
+    },
+    {
+      "id": "T005",
+      "title": "Add unit tests for searchScopes filtering",
+      "phase": 2,
+      "status": "pending",
+      "parallel": false,
+      "dependencies": [
+        "T001"
+      ],
+      "files_affected": [
+        "tests/tools.test.ts"
+      ]
+    },
+    {
+      "id": "T006",
+      "title": "Add unit tests for auto mode staged fallback",
+      "phase": 3,
+      "status": "pending",
+      "parallel": false,
+      "dependencies": [
+        "T003"
+      ],
+      "files_affected": [
+        "tests/tools.test.ts"
+      ]
+    },
+    {
+      "id": "T007",
+      "title": "Add MCP integration test for searchScopes",
+      "phase": 3,
+      "status": "pending",
+      "parallel": false,
+      "dependencies": [
+        "T004"
+      ],
+      "files_affected": [
+        "tests/mcp.test.ts"
+      ]
+    },
+    {
+      "id": "T008",
+      "title": "Update rpg_search MCP tool description for auto mode staged behavior",
+      "phase": 3,
+      "status": "pending",
+      "parallel": false,
+      "dependencies": [
+        "T003"
+      ],
+      "files_affected": [
+        "src/mcp/tools.ts"
+      ]
+    }
+  ],
+  "verification": {
+    "automated_tests": [
+      "Unit tests: searchScopes restricts results to subtree nodes only",
+      "Unit tests: auto mode returns feature results when sufficient (no snippet fallback)",
+      "Unit tests: auto mode falls back to snippet search when feature search returns empty",
+      "Unit tests: auto mode with searchScopes + featureTerms combination",
+      "MCP test: searchScopes parameter accepted and forwarded correctly"
+    ],
+    "manual_tests": [
+      "Encode a real repo, search with scope restricted to a module - verify only subtree results",
+      "Verify auto mode staged behavior with RPG MCP server"
+    ],
+    "acceptance_criteria": [
+      "AC-1: Searches can be scoped to a specific subtree by node ID",
+      "AC-2: Auto mode follows staged fallback: feature search first, then snippet + identifier",
+      "AC-3: MCP tool schema updated with searchScopes"
+    ]
+  }
+}
