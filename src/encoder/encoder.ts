@@ -1,6 +1,7 @@
 import type { RPGConfig } from '../graph'
 import type { CodeEntity } from '../utils/ast'
 import type { CacheOptions } from './cache'
+import type { EvolutionResult } from './evolution/types'
 import type { EntityInput, SemanticOptions } from './semantic'
 import fs from 'node:fs'
 import { readdir, readFile, stat } from 'node:fs/promises'
@@ -8,6 +9,7 @@ import path from 'node:path'
 import { RepositoryPlanningGraph } from '../graph'
 import { ASTParser } from '../utils/ast'
 import { SemanticCache } from './cache'
+import { RPGEvolver } from './evolution/evolve'
 import { SemanticExtractor } from './semantic'
 
 /**
@@ -712,10 +714,22 @@ export class RPGEncoder {
   }
 
   /**
-   * Incrementally update RPG with new commits
+   * Incrementally update RPG with commit-level changes.
+   *
+   * Delegates to RPGEvolver which implements the Evolution pipeline
+   * from RPG-Encoder §4: Delete → Modify → Insert scheduling.
    */
-  async evolve(options: { commitRange: string }): Promise<void> {
-    // TODO: Implement incremental updates
-    console.log(`Evolving with commits: ${options.commitRange}`)
+  async evolve(
+    rpg: RepositoryPlanningGraph,
+    options: { commitRange: string },
+  ): Promise<EvolutionResult> {
+    const evolver = new RPGEvolver(rpg, {
+      commitRange: options.commitRange,
+      repoPath: this.repoPath,
+      useLLM: this.options.semantic?.useLLM,
+      semantic: this.options.semantic,
+      cache: this.options.cache,
+    })
+    return evolver.evolve()
   }
 }
