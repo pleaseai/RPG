@@ -51,7 +51,20 @@ describe('rPGEncoder', () => {
 
   it('evolve accepts rpg and commit range', async () => {
     const { rpg } = await encoder.encode()
-    const result = await encoder.evolve(rpg, { commitRange: 'HEAD~5..HEAD' })
+
+    // /tmp/test-repo is not a git repository, so evolve should throw
+    await expect(encoder.evolve(rpg, { commitRange: 'HEAD~5..HEAD' })).rejects.toThrow(
+      /Failed to parse git diff/,
+    )
+  })
+
+  it('evolve returns result structure on valid repo', async () => {
+    // Use the actual project root which is a real git repo
+    const realEncoder = new RPGEncoder(PROJECT_ROOT, {
+      include: ['src/encoder/evolution/types.ts'],
+    })
+    const { rpg } = await realEncoder.encode()
+    const result = await realEncoder.evolve(rpg, { commitRange: 'HEAD~1..HEAD' })
 
     expect(result).toHaveProperty('inserted')
     expect(result).toHaveProperty('deleted')

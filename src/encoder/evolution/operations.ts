@@ -5,13 +5,14 @@ import type { Embedding } from '../embedding'
 import type { SemanticExtractor } from '../semantic'
 import type { SemanticRouter } from './semantic-router'
 import type { ChangedEntity } from './types'
+import path from 'node:path'
 import { cosineSimilarity } from './semantic-router'
 import { DEFAULT_DRIFT_THRESHOLD } from './types'
 
 /**
- * DeleteNode — Algorithm 1 from RPG-Encoder §4 (deletion.tex)
+ * DeleteNode — Algorithm 2 from RPG-Encoder §3 (Appendix A.2, deletion.tex)
  *
- * 1. Remove the target node (CASCADE deletes incident edges)
+ * 1. Remove the target node (CASCADE deletes incident edges per GraphStore contract)
  * 2. PruneOrphans: recursively remove empty ancestor HighLevelNodes
  *
  * Returns the number of pruned ancestor nodes.
@@ -57,6 +58,10 @@ async function pruneOrphans(rpg: RepositoryPlanningGraph, nodeId: string): Promi
   // Node is empty — remember parent, then remove
   const parent = await rpg.getParent(nodeId)
 
+  // Guard against concurrent removal during the same evolution pass
+  if (!(await rpg.hasNode(nodeId))) {
+    return 0
+  }
   await rpg.removeNode(nodeId)
 
   // Recurse to parent
@@ -80,12 +85,15 @@ export interface OperationContext {
 }
 
 /**
- * InsertNode — Algorithm 3 from RPG-Encoder §4 (insertion.tex)
+ * InsertNode — Algorithm 4 from RPG-Encoder §3 (Appendix A.2, insertion.tex)
  *
+ * Steps 1-4 implement Algorithm 4 from the paper:
  * 1. Extract semantic feature via SemanticExtractor
  * 2. Find best parent via FindBestParent (SemanticRouter)
  * 3. Create LowLevelNode
  * 4. Create FunctionalEdge from parent to new node
+ *
+ * Step 5 is an implementation addition for dependency maintenance:
  * 5. Inject dependency edges for imports
  */
 export async function insertNode(
@@ -167,43 +175,61 @@ async function injectDependencyEdges(
           dependencyType: 'import',
         })
       }
-      catch {
-        // Edge might already exist or target not found — skip
+      catch (error) {
+        const msg = error instanceof Error ? error.message : String(error)
+        // Duplicate edge is expected (skip), but other errors should surface
+        if (!msg.includes('already exists') && !msg.includes('not found')) {
+          console.warn(
+            `[evolution] Failed to add dependency edge ${entity.id} → ${targetId}: ${msg}`,
+          )
+        }
       }
     }
   }
 }
 
 /**
- * Resolve import module path to actual file path (simplified)
+ * Resolve import module path to actual file path.
+ * Tries direct file extensions first, then index files in directories.
  */
 function resolveImportPath(sourceFile: string, modulePath: string): string | null {
   if (!modulePath.startsWith('.') && !modulePath.startsWith('/')) {
     return null // External module
   }
 
-  const path = require('node:path') as typeof import('node:path')
   const sourceDir = path.dirname(sourceFile)
   const resolved = path.normalize(path.join(sourceDir, modulePath))
+  const normalize = (p: string) => p.replace(/\\/g, '/')
 
   const extensions = ['.ts', '.tsx', '.js', '.jsx', '.py', '']
+
+  // Try direct file match (e.g., ./utils → ./utils.ts)
   for (const ext of extensions) {
-    const candidate = resolved + ext
-    const normalized = candidate.replace(/\\/g, '/')
-    if (!normalized.startsWith('/')) {
-      return normalized
+    const candidate = normalize(resolved + ext)
+    if (!candidate.startsWith('/')) {
+      return candidate
     }
   }
 
-  return resolved.replace(/\\/g, '/')
+  // Try index file resolution (e.g., ./utils → ./utils/index.ts)
+  const indexExtensions = ['.ts', '.tsx', '.js', '.jsx']
+  for (const ext of indexExtensions) {
+    const candidate = normalize(path.join(resolved, `index${ext}`))
+    if (!candidate.startsWith('/')) {
+      return candidate
+    }
+  }
+
+  return normalize(resolved)
 }
 
 /**
- * ProcessModification — Algorithm 2 from RPG-Encoder §4 (modified.tex)
+ * ProcessModification — per-entity re-route logic from Algorithm 3,
+ * RPG-Encoder §3 (Appendix A.2, modified.tex, lines 19-26)
  *
  * For a modified entity:
  * 1. Re-extract semantic feature
- * 2. Compute semantic drift (cosine distance)
+ * 2. Compute semantic drift (cosine distance, range [0,1] where 0=identical, 1=maximum drift)
  * 3. If drift > threshold: delete + insert (re-route)
  * 4. Else: in-place update
  *
@@ -243,7 +269,16 @@ export async function processModification(
   // 3. If significant drift: delete + insert (re-route to correct location)
   if (drift > driftThreshold) {
     const prunedNodes = await deleteNode(rpg, existingNodeId)
-    await insertNode(rpg, newEntity, ctx)
+    try {
+      await insertNode(rpg, newEntity, ctx)
+    }
+    catch (error) {
+      console.error(
+        `[evolution] Node "${existingNodeId}" was deleted during re-route but re-insert failed. Graph may be inconsistent.`,
+        error,
+      )
+      throw error
+    }
     return { rerouted: true, prunedNodes }
   }
 
@@ -279,11 +314,16 @@ async function computeDrift(
 
   // Primary: embedding-based cosine distance
   if (embedding) {
-    const [oldEmbed, newEmbed] = await Promise.all([
-      embedding.embed(oldFeature.description),
-      embedding.embed(newFeature.description),
-    ])
-    return 1 - cosineSimilarity(oldEmbed.vector, newEmbed.vector)
+    try {
+      const [oldEmbed, newEmbed] = await Promise.all([
+        embedding.embed(oldFeature.description),
+        embedding.embed(newFeature.description),
+      ])
+      return 1 - cosineSimilarity(oldEmbed.vector, newEmbed.vector)
+    }
+    catch {
+      // Embedding failed — fall through to keyword-based drift
+    }
   }
 
   // Fallback: keyword Jaccard distance
@@ -324,19 +364,9 @@ function descriptionDrift(oldDesc: string, newDesc: string): number {
 }
 
 /**
- * Build a qualified entity ID for matching graph nodes
- *
- * Current encoder uses: filePath:entityType:entityName:startLine
- * Evolution matches on: filePath:entityType:qualifiedName (without line numbers)
- */
-export function buildEntityId(entity: ChangedEntity): string {
-  return entity.id
-}
-
-/**
  * Find a node in the RPG that matches a ChangedEntity.
  *
- * Tries exact match first, then falls back to prefix match
+ * Tries exact match first, then falls back to ID prefix match
  * (to handle line number differences in existing node IDs).
  */
 export async function findMatchingNode(
@@ -348,19 +378,13 @@ export async function findMatchingNode(
     return entity.id
   }
 
-  // Fallback: search for nodes with matching file path and entity name
-  // The existing encoder uses filePath:entityType:entityName:startLine format
+  // Fallback: match by ID prefix to handle encoder-style IDs with line numbers
+  // (e.g., "file.ts:function:foo:10" matches evolution "file.ts:function:foo")
+  const basePattern = `${entity.filePath}:${entity.entityType}:${entity.entityName}`
   const nodes = await rpg.getLowLevelNodes()
   for (const node of nodes) {
-    if (
-      node.metadata?.path === entity.filePath
-      && node.metadata?.entityType === entity.entityType
-    ) {
-      // Check if the node ID starts with the entity's base ID pattern
-      const basePattern = `${entity.filePath}:${entity.entityType}:${entity.entityName}`
-      if (node.id.startsWith(basePattern)) {
-        return node.id
-      }
+    if (node.id.startsWith(basePattern)) {
+      return node.id
     }
   }
 

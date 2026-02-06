@@ -1,10 +1,8 @@
 import type { RepositoryPlanningGraph } from '../../graph/rpg'
 import type { OperationContext } from './operations'
 import type { EvolutionOptions, EvolutionResult } from './types'
-import path from 'node:path'
 import { ASTParser } from '../../utils/ast'
 import { LLMClient } from '../../utils/llm'
-import { SemanticCache } from '../cache'
 import { SemanticExtractor } from '../semantic'
 import { DiffParser } from './diff-parser'
 import { deleteNode, insertNode, processModification } from './operations'
@@ -14,9 +12,9 @@ import { DEFAULT_DRIFT_THRESHOLD } from './types'
 /**
  * RPGEvolver — orchestrates incremental RPG updates from git commits.
  *
- * Implements the Evolution pipeline from RPG-Encoder §4:
+ * Implements the Evolution pipeline from RPG-Encoder §3 (Appendix A.2):
  * 1. ParseUnitDiff: Git diff → entity-level changes (U+, U-, U~)
- * 2. Schedule: Delete → Modify → Insert (paper §A.2.1)
+ * 2. Schedule: Delete → Modify → Insert (Appendix A.2.1)
  * 3. Execute atomic operations
  * 4. Return statistics
  */
@@ -26,7 +24,6 @@ export class RPGEvolver {
   private diffParser: DiffParser
   private semanticExtractor: SemanticExtractor
   private semanticRouter: SemanticRouter
-  private cache: SemanticCache
   private astParser: ASTParser
 
   constructor(rpg: RepositoryPlanningGraph, options: EvolutionOptions) {
@@ -37,10 +34,6 @@ export class RPGEvolver {
     this.diffParser = new DiffParser(options.repoPath, this.astParser)
 
     this.semanticExtractor = new SemanticExtractor(options.semantic)
-    this.cache = new SemanticCache({
-      cacheDir: path.join(options.repoPath, '.please', 'cache'),
-      ...options.cache,
-    })
 
     // Initialize LLM client if enabled
     const llmClient = this.createLLMClient()
@@ -77,36 +70,67 @@ export class RPGEvolver {
 
     const driftThreshold = this.options.driftThreshold ?? DEFAULT_DRIFT_THRESHOLD
 
+    const errors: Array<{ entity: string, phase: string, error: string }> = []
+
     // 2. Process deletions first (structural hygiene — paper scheduling)
     for (const entity of diffResult.deletions) {
-      const pruned = await deleteNode(this.rpg, entity.id)
-      result.deleted++
-      result.prunedNodes += pruned
+      try {
+        const pruned = await deleteNode(this.rpg, entity.id)
+        result.deleted++
+        result.prunedNodes += pruned
+      }
+      catch (error) {
+        errors.push({
+          entity: entity.id,
+          phase: 'deletion',
+          error: error instanceof Error ? error.message : String(error),
+        })
+      }
     }
 
     // 3. Process modifications (may trigger delete + insert for drift)
     for (const mod of diffResult.modifications) {
-      const modResult = await processModification(this.rpg, mod.old, mod.new, ctx, driftThreshold)
+      try {
+        const modResult = await processModification(this.rpg, mod.old, mod.new, ctx, driftThreshold)
 
-      if (modResult.rerouted) {
-        result.rerouted++
+        if (modResult.rerouted) {
+          result.rerouted++
+        }
+        else {
+          result.modified++
+        }
+        result.prunedNodes += modResult.prunedNodes
       }
-      else {
-        result.modified++
+      catch (error) {
+        errors.push({
+          entity: mod.old.id,
+          phase: 'modification',
+          error: error instanceof Error ? error.message : String(error),
+        })
       }
-      result.prunedNodes += modResult.prunedNodes
     }
 
     // 4. Process insertions last (new entities route into clean hierarchy)
     for (const entity of diffResult.insertions) {
-      await insertNode(this.rpg, entity, ctx)
-      result.inserted++
+      try {
+        await insertNode(this.rpg, entity, ctx)
+        result.inserted++
+      }
+      catch (error) {
+        errors.push({
+          entity: entity.id,
+          phase: 'insertion',
+          error: error instanceof Error ? error.message : String(error),
+        })
+      }
     }
 
-    // 5. Save semantic cache
-    await this.cache.save()
+    // Report any errors encountered during evolution
+    if (errors.length > 0) {
+      console.warn(`[evolution] ${errors.length} operation(s) failed:`, errors)
+    }
 
-    // 6. Collect statistics
+    // 5. Collect statistics
     result.llmCalls = this.semanticRouter.getLLMCalls()
     result.duration = Date.now() - startTime
 

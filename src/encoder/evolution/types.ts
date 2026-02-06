@@ -1,5 +1,4 @@
 import type { EntityType } from '../../graph/node'
-import type { CacheOptions } from '../cache'
 import type { SemanticOptions } from '../semantic'
 
 /**
@@ -16,8 +15,6 @@ export interface EvolutionOptions {
   useLLM?: boolean
   /** Semantic extraction options */
   semantic?: SemanticOptions
-  /** Cache options */
-  cache?: CacheOptions
   /** Include source code in nodes */
   includeSource?: boolean
 }
@@ -63,14 +60,6 @@ export interface ChangedEntity {
   /** End line (1-indexed) */
   endLine?: number
 }
-
-/**
- * A change event categorized from ParseUnitDiff
- */
-export type ChangeEvent
-  = | { type: 'insertion', entity: ChangedEntity }
-    | { type: 'deletion', entity: ChangedEntity }
-    | { type: 'modification', oldEntity: ChangedEntity, newEntity: ChangedEntity }
 
 /**
  * Result of parsing git diff into entity-level changes

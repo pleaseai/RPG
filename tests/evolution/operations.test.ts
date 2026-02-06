@@ -179,7 +179,7 @@ describe('insertNode (AC-4)', () => {
     // Should have a functional edge pointing to the new node
     const edges = await rpg.getFunctionalEdges()
     const newNodeEdges = edges.filter(e => e.target === entity.id)
-    expect(newNodeEdges.length).toBeGreaterThanOrEqual(0) // May or may not route
+    expect(newNodeEdges.length).toBeGreaterThanOrEqual(1)
   })
 })
 

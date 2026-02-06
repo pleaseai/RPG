@@ -9,7 +9,8 @@ import { buildSemanticRoutingPrompt } from './prompts'
 /**
  * FindBestParent — LLM-based recursive top-down semantic routing
  *
- * Implements Algorithm 3 from RPG-Encoder §4 (insertion.tex):
+ * Implements the FindBestParent sub-procedure from Algorithm 4
+ * (RPG-Encoder §3, Appendix A.2, insertion.tex):
  * Starting at the root, recursively descend through HighLevelNode children,
  * asking the LLM which child is the best semantic parent for a new entity.
  */
@@ -104,8 +105,14 @@ export class SemanticRouter {
       return this.selectWithEmbedding(candidates, entityFeature)
     }
 
-    // No LLM or embedding — return first candidate as fallback
-    return candidates[0]?.id ?? null
+    // No LLM or embedding — return first candidate as deterministic fallback
+    const fallbackId = candidates[0]?.id ?? null
+    if (fallbackId) {
+      console.warn(
+        `[SemanticRouter] No LLM or embedding configured — falling back to first candidate "${fallbackId}" for entity: "${entityFeature.slice(0, 80)}"`,
+      )
+    }
+    return fallbackId
   }
 
   /**
@@ -136,8 +143,12 @@ export class SemanticRouter {
 
       return null
     }
-    catch {
-      // LLM failure — fall through to embedding or return null
+    catch (error) {
+      this.llmCalls++ // API was called even if it failed
+      console.warn(
+        '[SemanticRouter] LLM call failed, falling back to embedding-based routing:',
+        error instanceof Error ? error.message : String(error),
+      )
       if (this.embedding) {
         return this.selectWithEmbedding(candidates, entityFeature)
       }

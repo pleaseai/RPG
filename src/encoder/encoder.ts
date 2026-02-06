@@ -717,7 +717,7 @@ export class RPGEncoder {
    * Incrementally update RPG with commit-level changes.
    *
    * Delegates to RPGEvolver which implements the Evolution pipeline
-   * from RPG-Encoder §4: Delete → Modify → Insert scheduling.
+   * from RPG-Encoder §3 (Appendix A.2): Delete → Modify → Insert scheduling.
    */
   async evolve(
     rpg: RepositoryPlanningGraph,
@@ -728,7 +728,6 @@ export class RPGEncoder {
       repoPath: this.repoPath,
       useLLM: this.options.semantic?.useLLM,
       semantic: this.options.semantic,
-      cache: this.options.cache,
     })
     return evolver.evolve()
   }

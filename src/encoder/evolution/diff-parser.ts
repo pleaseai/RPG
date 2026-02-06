@@ -24,6 +24,8 @@ export class DiffParser {
    * Parse a commit range into entity-level changes
    */
   async parse(commitRange: string): Promise<DiffResult> {
+    this.validateCommitRange(commitRange)
+
     const result: DiffResult = {
       insertions: [],
       deletions: [],
@@ -35,9 +37,10 @@ export class DiffParser {
     try {
       fileChanges = await this.getFileChanges(commitRange)
     }
-    catch {
-      // Not a git repository or invalid commit range — return empty result
-      return result
+    catch (error) {
+      throw new Error(
+        `Failed to parse git diff for range "${commitRange}" in ${this.repoPath}: ${error instanceof Error ? error.message : String(error)}`,
+      )
     }
 
     // Step 2: For each changed file, extract entity-level changes
@@ -90,6 +93,7 @@ export class DiffParser {
       '--name-status',
       '--no-renames', // Treat renames as delete + add
       commitRange,
+      '--', // Prevent commitRange from being interpreted as a flag
     ])
 
     return this.parseNameStatus(output)
@@ -160,9 +164,17 @@ export class DiffParser {
     try {
       source = await this.execGit(['show', `${revision}:${filePath}`])
     }
-    catch {
-      // File doesn't exist at this revision
-      return []
+    catch (error) {
+      const msg = error instanceof Error ? error.message : String(error)
+      // git show exits with 128 when path doesn't exist at revision
+      if (
+        msg.includes('does not exist')
+        || msg.includes('exists on disk, but not in')
+        || msg.includes('exit 128')
+      ) {
+        return []
+      }
+      throw error
     }
 
     const language = this.astParser.detectLanguage(filePath)
@@ -293,6 +305,22 @@ export class DiffParser {
     }
     // Single commit: compare with parent
     return [`${commitRange}~1`, commitRange]
+  }
+
+  /**
+   * Validate commit range to prevent git argument injection.
+   * Rejects values starting with '-' that git would interpret as flags.
+   */
+  private validateCommitRange(commitRange: string): void {
+    if (commitRange.startsWith('-')) {
+      throw new Error(`Invalid commit range "${commitRange}": must not start with "-"`)
+    }
+    // Validate each part of a range (e.g., "abc..def")
+    for (const part of commitRange.split('..')) {
+      if (part.startsWith('-')) {
+        throw new Error(`Invalid commit range "${commitRange}": revision must not start with "-"`)
+      }
+    }
   }
 
   /**
