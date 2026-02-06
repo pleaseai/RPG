@@ -209,6 +209,15 @@ If `better-sqlite3` native bindings are compiled for a different Node.js version
 - `--include` is not a valid CLI option; use positional arguments (`vitest run 'pattern'`) or workspace projects (`--project=unit`)
 - Test file naming: `*.integration.test.ts` for integration tests, `*.test.ts` for unit tests
 
+### CI shallow clones
+- `actions/checkout@v6` defaults to `fetch-depth: 1` — tests using `HEAD~1..HEAD` or specific commit hashes will fail
+- Unit tests use `fetch-depth: 2`; integration tests use `fetch-depth: 0` (full history for submodule fixture commits)
+- Guard git-history-dependent tests with `it.skipIf(!hasGitAncestor(repoPath, ref))` as a safety net
+- The `tests/fixtures/superjson` submodule is a real git repo used for evolution/diff-parser integration tests
+
+### Linter auto-formatting
+- Always run `bun run lint:fix` after editing test files — the local formatter and CI linter may disagree on arrow-parens, brace-style, and comma-dangle
+
 ## Semantic Extraction
 
 RPG encoding uses LLM for semantic feature extraction. Options:
