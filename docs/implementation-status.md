@@ -49,22 +49,35 @@ This document compares the current implementation against the papers, categorizi
   - Entity extraction (function, class, method, variable, import)
   - Docstring, parameter, return type, parent entity parsing
 
-### 1.5 Encoder — Phase 2 & 3 Basic Structure
+### 1.5 Encoder — Phase 2: Structural Reorganization
 
 - **RPGEncoder.encode()**: 3-phase orchestration — `src/encoder/encoder.ts`
   - `discoverFiles()`: Pattern-based source file discovery
   - `extractEntities()`: AST-based entity extraction
-  - `buildFunctionalHierarchy()`: Directory-based HighLevelNode creation
+  - `buildFunctionalHierarchy()`: LLM-based semantic reorganization (Domain Discovery + 3-Level Path)
   - `injectDependencies()`: Import parsing → DependencyEdge creation
 
-### 1.6 Embedding & Semantic Search
+### 1.6 Encoder — Phase 2: Semantic Reorganization (Paper §3.2)
+
+LLM-based semantic reorganization replacing directory-mirroring hierarchy — `src/encoder/reorganization/`
+
+| Paper Component | Module | Status |
+|-----------------|--------|--------|
+| **Domain Discovery** | `src/encoder/reorganization/domain-discovery.ts` | ✅ Complete |
+| **Three-Level Path Construction** | `src/encoder/reorganization/hierarchy-builder.ts` | ✅ Complete |
+| **Granularity-based input compression** | `src/encoder/reorganization/prompts.ts` | ✅ Complete |
+| **PascalCase functional area naming** | `domain-discovery.ts` | ✅ Complete |
+| **Uncategorized fallback** | `hierarchy-builder.ts` | ✅ Complete |
+| **Backward compatibility** | `encoder.ts` | ✅ Skips silently without LLM |
+
+### 1.7 Embedding & Semantic Search
 
 - **OpenAIEmbedding**: text-embedding-3-small/large — `src/encoder/embedding.ts`
 - **HuggingFaceEmbedding**: MongoDB LEAF local models (768/1024 dim)
 - **SemanticSearch**: Hybrid search (vector + BM25) — `src/encoder/semantic-search.ts`
 - **cosineSimilarity()** — `src/utils/vector.ts`
 
-### 1.7 Agentic Tools
+### 1.8 Agentic Tools
 
 | Tool | Module | Paper Correspondence |
 |------|--------|---------------------|
@@ -72,16 +85,16 @@ This document compares the current implementation against the papers, categorizi
 | FetchNode | `src/tools/fetch.ts` | RPG-Encoder FetchNode (metadata + source) |
 | ExploreRPG | `src/tools/explore.ts` | RPG-Encoder ExploreRPG (BFS/DFS traversal) |
 
-### 1.8 MCP Server
+### 1.9 MCP Server
 
 - 5 tools (rpg_search, rpg_fetch, rpg_explore, rpg_encode, rpg_stats) — `src/mcp/`
 - Zod-based input validation, error factory pattern
 
-### 1.9 CLI
+### 1.10 CLI
 
 - `encode`, `search`, `fetch` commands — `src/cli.ts`
 
-### 1.10 RPG-Encoder: Evolution (Incremental Updates)
+### 1.11 RPG-Encoder: Evolution (Incremental Updates)
 
 Commit-level incremental maintenance — a key differentiator of the paper — implementing the 3 atomic operations from §4:
 
@@ -95,9 +108,9 @@ Commit-level incremental maintenance — a key differentiator of the paper — i
 | **RPGEvolver** orchestrator (Delete → Modify → Insert) | `src/encoder/evolution/evolve.ts` | ✅ Complete |
 | **RPGEncoder.evolve()** public API | `src/encoder/encoder.ts` | ✅ Complete |
 
-### 1.11 Tests
+### 1.12 Tests
 
-- 23 test files (unit + integration)
+- 28 test files (unit + integration)
 - Vitest workspace configuration (unit: 10s, integration: 30s)
 - Fixtures: `tests/fixtures/superjson/`
 
@@ -126,8 +139,8 @@ Currently only a skeleton exists at `src/zerorepo/zerorepo.ts`; core logic is no
 
 | Paper Component | Description | Status |
 |-----------------|-------------|--------|
-| **Domain Discovery** | LLM-based automatic functional area identification, PascalCase naming | ❌ Not implemented |
-| **Three-Level Path Construction** | `<functional area>/<category>/<subcategory>` 3-level hierarchy | ❌ Not implemented |
+| **Domain Discovery** | LLM-based automatic functional area identification, PascalCase naming | ✅ Implemented |
+| **Three-Level Path Construction** | `<functional area>/<category>/<subcategory>` 3-level hierarchy | ✅ Implemented |
 | **Semantic Compatibility Routing** | LLM places nodes under semantically optimal parents | ❌ Not implemented |
 
 ### 2.3 RPG-Encoder: Advanced Artifact Grounding
@@ -151,18 +164,18 @@ Currently only a skeleton exists at `src/zerorepo/zerorepo.ts`; core logic is no
 
 ### 3.1 Semantic Lifting Improvements
 
-| Item | Current | Paper Requirement | Suggested Fix |
-|------|---------|-------------------|---------------|
-| Feature naming rules | Free-form | verb + object format, 3-8 words, single responsibility, exclude implementation details | Add paper's naming constraints to `SemanticExtractor` prompt |
-| File-level aggregation | Not implemented | Synthesize function-level features → file-level summary | Add file-level semantic lifting phase |
-| Functional edge auto-generation | Directory-based | Auto-generate functional edges between file → function | Implement file → function edge creation logic |
+| Item | Current | Paper Requirement | Status |
+|------|---------|-------------------|--------|
+| Feature naming rules | verb + object format, 3-8 words | verb + object format, single responsibility, exclude implementation details | ✅ Implemented (PR #29) |
+| File-level aggregation | Function features → file summary | Synthesize function-level features → file-level summary | ✅ Implemented (PR #29) |
+| Functional edge auto-generation | file → function edges in Phase 1 | Auto-generate functional edges between file → function | ✅ Implemented |
 
 ### 3.2 Structural Reorganization Improvements
 
-| Item | Current | Paper Requirement | Suggested Fix |
-|------|---------|-------------------|---------------|
-| Hierarchy structure | Physical directory mirroring | Semantic-based reorganization (resolve structural entanglement) | Implement Domain Discovery + 3-level path |
-| HighLevelNode creation | Directory = HighLevelNode | LLM-based functional area identification then reorganization | Rewrite `buildFunctionalHierarchy()` |
+| Item | Current | Paper Requirement | Status |
+|------|---------|-------------------|--------|
+| Hierarchy structure | LLM-based Domain Discovery + 3-Level Path | Semantic-based reorganization (resolve structural entanglement) | ✅ Implemented |
+| HighLevelNode creation | `domain:` prefixed semantic nodes | LLM-based functional area identification then reorganization | ✅ Implemented |
 
 ### 3.3 SearchNode Tool Improvements
 
@@ -205,8 +218,9 @@ Currently only a skeleton exists at `src/zerorepo/zerorepo.ts`; core logic is no
 ```
 P0 (Core)
 ├── ✅ RPG-Encoder Evolution (incremental updates) — key paper differentiator, 95.7% cost reduction
+├── ✅ Domain Discovery + 3-Level Path (semantic reorganization)
 ├── Semantic Lifting improvements (naming rules, file-level aggregation)
-└── Domain Discovery + 3-Level Path (semantic reorganization)
+└── Semantic Compatibility Routing (LLM-based node placement)
 
 P1 (Important)
 ├── Artifact Grounding — LCA-based metadata propagation
