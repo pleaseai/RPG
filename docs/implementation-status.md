@@ -81,9 +81,23 @@ This document compares the current implementation against the papers, categorizi
 
 - `encode`, `search`, `fetch` commands — `src/cli.ts`
 
-### 1.10 Tests
+### 1.10 RPG-Encoder: Evolution (Incremental Updates)
 
-- 20 test files (unit + integration)
+Commit-level incremental maintenance — a key differentiator of the paper — implementing the 3 atomic operations from §4:
+
+| Paper Component | Module | Status |
+|-----------------|--------|--------|
+| **ParseUnitDiff** (Delta-Level Feature Extraction) | `src/encoder/evolution/diff-parser.ts` | ✅ Complete |
+| **DeleteNode + PruneOrphans** (Algorithm 1) | `src/encoder/evolution/operations.ts` | ✅ Complete |
+| **ProcessModification** with semantic drift (Algorithm 2) | `src/encoder/evolution/operations.ts` | ✅ Complete |
+| **InsertNode** with semantic routing (Algorithm 3) | `src/encoder/evolution/operations.ts` | ✅ Complete |
+| **FindBestParent** LLM/embedding routing | `src/encoder/evolution/semantic-router.ts` | ✅ Complete |
+| **RPGEvolver** orchestrator (Delete → Modify → Insert) | `src/encoder/evolution/evolve.ts` | ✅ Complete |
+| **RPGEncoder.evolve()** public API | `src/encoder/encoder.ts` | ✅ Complete |
+
+### 1.11 Tests
+
+- 23 test files (unit + integration)
 - Vitest workspace configuration (unit: 10s, integration: 30s)
 - Fixtures: `tests/fixtures/superjson/`
 
@@ -108,18 +122,7 @@ Currently only a skeleton exists at `src/zerorepo/zerorepo.ts`; core logic is no
 | **Test Generation & Validation** | 3-tier test generation (Unit/Regression/Integration) | ❌ Not implemented |
 | **Majority-Vote Diagnosis** | Automated test failure root cause diagnosis | ❌ Not implemented |
 
-### 2.2 RPG-Encoder: Evolution (Incremental Updates)
-
-Commit-level incremental maintenance — a key differentiator of the paper — is entirely unimplemented:
-
-| Paper Component | Description | Status |
-|-----------------|-------------|--------|
-| **Delta-Level Feature Extraction** | Parse only changed code from commit diffs | ❌ Not implemented |
-| **Recursive Pruning (deletion)** | Node deletion + automatic empty ancestor cleanup | ❌ Not implemented |
-| **Differential Modification (modification)** | Semantic drift detection → in-place update vs re-routing | ❌ Not implemented |
-| **LLM-Based Semantic Routing (insertion)** | Route new entities to semantically optimal positions | ❌ Not implemented |
-
-### 2.3 RPG-Encoder: Advanced Semantic Structure Reorganization
+### 2.2 RPG-Encoder: Advanced Semantic Structure Reorganization
 
 | Paper Component | Description | Status |
 |-----------------|-------------|--------|
@@ -127,18 +130,18 @@ Commit-level incremental maintenance — a key differentiator of the paper — i
 | **Three-Level Path Construction** | `<functional area>/<category>/<subcategory>` 3-level hierarchy | ❌ Not implemented |
 | **Semantic Compatibility Routing** | LLM places nodes under semantically optimal parents | ❌ Not implemented |
 
-### 2.4 RPG-Encoder: Advanced Artifact Grounding
+### 2.3 RPG-Encoder: Advanced Artifact Grounding
 
 | Paper Component | Description | Status |
 |-----------------|-------------|--------|
 | **LCA-Based Metadata Propagation** | Trie-based bottom-up path propagation using Lowest Common Ancestor | ❌ Not implemented |
 | **Abstract → Physical Mapping** | Anchoring abstract features to code paths | ❌ Not implemented |
 
-### 2.5 RepoCraft Benchmark
+### 2.4 RepoCraft Benchmark
 
 - Paper's evaluation framework (6 projects, 1,052 tasks) not implemented
 
-### 2.6 Localization & Editing Tools
+### 2.5 Localization & Editing Tools
 
 - `view_file_interface_feature_map`, `get_interface_content`, `expand_leaf_node_info`, `search_interface_by_functionality` — editing tools from the ZeroRepo paper
 
@@ -179,7 +182,7 @@ Commit-level incremental maintenance — a key differentiator of the paper — i
 
 | Item | Current | Needed |
 |------|---------|--------|
-| rpg_evolve | Does not exist | Incremental update tool (add/modify/delete) |
+| rpg_evolve | Does not exist | MCP wrapper for `RPGEvolver` (backend implemented) |
 | rpg_generate | Does not exist | ZeroRepo generation pipeline tool |
 | Tool orchestration | Independent calls | Paper's Search → Fetch → Explore workflow guide |
 
@@ -201,7 +204,7 @@ Commit-level incremental maintenance — a key differentiator of the paper — i
 
 ```
 P0 (Core)
-├── RPG-Encoder Evolution (incremental updates) — key paper differentiator, 95.7% cost reduction
+├── ✅ RPG-Encoder Evolution (incremental updates) — key paper differentiator, 95.7% cost reduction
 ├── Semantic Lifting improvements (naming rules, file-level aggregation)
 └── Domain Discovery + 3-Level Path (semantic reorganization)
 

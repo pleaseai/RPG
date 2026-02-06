@@ -31,7 +31,14 @@ export class DiffParser {
     }
 
     // Step 1: Get file-level changes
-    const fileChanges = await this.getFileChanges(commitRange)
+    let fileChanges: FileChange[]
+    try {
+      fileChanges = await this.getFileChanges(commitRange)
+    }
+    catch {
+      // Not a git repository or invalid commit range — return empty result
+      return result
+    }
 
     // Step 2: For each changed file, extract entity-level changes
     const [oldRev, newRev] = this.parseCommitRange(commitRange)
@@ -300,20 +307,20 @@ export class DiffParser {
    * Execute a git command in the repo
    */
   private async execGit(args: string[]): Promise<string> {
-    const proc = Bun.spawn(['git', ...args], {
-      cwd: this.repoPath,
-      stdout: 'pipe',
-      stderr: 'pipe',
-    })
-
-    const stdout = await new Response(proc.stdout).text()
-    const exitCode = await proc.exited
-
-    if (exitCode !== 0) {
-      const stderr = await new Response(proc.stderr).text()
-      throw new Error(`git ${args[0]} failed (exit ${exitCode}): ${stderr.trim()}`)
+    const { execFileSync } = await import('node:child_process')
+    try {
+      const stdout = execFileSync('git', args, {
+        cwd: this.repoPath,
+        encoding: 'utf-8',
+        maxBuffer: 10 * 1024 * 1024, // 10MB
+      })
+      return stdout
     }
-
-    return stdout
+    catch (error: unknown) {
+      const err = error as { stderr?: string, status?: number }
+      throw new Error(
+        `git ${args[0]} failed (exit ${err.status ?? 1}): ${(err.stderr ?? '').trim()}`,
+      )
+    }
   }
 }

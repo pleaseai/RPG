@@ -49,9 +49,17 @@ describe('rPGEncoder', () => {
     expect(result.rpg.getConfig().rootPath).toBe('/tmp/test-repo')
   })
 
-  it('evolve accepts commit range', async () => {
-    // This should not throw
-    await expect(encoder.evolve({ commitRange: 'HEAD~5..HEAD' })).resolves.toBeUndefined()
+  it('evolve accepts rpg and commit range', async () => {
+    const { rpg } = await encoder.encode()
+    const result = await encoder.evolve(rpg, { commitRange: 'HEAD~5..HEAD' })
+
+    expect(result).toHaveProperty('inserted')
+    expect(result).toHaveProperty('deleted')
+    expect(result).toHaveProperty('modified')
+    expect(result).toHaveProperty('rerouted')
+    expect(result).toHaveProperty('prunedNodes')
+    expect(result).toHaveProperty('duration')
+    expect(result).toHaveProperty('llmCalls')
   })
 })
 
