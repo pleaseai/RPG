@@ -101,8 +101,8 @@ export class ArtifactGrounder {
     const children = await this.rpg.getChildren(nodeId)
     const dirSet = new Set<string>()
 
-    for (const child of children) {
-      const childDirs = await this.propagate(child.id)
+    const childDirSets = await Promise.all(children.map(child => this.propagate(child.id)))
+    for (const childDirs of childDirSets) {
       for (const dir of childDirs) {
         dirSet.add(dir)
       }

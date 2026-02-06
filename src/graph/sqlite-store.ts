@@ -514,10 +514,13 @@ export class SQLiteStore implements GraphStore {
       .prepare('SELECT * FROM nodes WHERE path LIKE ? OR extra LIKE ?')
       .all(likePattern, `%${likePattern}%`) as NodeRow[]
 
-    const regexStr = likePattern
+    const placeholder = '<<DOTSTAR>>'
+    const regexStr = pattern
+      .replace(/\.\*/g, placeholder) // preserve existing .*
       .replace(/[.+?^${}()|[\]\\]/g, '\\$&')
-      .replace(/%/g, '.*')
-      .replace(/_/g, '.')
+      .replace(/%/g, '.*') // SQL LIKE % → regex .*
+      .replace(/\*/g, '.*') // glob * → regex .*
+      .replaceAll(placeholder, '.*') // restore preserved .*
     const regex = new RegExp(`^${regexStr}$`)
 
     const seen = new Set<string>()

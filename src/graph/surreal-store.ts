@@ -472,11 +472,13 @@ export class SurrealStore implements GraphStore {
       .query<[NodeRecord[]]>('SELECT * FROM node WHERE path != NONE OR extra != NONE')
       .collect()
 
-    const likePattern = pattern.replace(/\.\*/g, '%').replace(/\*/g, '%')
-    const regexStr = likePattern
+    const placeholder = '<<DOTSTAR>>'
+    const regexStr = pattern
+      .replace(/\.\*/g, placeholder) // preserve existing .*
       .replace(/[.+?^${}()|[\]\\]/g, '\\$&')
-      .replace(/%/g, '.*')
-      .replace(/_/g, '.')
+      .replace(/%/g, '.*') // SQL LIKE % → regex .*
+      .replace(/\*/g, '.*') // glob * → regex .*
+      .replaceAll(placeholder, '.*') // restore preserved .*
     const regex = new RegExp(`^${regexStr}$`)
     return rows
       .filter((r) => {
