@@ -71,8 +71,9 @@ describe('e2E: Hybrid Search Pipeline (superjson)', () => {
   })
 
   describe('encode superjson', () => {
-    it('should have high-level and low-level nodes', async () => {
-      expect((await rpg.getHighLevelNodes()).length).toBeGreaterThan(0)
+    it('should have low-level nodes (high-level requires LLM)', async () => {
+      // Without LLM, semantic reorganization is skipped — no high-level nodes
+      expect((await rpg.getHighLevelNodes()).length).toBe(0)
       expect((await rpg.getLowLevelNodes()).length).toBeGreaterThan(0)
     })
 

@@ -29,8 +29,8 @@ describe('e2E: Encode Real Repository', () => {
       // RPG should be named after the project
       expect(result.rpg.getConfig().name).toBe('rpg')
 
-      // Should have both high-level and low-level nodes
-      expect((await result.rpg.getHighLevelNodes()).length).toBeGreaterThan(0)
+      // Without LLM, semantic reorganization is skipped — no high-level nodes
+      expect((await result.rpg.getHighLevelNodes()).length).toBe(0)
       expect((await result.rpg.getLowLevelNodes()).length).toBeGreaterThan(0)
 
       // Should have both functional and dependency edges
@@ -99,36 +99,21 @@ describe('e2E: Encode Real Repository', () => {
       expect(hasInternalImports).toBe(true)
     })
 
-    it('should build correct functional hierarchy', async () => {
+    it('should skip functional hierarchy without LLM and still have file→entity edges', async () => {
       const encoder = new RPGEncoder(PROJECT_ROOT, {
-        include: ['src/**/*.ts'],
-        exclude: ['**/node_modules/**'],
+        include: ['src/encoder/encoder.ts'],
+        exclude: [],
       })
 
       const result = await encoder.encode()
 
+      // Without LLM, semantic reorganization is skipped — no high-level nodes
       const highLevelNodes = await result.rpg.getHighLevelNodes()
+      expect(highLevelNodes.length).toBe(0)
+
+      // But file→entity functional edges from Phase 1 should still exist
       const functionalEdges = await result.rpg.getFunctionalEdges()
-
-      // Should have directory nodes for src subdirectories
-      const dirPaths = highLevelNodes.map(n => n.directoryPath || n.metadata?.path)
-      expect(dirPaths.some(p => p?.includes('encoder'))).toBe(true)
-      expect(dirPaths.some(p => p?.includes('graph'))).toBe(true)
-      expect(dirPaths.some(p => p?.includes('utils'))).toBe(true)
-
-      // Functional edges should connect directories to files
-      const dirToFileEdgesChecks = await Promise.all(
-        functionalEdges.map(async (e) => {
-          const sourceNode = await result.rpg.getNode(e.source)
-          const targetNode = await result.rpg.getNode(e.target)
-          return (
-            sourceNode?.metadata?.entityType === 'module'
-            && targetNode?.metadata?.entityType === 'file'
-          )
-        }),
-      )
-      const dirToFileEdges = functionalEdges.filter((_, i) => dirToFileEdgesChecks[i])
-      expect(dirToFileEdges.length).toBeGreaterThan(0)
+      expect(functionalEdges.length).toBeGreaterThan(0)
     })
   })
 

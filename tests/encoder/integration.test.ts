@@ -84,9 +84,9 @@ export class Greeter {
       expect(functionNodes.length).toBeGreaterThanOrEqual(2) // main, greet
       expect(classNodes.length).toBeGreaterThanOrEqual(1) // Greeter
 
-      // Verify hierarchy
+      // Without LLM, semantic reorganization is skipped — no high-level nodes
       const highLevelNodes = await result.rpg.getHighLevelNodes()
-      expect(highLevelNodes.length).toBeGreaterThanOrEqual(1)
+      expect(highLevelNodes.length).toBe(0)
 
       // Verify dependency edges
       const dependencyEdges = await result.rpg.getDependencyEdges()
@@ -392,9 +392,9 @@ export function deepFunction(): void {
 
       expect(result.filesProcessed).toBe(1)
 
-      // Should create high-level nodes for the directory hierarchy
+      // Without LLM, semantic reorganization is skipped — no high-level nodes
       const highLevelNodes = await result.rpg.getHighLevelNodes()
-      expect(highLevelNodes.length).toBeGreaterThan(0)
+      expect(highLevelNodes.length).toBe(0)
     })
 
     it('should respect maxDepth option', async () => {

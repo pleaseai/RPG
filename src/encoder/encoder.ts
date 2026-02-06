@@ -534,11 +534,19 @@ export class RPGEncoder {
     const lowLevelNodes = await rpg.getLowLevelNodes()
     const fileGroups = this.buildFileFeatureGroups(lowLevelNodes)
 
+    // Nothing to reorganize if no file nodes exist
+    if (fileGroups.length === 0)
+      return
+
     if (!this.llmClient) {
-      throw new Error(
-        'Semantic reorganization requires an LLM provider. '
-        + 'Set GOOGLE_API_KEY, ANTHROPIC_API_KEY, or OPENAI_API_KEY.',
-      )
+      // If user explicitly requested LLM, throw. Otherwise skip silently.
+      if (this.options.semantic?.useLLM === true || this.options.semantic?.provider) {
+        throw new Error(
+          'Semantic reorganization requires an LLM provider. '
+          + 'Set GOOGLE_API_KEY, ANTHROPIC_API_KEY, or OPENAI_API_KEY.',
+        )
+      }
+      return
     }
 
     // Step 1: Domain Discovery — identify functional areas

@@ -224,32 +224,26 @@ describe('RPGEncoder.extractEntities', () => {
 })
 
 describe('RPGEncoder.buildFunctionalHierarchy', () => {
-  it('creates high-level nodes for directories', async () => {
+  it('skips hierarchy when no LLM is available', async () => {
     const encoder = new RPGEncoder(PROJECT_ROOT, {
       include: ['src/encoder/**/*.ts'],
       exclude: [],
     })
     const result = await encoder.encode()
 
-    // Should create a high-level node for src/encoder directory
+    // Without LLM, semantic reorganization is skipped — no high-level nodes
     const highLevelNodes = await result.rpg.getHighLevelNodes()
-    expect(highLevelNodes.length).toBeGreaterThanOrEqual(1)
-
-    // Check for directory node
-    const encoderDir = highLevelNodes.find(
-      n => n.directoryPath === 'src/encoder' || n.metadata?.path === 'src/encoder',
-    )
-    expect(encoderDir).toBeDefined()
+    expect(highLevelNodes.length).toBe(0)
   })
 
-  it('creates functional edges from directories to files', async () => {
+  it('creates functional edges from files to contained entities (Phase 1)', async () => {
     const encoder = new RPGEncoder(PROJECT_ROOT, {
       include: ['src/encoder/**/*.ts'],
       exclude: [],
     })
     const result = await encoder.encode()
 
-    // Should have functional edges
+    // Should have functional edges from Phase 1 (file→entity)
     const functionalEdges = await result.rpg.getFunctionalEdges()
     expect(functionalEdges.length).toBeGreaterThan(0)
   })
@@ -273,18 +267,20 @@ describe('RPGEncoder.buildFunctionalHierarchy', () => {
     expect(fileEdges.length).toBeGreaterThan(0)
   })
 
-  it('directory nodes have semantic features', async () => {
+  it('throws when useLLM is true but no provider is available', async () => {
     const encoder = new RPGEncoder(PROJECT_ROOT, {
-      include: ['src/encoder/**/*.ts'],
+      include: ['src/encoder/encoder.ts'],
       exclude: [],
+      semantic: { useLLM: true },
     })
-    const result = await encoder.encode()
-
-    const highLevelNodes = await result.rpg.getHighLevelNodes()
-    for (const node of highLevelNodes) {
-      expect(node.feature).toBeDefined()
-      expect(node.feature.description).toBeDefined()
-      expect(typeof node.feature.description).toBe('string')
+    // Will throw if no API keys are set and useLLM is explicitly true
+    // If API keys happen to be set, this test effectively becomes a no-op
+    if (
+      !process.env.GOOGLE_API_KEY
+      && !process.env.ANTHROPIC_API_KEY
+      && !process.env.OPENAI_API_KEY
+    ) {
+      await expect(encoder.encode()).rejects.toThrow('LLM provider')
     }
   })
 })
