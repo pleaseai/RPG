@@ -415,6 +415,7 @@ function calculate(x: number): number {
       }
 
       const flows = detector.detectAll([file, helper])
+      expect(flows.length).toBeGreaterThan(0)
 
       // All flows should have required fields
       flows.forEach((flow: DataFlowEdge) => {

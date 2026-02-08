@@ -537,13 +537,13 @@ export class RepositoryPlanningGraph {
         edges,
       }
       if (this.dataFlowEdges.length > 0) {
-        result.dataFlowEdges = this.dataFlowEdges
+        result.dataFlowEdges = [...this.dataFlowEdges]
       }
       return result
     }
     const legacyResult = await this.legacyStore!.exportJSON(this.config)
     if (this.dataFlowEdges.length > 0) {
-      legacyResult.dataFlowEdges = this.dataFlowEdges
+      legacyResult.dataFlowEdges = [...this.dataFlowEdges]
     }
     return legacyResult
   }
@@ -576,6 +576,9 @@ export class RepositoryPlanningGraph {
         const result = DataFlowEdgeSchema.safeParse(dfEdge)
         if (result.success) {
           rpg.dataFlowEdges.push(result.data)
+        }
+        else {
+          console.warn(`[RPG] Skipping invalid dataFlowEdge during deserialization: ${result.error.message}`)
         }
       }
     }

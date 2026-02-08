@@ -390,6 +390,7 @@ describe('RPGEncoder.injectDataFlows', () => {
     const result = await encoder.encode()
 
     const dataFlowEdges = await result.rpg.getDataFlowEdges()
+    expect(dataFlowEdges.length).toBeGreaterThan(0)
     for (const edge of dataFlowEdges) {
       expect(edge.from).toBeDefined()
       expect(edge.to).toBeDefined()
@@ -438,6 +439,7 @@ describe('RPGEncoder.injectDataFlows', () => {
     const restored = await RepositoryPlanningGraph.fromJSON(json)
 
     const originalEdges = await result.rpg.getDataFlowEdges()
+    expect(originalEdges.length).toBeGreaterThan(0)
     const restoredEdges = await restored.getDataFlowEdges()
     expect(restoredEdges.length).toBe(originalEdges.length)
   })

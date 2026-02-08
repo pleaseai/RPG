@@ -118,6 +118,7 @@ export class DataFlowDetector {
     // where a parameter is passed to another function call in the same scope
 
     const functions = parseResult.entities.filter(e => e.type === 'function')
+    const sourceLines = file.sourceCode.split('\n')
 
     for (let i = 0; i < functions.length; i++) {
       const func = functions[i]
@@ -129,7 +130,7 @@ export class DataFlowDetector {
       // Get the function body text (skip first line to avoid matching function signature)
       const funcStart = func.startLine - 1
       const funcEnd = func.endLine
-      const funcLines = file.sourceCode.split('\n').slice(funcStart, funcEnd)
+      const funcLines = sourceLines.slice(funcStart, funcEnd)
       const funcBody = funcLines.join('\n')
       const funcBodyWithoutDecl = funcLines.slice(1).join('\n')
 
