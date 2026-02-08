@@ -58,6 +58,7 @@ export interface GraphStats {
   lowLevelNodeCount: number
   functionalEdgeCount: number
   dependencyEdgeCount: number
+  dataFlowEdgeCount?: number
 }
 
 /**

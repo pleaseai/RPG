@@ -10,6 +10,7 @@ export {
 // Edge types and utilities
 export {
   BaseEdgeSchema,
+  createDataFlowEdge,
   createDependencyEdge,
   createFunctionalEdge,
   DataFlowEdgeSchema,

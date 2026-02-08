@@ -1,76 +1,65 @@
 {
-  "feature": "SearchNode search_scopes & Auto Mode Staged Fallback",
-  "issue_number": 15,
-  "plan_path": ".please/plans/2026-02-07-search-scopes-auto-fallback.md",
+  "feature": "Implement DataFlowEdge creation in Encoder",
+  "issue_number": 17,
+  "plan_path": null,
   "spec": null,
-  "stage": 1,
-  "created_at": "2026-02-07T00:00:00.000Z",
-  "updated_at": "2026-02-07T00:00:00.000Z",
+  "stage": 2,
+  "pr_number": 36,
+  "created_at": "2026-02-09T00:00:00.000Z",
+  "updated_at": "2026-02-09T00:00:00.000Z",
   "tasks": [
     {
       "id": "T001",
-      "title": "Wire searchScopes through SearchNode.searchFeatures()",
+      "title": "Implement inter-module data flow detection (shared state, parameters, return values)",
       "phase": 1,
       "status": "pending",
       "parallel": true,
       "dependencies": [],
       "files_affected": [
-        "src/tools/search.ts"
+        "src/encoder/data-flow.ts",
+        "src/graph/edge.ts"
       ]
     },
     {
       "id": "T002",
-      "title": "Add searchScopes to MCP SearchInputSchema",
+      "title": "Implement intra-module data flow detection (variable usage chains)",
       "phase": 1,
       "status": "pending",
       "parallel": true,
       "dependencies": [],
       "files_affected": [
-        "src/mcp/tools.ts"
+        "src/encoder/data-flow.ts"
       ]
     },
     {
       "id": "T003",
-      "title": "Implement staged auto mode fallback",
+      "title": "Integrate DataFlowEdge creation into the encoding pipeline",
       "phase": 2,
       "status": "pending",
       "parallel": false,
       "dependencies": [
-        "T001"
+        "T001",
+        "T002"
       ],
       "files_affected": [
-        "src/tools/search.ts"
+        "src/encoder/encoder.ts",
+        "src/graph/index.ts"
       ]
     },
     {
       "id": "T004",
-      "title": "Pass searchScopes through executeSearch()",
-      "phase": 2,
+      "title": "Add unit tests for inter-module and intra-module data flow detection",
+      "phase": 1,
       "status": "pending",
-      "parallel": false,
-      "dependencies": [
-        "T002"
-      ],
+      "parallel": true,
+      "dependencies": [],
       "files_affected": [
-        "src/mcp/tools.ts"
+        "tests/data-flow.test.ts"
       ]
     },
     {
       "id": "T005",
-      "title": "Add unit tests for searchScopes filtering",
-      "phase": 2,
-      "status": "pending",
-      "parallel": false,
-      "dependencies": [
-        "T001"
-      ],
-      "files_affected": [
-        "tests/tools.test.ts"
-      ]
-    },
-    {
-      "id": "T006",
-      "title": "Add unit tests for auto mode staged fallback",
+      "title": "Add integration test for DataFlowEdge in full encoding pipeline",
       "phase": 3,
       "status": "pending",
       "parallel": false,
@@ -78,52 +67,23 @@
         "T003"
       ],
       "files_affected": [
-        "tests/tools.test.ts"
-      ]
-    },
-    {
-      "id": "T007",
-      "title": "Add MCP integration test for searchScopes",
-      "phase": 3,
-      "status": "pending",
-      "parallel": false,
-      "dependencies": [
-        "T004"
-      ],
-      "files_affected": [
-        "tests/mcp.test.ts"
-      ]
-    },
-    {
-      "id": "T008",
-      "title": "Update rpg_search MCP tool description for auto mode staged behavior",
-      "phase": 3,
-      "status": "pending",
-      "parallel": false,
-      "dependencies": [
-        "T003"
-      ],
-      "files_affected": [
-        "src/mcp/tools.ts"
+        "tests/encoder.test.ts"
       ]
     }
   ],
   "verification": {
     "automated_tests": [
-      "Unit tests: searchScopes restricts results to subtree nodes only",
-      "Unit tests: auto mode returns feature results when sufficient (no snippet fallback)",
-      "Unit tests: auto mode falls back to snippet search when feature search returns empty",
-      "Unit tests: auto mode with searchScopes + featureTerms combination",
-      "MCP test: searchScopes parameter accepted and forwarded correctly"
+      "Unit tests pass: bun run test tests/data-flow.test.ts",
+      "Integration tests pass: bun run test tests/encoder.test.ts",
+      "All tests pass: bun run test",
+      "Type checking: bun run typecheck",
+      "Linting: bun run lint"
     ],
-    "manual_tests": [
-      "Encode a real repo, search with scope restricted to a module - verify only subtree results",
-      "Verify auto mode staged behavior with RPG MCP server"
-    ],
+    "manual_tests": [],
     "acceptance_criteria": [
-      "AC-1: Searches can be scoped to a specific subtree by node ID",
-      "AC-2: Auto mode follows staged fallback: feature search first, then snippet + identifier",
-      "AC-3: MCP tool schema updated with searchScopes"
+      "AC-1: Data flow relationships are detected and encoded as edges",
+      "AC-2: Both inter-module and intra-module flows are captured",
+      "AC-3: Edges include proper metadata (variable names, flow direction)"
     ]
   }
 }

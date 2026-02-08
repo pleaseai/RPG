@@ -1,12 +1,14 @@
 import type { ContextStore } from '../store/context-store'
-import type { DependencyEdge, Edge, FunctionalEdge } from './edge'
+import type { DataFlowEdge, DependencyEdge, Edge, FunctionalEdge } from './edge'
 import type { HighLevelNode, LowLevelNode, Node, SemanticFeature, StructuralMetadata } from './node'
 import type { GraphStats, GraphStore } from './store'
 import { z } from 'zod'
 import { attrsToEdge, attrsToNode, edgeToAttrs, nodeToAttrs, nodeToSearchFields } from './adapters'
 import {
+  createDataFlowEdge,
   createDependencyEdge,
   createFunctionalEdge,
+  DataFlowEdgeSchema,
 
   EdgeType,
 
@@ -46,6 +48,7 @@ export const SerializedRPGSchema = z.object({
   }),
   nodes: z.array(z.unknown()),
   edges: z.array(z.unknown()),
+  dataFlowEdges: z.array(z.unknown()).optional(),
 })
 
 export type SerializedRPG = z.infer<typeof SerializedRPGSchema>
@@ -64,6 +67,7 @@ export class RepositoryPlanningGraph {
   private context: ContextStore | null = null
   private legacyStore: GraphStore | null = null
   private config: RPGConfig
+  private dataFlowEdges: DataFlowEdge[] = []
 
   constructor(config: RPGConfig, storeOrContext: GraphStore | ContextStore) {
     this.config = config
@@ -368,6 +372,30 @@ export class RepositoryPlanningGraph {
     return this.legacyStore!.getDependents(nodeId)
   }
 
+  // ==================== Data Flow Edge Operations ====================
+
+  async addDataFlowEdge(params: {
+    from: string
+    to: string
+    dataId: string
+    dataType: string
+    transformation?: string
+  }): Promise<DataFlowEdge> {
+    if (!(await this.hasNode(params.from))) {
+      throw new Error(`Source node "${params.from}" not found`)
+    }
+    if (params.from !== params.to && !(await this.hasNode(params.to))) {
+      throw new Error(`Target node "${params.to}" not found`)
+    }
+    const edge = createDataFlowEdge(params)
+    this.dataFlowEdges.push(edge)
+    return edge
+  }
+
+  async getDataFlowEdges(): Promise<DataFlowEdge[]> {
+    return [...this.dataFlowEdges]
+  }
+
   // ==================== Graph Operations ====================
 
   async getTopologicalOrder(): Promise<Node[]> {
@@ -502,14 +530,22 @@ export class RepositoryPlanningGraph {
     if (this.isNewStore) {
       const nodes = await this.getNodes()
       const edges = await this.getEdges()
-      return {
+      const result: SerializedRPG = {
         version: '1.0.0',
         config: this.config,
         nodes,
         edges,
       }
+      if (this.dataFlowEdges.length > 0) {
+        result.dataFlowEdges = [...this.dataFlowEdges]
+      }
+      return result
     }
-    return this.legacyStore!.exportJSON(this.config)
+    const legacyResult = await this.legacyStore!.exportJSON(this.config)
+    if (this.dataFlowEdges.length > 0) {
+      legacyResult.dataFlowEdges = [...this.dataFlowEdges]
+    }
+    return legacyResult
   }
 
   async toJSON(): Promise<string> {
@@ -532,6 +568,19 @@ export class RepositoryPlanningGraph {
     for (const edgeData of parsed.edges) {
       const edge = edgeData as Edge
       await rpg.addEdge(edge)
+    }
+
+    // Import data flow edges with individual validation
+    if (parsed.dataFlowEdges) {
+      for (const dfEdge of parsed.dataFlowEdges) {
+        const result = DataFlowEdgeSchema.safeParse(dfEdge)
+        if (result.success) {
+          rpg.dataFlowEdges.push(result.data)
+        }
+        else {
+          console.warn(`[RPG] Skipping invalid dataFlowEdge during deserialization: ${result.error.message}`)
+        }
+      }
     }
 
     return rpg
@@ -576,9 +625,14 @@ export class RepositoryPlanningGraph {
         lowLevelNodeCount: lowLevelCount,
         functionalEdgeCount: functionalCount,
         dependencyEdgeCount: dependencyCount,
+        ...(this.dataFlowEdges.length > 0 && { dataFlowEdgeCount: this.dataFlowEdges.length }),
       }
     }
-    return this.legacyStore!.getStats()
+    const stats = await this.legacyStore!.getStats()
+    if (this.dataFlowEdges.length > 0) {
+      stats.dataFlowEdgeCount = this.dataFlowEdges.length
+    }
+    return stats
   }
 
   getConfig(): RPGConfig {

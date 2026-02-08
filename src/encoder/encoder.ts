@@ -2,6 +2,7 @@ import type { RPGConfig } from '../graph'
 import type { LowLevelNode } from '../graph/node'
 import type { CodeEntity } from '../utils/ast'
 import type { CacheOptions } from './cache'
+import type { FileParseInfo } from './data-flow'
 import type { EvolutionResult } from './evolution/types'
 import type { FileFeatureGroup } from './reorganization'
 import type { EntityInput, SemanticFeature, SemanticOptions } from './semantic'
@@ -12,6 +13,7 @@ import { RepositoryPlanningGraph } from '../graph'
 import { ASTParser } from '../utils/ast'
 import { LLMClient } from '../utils/llm'
 import { SemanticCache } from './cache'
+import { DataFlowDetector } from './data-flow'
 import { RPGEvolver } from './evolution/evolve'
 import { ArtifactGrounder } from './grounding'
 import { DomainDiscovery, HierarchyBuilder } from './reorganization'
@@ -79,6 +81,8 @@ interface ExtractedEntity {
 interface ExtractionResult {
   entities: ExtractedEntity[]
   fileToChildEdges: Array<{ source: string, target: string }>
+  parseResult: import('../utils/ast').ParseResult
+  sourceCode?: string
 }
 
 export class RPGEncoder {
@@ -156,9 +160,10 @@ export class RPGEncoder {
     // Phase 1: Semantic Lifting (including file→child functional edges)
     const files = await this.discoverFiles()
     let entitiesExtracted = 0
+    const fileParseInfos: FileParseInfo[] = []
 
     for (const file of files) {
-      const { entities, fileToChildEdges } = await this.extractEntities(file)
+      const { entities, fileToChildEdges, parseResult, sourceCode } = await this.extractEntities(file)
       entitiesExtracted += entities.length
 
       // Add nodes
@@ -174,6 +179,18 @@ export class RPGEncoder {
       // Add file→child functional edges (Phase 1, per paper §3.1)
       for (const edge of fileToChildEdges) {
         await rpg.addFunctionalEdge(edge)
+      }
+
+      // Collect parse info for data flow detection
+      const relativePath = path.relative(this.repoPath, file)
+      const fileEntity = entities.find(e => e.metadata.entityType === 'file')
+      if (fileEntity && parseResult) {
+        fileParseInfos.push({
+          filePath: relativePath,
+          nodeId: fileEntity.id,
+          parseResult,
+          sourceCode,
+        })
       }
     }
 
@@ -198,6 +215,17 @@ export class RPGEncoder {
 
     // Phase 3b: Artifact Grounding — dependency injection
     await this.injectDependencies(rpg)
+
+    // Phase 3c: Data flow edge creation (§3.2 inter-module + intra-module flows)
+    try {
+      await this.injectDataFlows(rpg, fileParseInfos)
+    }
+    catch (error) {
+      const msg = `Data flow detection failed, continuing without data flow edges: `
+        + `${error instanceof Error ? error.message : String(error)}`
+      console.warn(`[RPGEncoder] ${msg}`)
+      warnings.push(msg)
+    }
 
     return {
       rpg,
@@ -444,7 +472,7 @@ export class RPGEncoder {
       target: child.id,
     }))
 
-    return { entities, fileToChildEdges }
+    return { entities, fileToChildEdges, parseResult, sourceCode }
   }
 
   /**
@@ -722,6 +750,24 @@ export class RPGEncoder {
     }
 
     return resolvedPath.replace(/\\/g, '/')
+  }
+
+  /**
+   * Inject data flow edges using the DataFlowDetector
+   */
+  private async injectDataFlows(
+    rpg: RepositoryPlanningGraph,
+    fileParseInfos: FileParseInfo[],
+  ): Promise<void> {
+    if (fileParseInfos.length === 0)
+      return
+
+    const detector = new DataFlowDetector({ repoPath: this.repoPath })
+    const dataFlowEdges = detector.detectAll(fileParseInfos)
+
+    for (const edge of dataFlowEdges) {
+      await rpg.addDataFlowEdge(edge)
+    }
   }
 
   /**

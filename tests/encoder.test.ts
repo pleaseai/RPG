@@ -369,6 +369,93 @@ describe('RPGEncoder Phase 1 file→function edges', () => {
   })
 })
 
+describe('RPGEncoder.injectDataFlows', () => {
+  it('creates data flow edges during encoding', async () => {
+    const encoder = new RPGEncoder(PROJECT_ROOT, {
+      include: ['src/encoder/**/*.ts'],
+      exclude: [],
+    })
+    const result = await encoder.encode()
+
+    // Should have data flow edges from inter-module imports
+    const dataFlowEdges = await result.rpg.getDataFlowEdges()
+    expect(dataFlowEdges.length).toBeGreaterThan(0)
+  })
+
+  it('data flow edges have valid structure', async () => {
+    const encoder = new RPGEncoder(PROJECT_ROOT, {
+      include: ['src/encoder/**/*.ts'],
+      exclude: [],
+    })
+    const result = await encoder.encode()
+
+    const dataFlowEdges = await result.rpg.getDataFlowEdges()
+    expect(dataFlowEdges.length).toBeGreaterThan(0)
+    for (const edge of dataFlowEdges) {
+      expect(edge.from).toBeDefined()
+      expect(edge.to).toBeDefined()
+      expect(edge.dataId).toBeDefined()
+      expect(edge.dataType).toBeDefined()
+      expect(typeof edge.from).toBe('string')
+      expect(typeof edge.to).toBe('string')
+      expect(typeof edge.dataId).toBe('string')
+      expect(typeof edge.dataType).toBe('string')
+    }
+  })
+
+  it('data flow edges include import-type flows', async () => {
+    const encoder = new RPGEncoder(PROJECT_ROOT, {
+      include: ['src/encoder/**/*.ts'],
+      exclude: [],
+    })
+    const result = await encoder.encode()
+
+    const dataFlowEdges = await result.rpg.getDataFlowEdges()
+    const importFlows = dataFlowEdges.filter(e => e.dataType === 'import')
+    expect(importFlows.length).toBeGreaterThan(0)
+  })
+
+  it('data flow edges are included in serialization', async () => {
+    const encoder = new RPGEncoder(PROJECT_ROOT, {
+      include: ['src/encoder/**/*.ts'],
+      exclude: [],
+    })
+    const result = await encoder.encode()
+
+    const serialized = await result.rpg.serialize()
+    expect(serialized.dataFlowEdges).toBeDefined()
+    expect(serialized.dataFlowEdges!.length).toBeGreaterThan(0)
+  })
+
+  it('data flow edges survive serialization round-trip', async () => {
+    const encoder = new RPGEncoder(PROJECT_ROOT, {
+      include: ['src/encoder/**/*.ts'],
+      exclude: [],
+    })
+    const result = await encoder.encode()
+
+    const json = await result.rpg.toJSON()
+    const { RepositoryPlanningGraph } = await import('../src/graph')
+    const restored = await RepositoryPlanningGraph.fromJSON(json)
+
+    const originalEdges = await result.rpg.getDataFlowEdges()
+    expect(originalEdges.length).toBeGreaterThan(0)
+    const restoredEdges = await restored.getDataFlowEdges()
+    expect(restoredEdges.length).toBe(originalEdges.length)
+  })
+
+  it('data flow edges appear in graph stats', async () => {
+    const encoder = new RPGEncoder(PROJECT_ROOT, {
+      include: ['src/encoder/**/*.ts'],
+      exclude: [],
+    })
+    const result = await encoder.encode()
+
+    const stats = await result.rpg.getStats()
+    expect(stats.dataFlowEdgeCount).toBeGreaterThan(0)
+  })
+})
+
 describe('RPGEncoder.injectDependencies', () => {
   it('creates dependency edges for imports', async () => {
     const encoder = new RPGEncoder(PROJECT_ROOT, {

@@ -97,6 +97,19 @@ export const DataFlowEdgeSchema = z.object({
 export type DataFlowEdge = z.infer<typeof DataFlowEdgeSchema>
 
 /**
+ * Create a data flow edge
+ */
+export function createDataFlowEdge(params: {
+  from: string
+  to: string
+  dataId: string
+  dataType: string
+  transformation?: string
+}): DataFlowEdge {
+  return DataFlowEdgeSchema.parse(params)
+}
+
+/**
  * Create a functional edge
  */
 export function createFunctionalEdge(params: {
