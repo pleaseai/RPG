@@ -126,14 +126,15 @@ export class DataFlowDetector {
         continue
       }
 
-      // Get the function body text
+      // Get the function body text (skip first line to avoid matching function signature)
       const funcStart = func.startLine - 1
       const funcEnd = func.endLine
       const funcLines = file.sourceCode.split('\n').slice(funcStart, funcEnd)
       const funcBody = funcLines.join('\n')
+      const funcBodyWithoutDecl = funcLines.slice(1).join('\n')
 
-      // Detect parameter forwarding
-      this.detectParameterFlows(file.nodeId, funcBody, func.parameters, flows)
+      // Detect parameter forwarding (using body without declaration to avoid false positives)
+      this.detectParameterFlows(file.nodeId, funcBodyWithoutDecl, func.parameters, flows)
 
       // Detect variable chains
       this.detectVariableChains(file.nodeId, funcBody, flows)
@@ -146,14 +147,25 @@ export class DataFlowDetector {
    * Detect both inter-module and intra-module flows
    */
   detectAll(files: FileParseInfo[]): DataFlowEdge[] {
-    const flows: DataFlowEdge[] = []
+    const allFlows: DataFlowEdge[] = []
 
     // Detect inter-module flows
-    flows.push(...this.detectInterModuleFlows(files))
+    allFlows.push(...this.detectInterModuleFlows(files))
 
     // Detect intra-module flows for each file
     for (const file of files) {
-      flows.push(...this.detectIntraModuleFlows(file))
+      allFlows.push(...this.detectIntraModuleFlows(file))
+    }
+
+    // Deduplicate edges by (from, to, dataId, dataType) tuple
+    const seen = new Set<string>()
+    const flows: DataFlowEdge[] = []
+    for (const edge of allFlows) {
+      const key = `${edge.from}|${edge.to}|${edge.dataId}|${edge.dataType}`
+      if (!seen.has(key)) {
+        seen.add(key)
+        flows.push(edge)
+      }
     }
 
     return flows
@@ -194,12 +206,18 @@ export class DataFlowDetector {
   }
 
   /**
+   * Escape special regex characters in a string
+   */
+  private escapeRegex(str: string): string {
+    return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  }
+
+  /**
    * Check if a parameter is used in a function call within the function body
    */
   private isParameterUsedInFunctionCall(funcBody: string, paramName: string): boolean {
-    // Simple pattern: look for parameter name followed by function call syntax
-    // e.g., "validate(data)" where data is the parameter
-    const pattern = new RegExp(`\\w+\\(.*\\b${paramName}\\b.*\\)`)
+    const escaped = this.escapeRegex(paramName)
+    const pattern = new RegExp(`\\w+\\(.*\\b${escaped}\\b.*\\)`)
     return pattern.test(funcBody)
   }
 
@@ -219,7 +237,7 @@ export class DataFlowDetector {
 
       if (varName) {
         // Check if variable is used later in the function
-        const usagePattern = new RegExp(`\\b${varName}\\b`, 'g')
+        const usagePattern = new RegExp(`\\b${this.escapeRegex(varName)}\\b`, 'g')
         const matches = funcBody.match(usagePattern)
 
         if (matches && matches.length > 1) {
@@ -239,13 +257,15 @@ export class DataFlowDetector {
    * Returns the edge if valid, null otherwise
    */
   private createValidatedEdge(edge: DataFlowEdge): DataFlowEdge | null {
-    try {
-      DataFlowEdgeSchema.parse(edge)
-      return edge
+    const result = DataFlowEdgeSchema.safeParse(edge)
+    if (result.success) {
+      return result.data
     }
-    catch {
-      return null
-    }
+    console.warn(
+      `[DataFlowDetector] Invalid DataFlowEdge (from=${edge.from}, to=${edge.to}, `
+      + `dataId=${edge.dataId}): ${result.error.message}`,
+    )
+    return null
   }
 
   /**

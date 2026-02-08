@@ -8,6 +8,7 @@ import {
   createDataFlowEdge,
   createDependencyEdge,
   createFunctionalEdge,
+  DataFlowEdgeSchema,
 
   EdgeType,
 
@@ -380,6 +381,12 @@ export class RepositoryPlanningGraph {
     dataType: string
     transformation?: string
   }): Promise<DataFlowEdge> {
+    if (!(await this.hasNode(params.from))) {
+      throw new Error(`Source node "${params.from}" not found`)
+    }
+    if (params.from !== params.to && !(await this.hasNode(params.to))) {
+      throw new Error(`Target node "${params.to}" not found`)
+    }
     const edge = createDataFlowEdge(params)
     this.dataFlowEdges.push(edge)
     return edge
@@ -563,11 +570,13 @@ export class RepositoryPlanningGraph {
       await rpg.addEdge(edge)
     }
 
-    // Import data flow edges
+    // Import data flow edges with individual validation
     if (parsed.dataFlowEdges) {
       for (const dfEdge of parsed.dataFlowEdges) {
-        const edge = dfEdge as DataFlowEdge
-        await rpg.addDataFlowEdge(edge)
+        const result = DataFlowEdgeSchema.safeParse(dfEdge)
+        if (result.success) {
+          rpg.dataFlowEdges.push(result.data)
+        }
       }
     }
 

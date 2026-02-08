@@ -217,7 +217,15 @@ export class RPGEncoder {
     await this.injectDependencies(rpg)
 
     // Phase 3c: Data flow edge creation (§3.2 inter-module + intra-module flows)
-    await this.injectDataFlows(rpg, fileParseInfos)
+    try {
+      await this.injectDataFlows(rpg, fileParseInfos)
+    }
+    catch (error) {
+      const msg = `Data flow detection failed, continuing without data flow edges: `
+        + `${error instanceof Error ? error.message : String(error)}`
+      console.warn(`[RPGEncoder] ${msg}`)
+      warnings.push(msg)
+    }
 
     return {
       rpg,
