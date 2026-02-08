@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.1.2](https://github.com/pleaseai/rpg/compare/v0.1.1...v0.1.2) (2026-02-08)
+
+
+### Features
+
+* **encoder:** implement DataFlowEdge creation ([#36](https://github.com/pleaseai/rpg/issues/36)) ([9eb8906](https://github.com/pleaseai/rpg/commit/9eb8906ec5c4c947e521b351cf55808d225d7f75))
+* **encoder:** implement LCA-based artifact grounding with metadata propagation ([#32](https://github.com/pleaseai/rpg/issues/32)) ([dd22aa8](https://github.com/pleaseai/rpg/commit/dd22aa8432f7cb9cfe72b91dfb33a191bef0880a))
+* **mcp:** add rpg_evolve tool for incremental RPG updates ([#35](https://github.com/pleaseai/rpg/issues/35)) ([c3f666d](https://github.com/pleaseai/rpg/commit/c3f666dd88df470277b67992735c107b9692caa6))
+* **tools:** add search_scopes parameter and auto mode staged fallback ([#34](https://github.com/pleaseai/rpg/issues/34)) ([2cbdf5e](https://github.com/pleaseai/rpg/commit/2cbdf5e4f90d1bd464603124d4e6b681c0346884))
+
 ## [0.1.1](https://github.com/pleaseai/rpg/compare/v0.1.0...v0.1.1) (2026-02-06)
 
 
