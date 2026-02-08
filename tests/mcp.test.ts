@@ -126,6 +126,16 @@ describe('MCP Tool Schemas', () => {
       expect(result.direction).toBe('downstream')
     })
 
+    it('should reject old edgeType values', () => {
+      expect(() => ExploreInputSchema.parse({ startNode: 'n', edgeType: 'functional' })).toThrow()
+      expect(() => ExploreInputSchema.parse({ startNode: 'n', edgeType: 'both' })).toThrow()
+    })
+
+    it('should reject old direction values', () => {
+      expect(() => ExploreInputSchema.parse({ startNode: 'n', direction: 'out' })).toThrow()
+      expect(() => ExploreInputSchema.parse({ startNode: 'n', direction: 'in' })).toThrow()
+    })
+
     it('should require startNode', () => {
       const input = {}
       expect(() => ExploreInputSchema.parse(input)).toThrow()

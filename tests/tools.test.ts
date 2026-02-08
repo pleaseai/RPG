@@ -580,6 +580,20 @@ describe('exploreRPG', () => {
     expect(result.nodes.some(n => n.id === 'root')).toBe(true)
   })
 
+  it('explores both directions', async () => {
+    const result = await explore.traverse({
+      startNode: 'moduleA',
+      edgeType: 'containment',
+      maxDepth: 1,
+      direction: 'both',
+    })
+
+    // upstream: moduleA <- root, downstream: moduleA -> funcA1, funcA2
+    expect(result.nodes.some(n => n.id === 'root')).toBe(true)
+    expect(result.nodes.some(n => n.id === 'funcA1')).toBe(true)
+    expect(result.nodes.some(n => n.id === 'funcA2')).toBe(true)
+  })
+
   it('respects max depth limit', async () => {
     const result = await explore.traverse({
       startNode: 'root',
