@@ -2,10 +2,10 @@
 
 ## Feature
 
-- **Name**: SearchNode search_scopes & Auto Mode Staged Fallback
-- **Issue**: #15
-- **Plan**: .please/plans/2026-02-07-search-scopes-auto-fallback.md
-- **Started**: 2026-02-07T00:00:00.000Z
+- **Name**: Implement DataFlowEdge creation in Encoder
+- **Issue**: #17
+- **Plan**: None (tasks from issue body)
+- **Started**: 2026-02-09T00:00:00.000Z
 
 ## Current Stage
 
@@ -13,7 +13,7 @@ Stage 1: Setup
 
 ## Progress
 
-- [x] Stage 1: Setup
+- [ ] Stage 1: Setup
 - [ ] Stage 2: Implementation
 - [ ] Stage 3: Quality Review
 - [ ] Stage 4: PR Finalization
