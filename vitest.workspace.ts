@@ -7,8 +7,24 @@ export default defineWorkspace([
       globals: true,
       environment: 'node',
       include: ['tests/**/*.test.ts'],
-      exclude: ['tests/fixtures/**', 'tests/**/*.integration.test.ts'],
+      exclude: ['tests/fixtures/**', 'tests/**/*.integration.test.ts', 'tests/**/*.ladybug.test.ts'],
       testTimeout: 10000,
+    },
+    resolve: {
+      alias: {
+        '@': './src',
+      },
+    },
+  },
+  {
+    test: {
+      name: 'ladybug',
+      globals: true,
+      environment: 'node',
+      include: ['tests/**/*.ladybug.test.ts'],
+      exclude: ['tests/fixtures/**'],
+      testTimeout: 10000,
+      isolate: false,
     },
     resolve: {
       alias: {
