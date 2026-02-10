@@ -13,7 +13,7 @@
     "dev": "bun run --watch src/cli.ts",
     "mcp": "bun run src/mcp/server.ts",
     "build": "bun build src/index.ts src/cli.ts src/mcp/server.ts --outdir dist --target node --external @lancedb/lancedb --external better-sqlite3 --external @surrealdb/node --external tree-sitter --external tree-sitter-typescript --external tree-sitter-python && npm run build:fix-shebang",
-    "build:fix-shebang": "sed -i 's|#!/usr/bin/env bun|#!/usr/bin/env node|g' dist/cli.js dist/mcp/server.js",
+    "build:fix-shebang": "sed -i.bak 's|#!/usr/bin/env bun|#!/usr/bin/env node|g' dist/cli.js dist/mcp/server.js && rm -f dist/cli.js.bak dist/mcp/server.js.bak",
     "test": "vitest run",
     "test:unit": "vitest run --project=unit",
     "test:integration": "vitest run --project=integration",

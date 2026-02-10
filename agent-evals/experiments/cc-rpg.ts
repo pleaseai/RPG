@@ -1,6 +1,6 @@
+import type { ExperimentConfig } from '@pleaseai/agent-eval'
 import { readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import type { ExperimentConfig } from '@pleaseai/agent-eval'
 
 const RPG_FIXTURE = join(import.meta.dirname, '..', 'fixtures', 'nextjs-rpg.json')
 
@@ -45,8 +45,8 @@ const config: ExperimentConfig = {
       '.claude/settings.json': JSON.stringify({
         mcpServers: {
           rpg: {
-            command: 'npx',
-            args: ['@pleaseai/rpg', 'nextjs-rpg.json', '--no-search'],
+            command: 'rpg-mcp',
+            args: ['nextjs-rpg.json', '--no-search'],
           },
         },
       }),

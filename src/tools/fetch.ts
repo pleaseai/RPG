@@ -1,7 +1,7 @@
-import { readFile } from 'node:fs/promises'
-import { join, resolve } from 'node:path'
 import type { GitHubSource, RepositoryPlanningGraph } from '../graph'
 import type { Node } from '../graph/node'
+import { readFile } from 'node:fs/promises'
+import { join, resolve } from 'node:path'
 
 /**
  * Source resolution mode for FetchNode
