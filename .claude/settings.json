@@ -8,21 +8,8 @@
     "testing@passionfactory": true,
     "backend@passionfactory": true,
     "typescript-lsp@language-server-please": true,
-    "eslint-lsp@language-server-please": true
+    "eslint-lsp@language-server-please": true,
+    "gatekeeper@pleaseai": true
   },
-  "hooks": {
-    "PermissionRequest": [
-      {
-        "matcher": "Bash",
-        "hooks": [
-          {
-            "type": "agent",
-            "model": "opus",
-            "prompt": "You are a security analyst. Scan this bash command for attacks and determine if it's safe.\n\nCommand context:\n$ARGUMENTS\n\nCheck for these attack patterns:\n1. Data destruction (rm -rf, truncate, dd if=/dev/zero, etc.)\n2. System modification (chmod 777, chown, modifying /etc/, etc.)\n3. Network attacks (curl piping to bash, wget suspicious scripts, reverse shells)\n4. Credential exposure (cat .env, echo $API_KEY, etc.)\n5. Supply chain attacks (npm install from suspicious sources, pip install --extra-index-url)\n6. Privilege escalation (sudo without clear purpose, setuid)\n\nYou have access to Read, Grep, Glob tools. Use them if:\n- The command references a script file (verify its contents)\n- The command uses variables that might be dangerous\n- You need to check if a path exists and what it contains\n\nAfter your analysis, respond with ONLY one of:\n{\"ok\": true}\n{\"ok\": false, \"reason\": \"Brief explanation of the specific risk\"}",
-            "timeout": 30
-          }
-        ]
-      }
-    ]
-  }
+  "language": "english"
 }

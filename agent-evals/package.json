@@ -1,0 +1,12 @@
+{
+  "name": "agent-evals",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "devDependencies": {
+    "@vercel/agent-eval": "github:pleaseai/agent-eval",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  }
+}
