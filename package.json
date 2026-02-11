@@ -48,7 +48,7 @@
     "openai": "^4.104.0",
     "surrealdb": "^2.0.0-alpha.17",
     "tree-sitter": "^0.21.1",
-    "tree-sitter-python": "^0.21.0",
+    "tree-sitter-python": "^0.25.0",
     "tree-sitter-typescript": "^0.21.2",
     "zod": "^3.25.76"
   },
