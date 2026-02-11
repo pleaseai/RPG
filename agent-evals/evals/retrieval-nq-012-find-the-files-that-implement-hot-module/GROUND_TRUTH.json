@@ -1,0 +1,10 @@
+{
+  "id": "nq-012",
+  "query": "Find the files that implement hot module reloading for both webpack and turbopack",
+  "expect": [
+    "src/server/dev/hot-reloader-turbopack.ts",
+    "src/server/dev/hot-reloader-webpack.ts"
+  ],
+  "difficulty": "medium",
+  "category": "devtools"
+}

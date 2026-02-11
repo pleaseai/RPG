@@ -1,0 +1,220 @@
+[
+  {
+    "id": "nq-001",
+    "query": "Find the files that handle image optimization and responsive image loading",
+    "expect": [
+      "src/client/image-component.tsx",
+      "src/server/image-optimizer.ts",
+      "src/build/webpack/loaders/next-image-loader/blur.ts"
+    ],
+    "difficulty": "medium",
+    "category": "client"
+  },
+  {
+    "id": "nq-002",
+    "query": "Find the files responsible for client-side routing and link navigation",
+    "expect": [
+      "src/client/link.tsx",
+      "src/client/router.ts",
+      "src/client/resolve-href.ts"
+    ],
+    "difficulty": "easy",
+    "category": "routing"
+  },
+  {
+    "id": "nq-003",
+    "query": "Find the files that implement server-side rendering for App Router pages",
+    "expect": [
+      "src/server/app-render/app-render.tsx",
+      "src/server/render.tsx",
+      "src/server/route-modules/app-page/module.ts"
+    ],
+    "difficulty": "medium",
+    "category": "server"
+  },
+  {
+    "id": "nq-004",
+    "query": "Find the files that handle the webpack build configuration and compiler setup",
+    "expect": [
+      "src/build/webpack-config.ts",
+      "src/build/compiler.ts",
+      "src/build/create-compiler-aliases.ts"
+    ],
+    "difficulty": "easy",
+    "category": "build"
+  },
+  {
+    "id": "nq-005",
+    "query": "Find the files responsible for error display and the development error overlay",
+    "expect": [
+      "src/next-devtools/dev-overlay/components/errors/error-overlay/error-overlay.tsx",
+      "src/next-devtools/dev-overlay/container/errors.tsx",
+      "src/client/components/error-boundary.tsx",
+      "src/next-devtools/dev-overlay.browser.tsx"
+    ],
+    "difficulty": "hard",
+    "category": "devtools"
+  },
+  {
+    "id": "nq-006",
+    "query": "Find the files that implement the web request and response extensions for middleware",
+    "expect": [
+      "src/server/web/spec-extension/request.ts",
+      "src/server/web/spec-extension/response.ts"
+    ],
+    "difficulty": "medium",
+    "category": "server"
+  },
+  {
+    "id": "nq-007",
+    "query": "Find the files that handle font optimization and loading",
+    "expect": [
+      "src/server/font-utils.ts",
+      "font/google/index.d.ts",
+      "font/local/index.d.ts"
+    ],
+    "difficulty": "medium",
+    "category": "server"
+  },
+  {
+    "id": "nq-008",
+    "query": "Find the files that implement the build entry points and page discovery",
+    "expect": [
+      "src/build/entries.ts",
+      "src/build/index.ts",
+      "src/build/route-discovery.ts"
+    ],
+    "difficulty": "medium",
+    "category": "build"
+  },
+  {
+    "id": "nq-009",
+    "query": "Find the files that handle server actions and the action handler pipeline",
+    "expect": [
+      "src/server/app-render/action-handler.ts",
+      "src/server/app-render/action-async-storage.external.ts",
+      "src/server/app-render/action-async-storage-instance.ts"
+    ],
+    "difficulty": "hard",
+    "category": "server"
+  },
+  {
+    "id": "nq-010",
+    "query": "Find the files that implement the Next.js configuration loading and schema validation",
+    "expect": [
+      "src/server/config.ts",
+      "src/server/config-shared.ts",
+      "src/server/config-schema.ts"
+    ],
+    "difficulty": "easy",
+    "category": "server"
+  },
+  {
+    "id": "nq-011",
+    "query": "Find the files responsible for telemetry data collection and event tracking",
+    "expect": [
+      "src/telemetry/storage.ts",
+      "src/telemetry/events/build.ts",
+      "src/telemetry/flush-telemetry.ts"
+    ],
+    "difficulty": "easy",
+    "category": "telemetry"
+  },
+  {
+    "id": "nq-012",
+    "query": "Find the files that implement hot module reloading for both webpack and turbopack",
+    "expect": [
+      "src/server/dev/hot-reloader-turbopack.ts",
+      "src/server/dev/hot-reloader-webpack.ts"
+    ],
+    "difficulty": "medium",
+    "category": "devtools"
+  },
+  {
+    "id": "nq-013",
+    "query": "Find the files that handle HTML metadata and document head management",
+    "expect": [
+      "src/lib/metadata/metadata.tsx",
+      "src/lib/metadata/resolve-metadata.ts",
+      "src/client/head-manager.ts",
+      "src/api/head.ts"
+    ],
+    "difficulty": "hard",
+    "category": "client"
+  },
+  {
+    "id": "nq-014",
+    "query": "Find the files that implement React Server Components flight data streaming",
+    "expect": [
+      "src/client/flight-data-helpers.ts",
+      "src/build/webpack/plugins/flight-client-entry-plugin.ts"
+    ],
+    "difficulty": "hard",
+    "category": "server"
+  },
+  {
+    "id": "nq-015",
+    "query": "Find the files that implement static page generation and ISR path handling",
+    "expect": [
+      "src/build/static-paths/pages.ts",
+      "src/build/static-paths/app.ts",
+      "src/server/response-cache/index.ts"
+    ],
+    "difficulty": "hard",
+    "category": "build"
+  },
+  {
+    "id": "nq-016",
+    "query": "Find the files that implement the Script component for third-party script loading",
+    "expect": [
+      "src/client/script.tsx",
+      "src/api/script.ts"
+    ],
+    "difficulty": "easy",
+    "category": "client"
+  },
+  {
+    "id": "nq-017",
+    "query": "Find the files that implement the use-cache directive and cache lifecycle management",
+    "expect": [
+      "src/server/use-cache/use-cache-wrapper.ts",
+      "src/server/use-cache/cache-life.ts",
+      "src/server/use-cache/cache-tag.ts"
+    ],
+    "difficulty": "hard",
+    "category": "server"
+  },
+  {
+    "id": "nq-018",
+    "query": "Find the files that handle custom route definitions including rewrites and redirects",
+    "expect": [
+      "src/lib/load-custom-routes.ts",
+      "src/lib/build-custom-route.ts",
+      "src/server/server-route-utils.ts"
+    ],
+    "difficulty": "medium",
+    "category": "routing"
+  },
+  {
+    "id": "nq-019",
+    "query": "Find the files that implement the base server and the Node.js-specific server",
+    "expect": [
+      "src/server/base-server.ts",
+      "src/server/next-server.ts",
+      "src/server/next.ts"
+    ],
+    "difficulty": "easy",
+    "category": "server"
+  },
+  {
+    "id": "nq-020",
+    "query": "Find the files that implement dynamic imports and code splitting for components",
+    "expect": [
+      "src/api/dynamic.ts",
+      "src/api/app-dynamic.ts",
+      "src/client/app-bootstrap.ts"
+    ],
+    "difficulty": "medium",
+    "category": "client"
+  }
+]

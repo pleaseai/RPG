@@ -1,0 +1,11 @@
+{
+  "id": "nq-004",
+  "query": "Find the files that handle the webpack build configuration and compiler setup",
+  "expect": [
+    "src/build/webpack-config.ts",
+    "src/build/compiler.ts",
+    "src/build/create-compiler-aliases.ts"
+  ],
+  "difficulty": "easy",
+  "category": "build"
+}

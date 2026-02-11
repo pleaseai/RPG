@@ -1,0 +1,11 @@
+{
+  "id": "nq-018",
+  "query": "Find the files that handle custom route definitions including rewrites and redirects",
+  "expect": [
+    "src/lib/load-custom-routes.ts",
+    "src/lib/build-custom-route.ts",
+    "src/server/server-route-utils.ts"
+  ],
+  "difficulty": "medium",
+  "category": "routing"
+}

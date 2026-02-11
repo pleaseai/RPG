@@ -1,0 +1,11 @@
+{
+  "id": "nq-010",
+  "query": "Find the files that implement the Next.js configuration loading and schema validation",
+  "expect": [
+    "src/server/config.ts",
+    "src/server/config-shared.ts",
+    "src/server/config-schema.ts"
+  ],
+  "difficulty": "easy",
+  "category": "server"
+}
