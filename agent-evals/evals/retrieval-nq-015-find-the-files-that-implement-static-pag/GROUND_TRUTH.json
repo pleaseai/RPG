@@ -1,0 +1,11 @@
+{
+  "id": "nq-015",
+  "query": "Find the files that implement static page generation and ISR path handling",
+  "expect": [
+    "src/build/static-paths/pages.ts",
+    "src/build/static-paths/app.ts",
+    "src/server/response-cache/index.ts"
+  ],
+  "difficulty": "hard",
+  "category": "build"
+}

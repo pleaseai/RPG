@@ -1,0 +1,11 @@
+{
+  "id": "nq-002",
+  "query": "Find the files responsible for client-side routing and link navigation",
+  "expect": [
+    "src/client/link.tsx",
+    "src/client/router.ts",
+    "src/client/resolve-href.ts"
+  ],
+  "difficulty": "easy",
+  "category": "routing"
+}

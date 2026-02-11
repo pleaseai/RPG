@@ -1,0 +1,11 @@
+{
+  "id": "nq-003",
+  "query": "Find the files that implement server-side rendering for App Router pages",
+  "expect": [
+    "src/server/app-render/app-render.tsx",
+    "src/server/render.tsx",
+    "src/server/route-modules/app-page/module.ts"
+  ],
+  "difficulty": "medium",
+  "category": "server"
+}

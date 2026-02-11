@@ -1,0 +1,11 @@
+{
+  "id": "nq-008",
+  "query": "Find the files that implement the build entry points and page discovery",
+  "expect": [
+    "src/build/entries.ts",
+    "src/build/index.ts",
+    "src/build/route-discovery.ts"
+  ],
+  "difficulty": "medium",
+  "category": "build"
+}

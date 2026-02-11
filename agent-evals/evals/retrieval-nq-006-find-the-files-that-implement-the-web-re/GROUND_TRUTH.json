@@ -1,0 +1,10 @@
+{
+  "id": "nq-006",
+  "query": "Find the files that implement the web request and response extensions for middleware",
+  "expect": [
+    "src/server/web/spec-extension/request.ts",
+    "src/server/web/spec-extension/response.ts"
+  ],
+  "difficulty": "medium",
+  "category": "server"
+}

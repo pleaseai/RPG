@@ -1,0 +1,12 @@
+{
+  "id": "nq-013",
+  "query": "Find the files that handle HTML metadata and document head management",
+  "expect": [
+    "src/lib/metadata/metadata.tsx",
+    "src/lib/metadata/resolve-metadata.ts",
+    "src/client/head-manager.ts",
+    "src/api/head.ts"
+  ],
+  "difficulty": "hard",
+  "category": "client"
+}

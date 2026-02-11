@@ -1,0 +1,10 @@
+{
+  "id": "nq-014",
+  "query": "Find the files that implement React Server Components flight data streaming",
+  "expect": [
+    "src/client/flight-data-helpers.ts",
+    "src/build/webpack/plugins/flight-client-entry-plugin.ts"
+  ],
+  "difficulty": "hard",
+  "category": "server"
+}
