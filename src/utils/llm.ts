@@ -22,6 +22,10 @@ export interface LLMOptions {
   maxTokens?: number
   /** Temperature for sampling */
   temperature?: number
+  /** Timeout in milliseconds (default: 120000) */
+  timeout?: number
+  /** Error callback */
+  onError?: (error: Error, context: { model: string, promptLength: number }) => void
 }
 
 /**
@@ -47,6 +51,21 @@ const DEFAULT_MODELS: Record<LLMProvider, string> = {
   openai: 'gpt-4o',
   anthropic: 'claude-sonnet-4.5',
   google: 'gemini-3-flash-preview',
+}
+
+/**
+ * Pricing per million tokens (input, output) in USD
+ */
+const MODEL_PRICING: Record<string, { input: number, output: number }> = {
+  'gpt-4o': { input: 2.50, output: 10.00 },
+  'gpt-4.1': { input: 2.00, output: 8.00 },
+  'gpt-5': { input: 1.25, output: 10.00 },
+  'gpt-5-mini': { input: 0.25, output: 2.00 },
+  'claude-sonnet-4.5': { input: 3.00, output: 15.00 },
+  'claude-haiku-4.5': { input: 1.00, output: 5.00 },
+  'gemini-3-flash-preview': { input: 0.50, output: 3.00 },
+  'gemini-3-pro-preview': { input: 2.00, output: 12.00 },
+  'gemini-2.0-flash': { input: 0.30, output: 2.50 },
 }
 
 /**
@@ -128,13 +147,24 @@ export class LLMClient {
     const modelId = this.options.model ?? DEFAULT_MODELS[this.options.provider]
     const model = this.providerInstance(modelId)
 
-    const result = await generateText({
-      model,
-      system: systemPrompt,
-      prompt,
-      maxOutputTokens: this.options.maxTokens,
-      temperature: this.options.temperature,
-    })
+    const timeout = this.options.timeout ?? 120_000
+    let result: Awaited<ReturnType<typeof generateText>>
+    try {
+      result = await generateText({
+        model,
+        system: systemPrompt,
+        prompt,
+        maxOutputTokens: this.options.maxTokens,
+        temperature: this.options.temperature,
+        abortSignal: AbortSignal.timeout(timeout),
+      })
+    }
+    catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error))
+      console.error(`[LLMClient] ${modelId} error: ${err.message}`)
+      this.options.onError?.(err, { model: modelId, promptLength: prompt.length })
+      throw err
+    }
 
     const inputTokens = result.usage?.inputTokens ?? 0
     const outputTokens = result.usage?.outputTokens ?? 0
@@ -191,6 +221,21 @@ export class LLMClient {
    */
   getUsageStats(): TokenUsageStats {
     return { ...this.usageStats }
+  }
+
+  /**
+   * Estimate cost in USD based on token usage and model pricing
+   */
+  estimateCost(stats?: TokenUsageStats): { inputCost: number, outputCost: number, totalCost: number } {
+    const s = stats ?? this.usageStats
+    const modelId = this.getModel()
+    const pricing = MODEL_PRICING[modelId]
+    if (!pricing) {
+      return { inputCost: 0, outputCost: 0, totalCost: 0 }
+    }
+    const inputCost = (s.totalPromptTokens / 1_000_000) * pricing.input
+    const outputCost = (s.totalCompletionTokens / 1_000_000) * pricing.output
+    return { inputCost, outputCost, totalCost: inputCost + outputCost }
   }
 
   /**
