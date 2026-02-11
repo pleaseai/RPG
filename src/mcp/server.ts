@@ -7,6 +7,7 @@ import { HuggingFaceEmbedding } from '../encoder/embedding'
 import { SemanticSearch } from '../encoder/semantic-search'
 import { RepositoryPlanningGraph } from '../graph'
 import { invalidPathError, RPGError } from './errors'
+import { InteractiveState, registerInteractiveProtocol } from './interactive'
 import {
   EncodeInputSchema,
   EvolveInputSchema,
@@ -29,6 +30,8 @@ export interface McpServerOptions {
   semanticSearch?: SemanticSearch | null
   /** Root path override for filesystem source resolution */
   rootPath?: string
+  /** Enable interactive encoding protocol */
+  interactive?: boolean
 }
 
 /**
@@ -93,6 +96,14 @@ export function createMcpServer(
     StatsInputSchema.shape,
     async () => wrapHandler(() => executeStats(rpg)),
   )
+
+  // Register interactive encoding protocol when explicitly enabled
+  if (options.interactive) {
+    const state = new InteractiveState()
+    state.repoPath = options.rootPath ?? null
+    state.rpg = rpg
+    registerInteractiveProtocol(server, state)
+  }
 
   return server
 }
@@ -162,6 +173,7 @@ export async function loadRPG(filePath: string): Promise<RepositoryPlanningGraph
 export async function main(): Promise<void> {
   const args = process.argv.slice(2)
   const noSearch = args.includes('--no-search')
+  const interactive = args.includes('--interactive')
 
   // Parse --root-path <dir>
   let rootPath: string | undefined
@@ -172,6 +184,7 @@ export async function main(): Promise<void> {
 
   const filteredArgs = args.filter((a, i) =>
     a !== '--no-search'
+    && a !== '--interactive'
     && a !== '--root-path'
     && (rootPathIdx === -1 || i !== rootPathIdx + 1),
   )
@@ -208,7 +221,7 @@ export async function main(): Promise<void> {
   }
   else {
     console.error('No RPG file path provided. Server will start without a pre-loaded RPG.')
-    console.error('Usage: bun run src/mcp/server.ts <rpg-file.json> [--root-path <dir>] [--no-search]')
+    console.error('Usage: bun run src/mcp/server.ts <rpg-file.json> [--root-path <dir>] [--interactive] [--no-search]')
     console.error(
       'Note: rpg_encode tool will still work, but other tools require an RPG to be loaded.',
     )
@@ -218,7 +231,7 @@ export async function main(): Promise<void> {
     console.error(`Source root path: ${rootPath}`)
   }
 
-  const server = createMcpServer({ rpg, semanticSearch, rootPath })
+  const server = createMcpServer({ rpg, semanticSearch, rootPath, interactive })
   const transport = new StdioServerTransport()
 
   await server.connect(transport)
