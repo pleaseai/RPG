@@ -258,13 +258,13 @@ export class InteractiveEncoder {
       return `Batch ${batchIndex} is out of range. Total batches: ${totalBatches}.`
     }
 
-    return this.formatEntityBatch(scopedEntities.slice(start, end), batchIndex, totalBatches)
+    return this.formatEntityBatch(scopedEntities.slice(start, end), batchIndex, totalBatches, start, scopedEntities.length)
   }
 
-  private formatEntityBatch(entities: LiftableEntity[], batchIndex: number, totalBatches: number): string {
-    const total = this.state.getTotalCount()
-    const startIdx = batchIndex === 0 ? 0 : this.state.batchBoundaries[batchIndex]?.[0] ?? 0
-    const endIdx = startIdx + entities.length - 1
+  private formatEntityBatch(entities: LiftableEntity[], batchIndex: number, totalBatches: number, startIdx?: number, totalEntities?: number): string {
+    const total = totalEntities ?? this.state.getTotalCount()
+    const effectiveStartIdx = startIdx ?? (batchIndex === 0 ? 0 : this.state.batchBoundaries[batchIndex]?.[0] ?? 0)
+    const endIdx = effectiveStartIdx + entities.length - 1
 
     const parts: string[] = []
 
@@ -273,7 +273,7 @@ export class InteractiveEncoder {
       parts.push('')
     }
 
-    parts.push(`## Batch ${batchIndex} of ${totalBatches} (entities ${startIdx}–${endIdx} of ${total})`)
+    parts.push(`## Batch ${batchIndex} of ${totalBatches} (entities ${effectiveStartIdx}–${endIdx} of ${total})`)
     parts.push('')
 
     for (const entity of entities) {
@@ -728,15 +728,24 @@ export class InteractiveEncoder {
       throw new Error('Invalid JSON. Expected: [{"entityId": "...", "decision": "keep|move|split", "targetPath?": "..."}, ...]')
     }
 
-    let processed = 0
+    // Validate all entity IDs exist in pending routing before mutating state
     const notFound: string[] = []
+    for (const { entityId } of decisions) {
+      if (!this.state.pendingRouting.find(p => p.entityId === entityId)) {
+        notFound.push(entityId)
+      }
+    }
+    if (notFound.length > 0) {
+      throw new Error(
+        `Entity not found in pending routing: ${notFound.join(', ')}. `
+        + `Read rpg://encoding/routing/0 for current candidates.`,
+      )
+    }
+
+    let processed = 0
 
     for (const { entityId, decision, targetPath } of decisions) {
-      const pending = this.state.pendingRouting.find(p => p.entityId === entityId)
-      if (!pending) {
-        notFound.push(entityId)
-        continue
-      }
+      const pending = this.state.pendingRouting.find(p => p.entityId === entityId)!
 
       if (decision === 'move' && targetPath) {
         // Update hierarchy assignment
@@ -756,13 +765,6 @@ export class InteractiveEncoder {
         p => p.entityId !== entityId,
       )
       processed++
-    }
-
-    if (notFound.length > 0) {
-      throw new Error(
-        `Entity not found in pending routing: ${notFound.join(', ')}. `
-        + `Read rpg://encoding/routing/0 for current candidates.`,
-      )
     }
 
     await this.persistGraph()

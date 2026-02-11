@@ -89,8 +89,8 @@ export class InteractiveState {
     const data = JSON.stringify({
       entities: this.entities.map(e => e.id),
       lifted: [...this.liftedFeatures.keys()].sort(),
-      routing: this.pendingRouting.map(r => r.entityId),
-      hierarchy: this.hierarchyAssignments.map(a => `${a.filePath}:${a.hierarchyPath}`),
+      routing: this.pendingRouting.map(r => r.entityId).sort(),
+      hierarchy: this.hierarchyAssignments.map(a => `${a.filePath}:${a.hierarchyPath}`).sort(),
     })
     return createHash('sha256').update(data).digest('hex').slice(0, 12)
   }

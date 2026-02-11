@@ -285,6 +285,7 @@ export async function extractEntitiesFromFile(
 
   const fileEntityId = generateEntityId(relativePath, 'file')
   const entities: FileEntityExtractionResult['entities'] = []
+  const sourceLines = sourceCode?.split('\n')
 
   for (const codeEntity of parseResult.entities) {
     const entityType = mapEntityType(codeEntity.type)
@@ -299,9 +300,8 @@ export async function extractEntitiesFromFile(
     )
 
     let entitySourceCode: string | undefined
-    if (sourceCode && codeEntity.startLine !== undefined && codeEntity.endLine !== undefined) {
-      const lines = sourceCode.split('\n')
-      entitySourceCode = lines.slice(codeEntity.startLine - 1, codeEntity.endLine).join('\n')
+    if (sourceLines && codeEntity.startLine !== undefined && codeEntity.endLine !== undefined) {
+      entitySourceCode = sourceLines.slice(codeEntity.startLine - 1, codeEntity.endLine).join('\n')
     }
 
     entities.push({
@@ -510,6 +510,7 @@ export class RPGEncoder {
     const rpg = await RepositoryPlanningGraph.create(config)
 
     // Phase 1: Semantic Lifting (including file→child functional edges)
+    const warnings: string[] = []
     let files: string[]
     try {
       files = await discoverFiles(this.repoPath, {
@@ -518,7 +519,10 @@ export class RPGEncoder {
         maxDepth: this.options.maxDepth,
       })
     }
-    catch {
+    catch (error) {
+      const msg = `File discovery failed: ${error instanceof Error ? error.message : String(error)}`
+      console.warn(`[RPGEncoder] ${msg}`)
+      warnings.push(msg)
       files = []
     }
     let entitiesExtracted = 0
@@ -563,7 +567,6 @@ export class RPGEncoder {
     await this.buildFunctionalHierarchy(rpg)
 
     // Phase 3a: Artifact Grounding — metadata propagation
-    const warnings: string[] = []
     try {
       const grounder = new ArtifactGrounder(rpg)
       await grounder.ground()

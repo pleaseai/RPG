@@ -391,10 +391,9 @@ export class Logger {
       // Assign files to overlapping hierarchy paths
       const assignments: Record<string, string> = {}
       const fileEntities = state.entities.filter(e => e.entityType === 'file')
-      if (fileEntities.length >= 2) {
-        assignments[fileEntities[0]!.filePath] = 'Core/utilities/helpers'
-        assignments[fileEntities[1]!.filePath] = 'Core/utilities/formatters'
-      }
+      expect(fileEntities.length).toBeGreaterThanOrEqual(2)
+      assignments[fileEntities[0]!.filePath] = 'Core/utilities/helpers'
+      assignments[fileEntities[1]!.filePath] = 'Core/utilities/formatters'
 
       await encoder.submitHierarchy(JSON.stringify(assignments))
 
