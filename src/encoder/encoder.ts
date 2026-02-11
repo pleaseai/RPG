@@ -579,7 +579,7 @@ export class RPGEncoder {
     const fileParseInfos: FileParseInfo[] = []
 
     for (let i = 0; i < files.length; i++) {
-      const file = files[i]
+      const file = files[i]!
       const displayPath = path.relative(this.repoPath, file)
       console.log(`[RPGEncoder] [${i + 1}/${files.length}] ${displayPath}`)
       let extraction: Awaited<ReturnType<typeof this.extractEntities>>
