@@ -39,5 +39,5 @@ bun.lockb
 
 # Please AI session state
 .please/cache/
-.please/memory/session-summary.md
+.please/memory/
 .please/tasklist.json
