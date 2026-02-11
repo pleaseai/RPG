@@ -9,7 +9,23 @@
     "backend@passionfactory": true,
     "typescript-lsp@language-server-please": true,
     "eslint-lsp@language-server-please": true,
-    "gatekeeper@pleaseai": true
+    "gatekeeper@pleaseai": true,
+    "mcp-dev@pleaseai": true,
+    "plugin-dev@claude-plugins-official": true
+  },
+  "extraKnownMarketplaces": {
+    "anthropic-agent-skills": {
+      "source": {
+        "source": "github",
+        "repo": "anthropics/skills"
+      }
+    },
+    "pleaseai": {
+      "source": {
+        "source": "github",
+        "repo": "pleaseai/claude-code-plugins"
+      }
+    }
   },
   "language": "english"
 }
