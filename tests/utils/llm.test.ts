@@ -146,6 +146,26 @@ describe('LLMClient', () => {
       expect(vi.mocked(createClaudeCode)).toHaveBeenCalledWith({ defaultSettings: settings })
     })
 
+    it('should call createClaudeCode with undefined when no settings provided', async () => {
+      const { createClaudeCode } = await import('ai-sdk-provider-claude-code')
+      vi.mocked(createClaudeCode).mockClear()
+
+      // eslint-disable-next-line no-new
+      new LLMClient({ provider: 'claude-code' })
+
+      expect(vi.mocked(createClaudeCode)).toHaveBeenCalledWith(undefined)
+    })
+
+    it('should not pass apiKey to createClaudeCode', async () => {
+      const { createClaudeCode } = await import('ai-sdk-provider-claude-code')
+      vi.mocked(createClaudeCode).mockClear()
+
+      // eslint-disable-next-line no-new
+      new LLMClient({ provider: 'claude-code', apiKey: 'should-be-ignored' })
+
+      expect(vi.mocked(createClaudeCode)).toHaveBeenCalledWith(undefined)
+    })
+
     it('should throw and call onError on failure', async () => {
       const { generateText } = await import('ai')
 
@@ -310,6 +330,34 @@ describe('LLMClient', () => {
       expect(cost.inputCost).toBe(3.00) // $3.00/M input
       expect(cost.outputCost).toBe(15.00) // $15.00/M output
       expect(cost.totalCost).toBe(18.00)
+    })
+
+    it('should estimate cost for claude-code opus model', () => {
+      const client = new LLMClient({ provider: 'claude-code', model: 'opus' })
+      const cost = client.estimateCost({
+        totalPromptTokens: 1_000_000,
+        totalCompletionTokens: 1_000_000,
+        totalTokens: 2_000_000,
+        requestCount: 1,
+      })
+
+      expect(cost.inputCost).toBe(15.00)
+      expect(cost.outputCost).toBe(75.00)
+      expect(cost.totalCost).toBe(90.00)
+    })
+
+    it('should estimate cost for claude-code haiku model', () => {
+      const client = new LLMClient({ provider: 'claude-code', model: 'haiku' })
+      const cost = client.estimateCost({
+        totalPromptTokens: 1_000_000,
+        totalCompletionTokens: 1_000_000,
+        totalTokens: 2_000_000,
+        requestCount: 1,
+      })
+
+      expect(cost.inputCost).toBe(1.00)
+      expect(cost.outputCost).toBe(5.00)
+      expect(cost.totalCost).toBe(6.00)
     })
 
     it('should return zero cost for unknown model', () => {

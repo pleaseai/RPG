@@ -110,8 +110,9 @@ export class SemanticExtractor {
       try {
         return await this.extractWithLLM(input)
       }
-      catch {
-        // Fall back to heuristic on error
+      catch (error) {
+        const msg = error instanceof Error ? error.message : String(error)
+        console.warn(`[SemanticExtractor] LLM extraction failed for ${input.name}: ${msg}. Falling back to heuristic.`)
       }
     }
 
@@ -161,8 +162,9 @@ export class SemanticExtractor {
       try {
         return await this.aggregateWithLLM(childFeatures, fileName, filePath)
       }
-      catch {
-        // Fall back to heuristic
+      catch (error) {
+        const msg = error instanceof Error ? error.message : String(error)
+        console.warn(`[SemanticExtractor] LLM aggregation failed for ${fileName}: ${msg}. Falling back to heuristic.`)
       }
     }
 

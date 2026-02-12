@@ -15,7 +15,7 @@ export type LLMProvider = 'openai' | 'anthropic' | 'google' | 'claude-code'
  * LLM client options
  */
 export interface LLMOptions {
-  /** Provider (openai, anthropic, or google) */
+  /** Provider (openai, anthropic, google, or claude-code) */
   provider: LLMProvider
   /** API key (defaults to environment variable) */
   apiKey?: string
@@ -74,7 +74,9 @@ const MODEL_PRICING: Record<string, { input: number, output: number }> = {
   'gemini-3-flash-preview': { input: 0.50, output: 3.00 },
   'gemini-3-pro-preview': { input: 2.00, output: 12.00 },
   'gemini-2.0-flash': { input: 0.30, output: 2.50 },
-  // claude-code provider uses model shortcuts; pricing is nominal (based on API rates)
+  // Claude Code provider uses model shortcuts (sonnet/opus/haiku).
+  // Pricing reflects equivalent Claude API rates for cost estimation,
+  // not actual charges (Claude Code uses subscription billing).
   'sonnet': { input: 3.00, output: 15.00 },
   'opus': { input: 15.00, output: 75.00 },
   'haiku': { input: 1.00, output: 5.00 },
@@ -99,6 +101,8 @@ function createProvider(provider: LLMProvider, apiKey?: string, claudeCodeSettin
       })
     case 'claude-code':
       return createClaudeCode(claudeCodeSettings ? { defaultSettings: claudeCodeSettings } : undefined)
+    default:
+      throw new Error(`Unsupported LLM provider: ${String(provider satisfies never)}`)
   }
 }
 
@@ -110,7 +114,7 @@ function createProvider(provider: LLMProvider, apiKey?: string, claudeCodeSettin
  * - Functional hierarchy construction
  * - Code generation
  *
- * Supports OpenAI, Anthropic, and Google providers with unified interface.
+ * Supports OpenAI, Anthropic, Google, and Claude Code providers with unified interface.
  *
  * @example
  * ```typescript
@@ -122,6 +126,9 @@ function createProvider(provider: LLMProvider, apiKey?: string, claudeCodeSettin
  *
  * // Use GPT-4o (paper baseline)
  * const client = new LLMClient({ provider: 'openai', model: 'gpt-4o' })
+ *
+ * // Use Claude Code (no API key needed, requires Claude Pro/Max subscription)
+ * const client = new LLMClient({ provider: 'claude-code', model: 'sonnet' })
  * ```
  */
 
