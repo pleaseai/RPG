@@ -626,6 +626,7 @@ export class RPGEncoder {
       provider,
       apiKey: semantic?.apiKey,
       maxTokens: semantic?.maxTokens,
+      claudeCodeSettings: semantic?.claudeCodeSettings,
     })
   }
 

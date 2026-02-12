@@ -1,4 +1,4 @@
-import type { LLMProvider } from '@pleaseai/rpg-utils/llm'
+import type { ClaudeCodeSettings, LLMProvider } from '@pleaseai/rpg-utils/llm'
 import { SemanticFeatureSchema as NodeSemanticFeatureSchema } from '@pleaseai/rpg-graph/node'
 import { LLMClient } from '@pleaseai/rpg-utils/llm'
 import { z } from 'zod/v4'
@@ -15,6 +15,8 @@ export interface SemanticOptions {
   useLLM?: boolean
   /** Maximum tokens per request */
   maxTokens?: number
+  /** Claude Code provider settings (only used when provider is 'claude-code') */
+  claudeCodeSettings?: ClaudeCodeSettings
 }
 
 /**
@@ -69,6 +71,7 @@ export class SemanticExtractor {
           provider,
           apiKey: this.options.apiKey,
           maxTokens: this.options.maxTokens,
+          claudeCodeSettings: this.options.claudeCodeSettings,
         })
       }
     }
