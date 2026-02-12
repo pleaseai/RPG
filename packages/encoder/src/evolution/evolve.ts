@@ -2,7 +2,7 @@ import type { RepositoryPlanningGraph } from '@pleaseai/rpg-graph/rpg'
 import type { OperationContext } from './operations'
 import type { EvolutionOptions, EvolutionResult } from './types'
 import { ASTParser } from '@pleaseai/rpg-utils/ast'
-import { LLMClient } from '@pleaseai/rpg-utils/llm'
+import { LLMClient, type LLMProvider } from '@pleaseai/rpg-utils/llm'
 import { SemanticExtractor } from '../semantic'
 import { DiffParser } from './diff-parser'
 import { deleteNode, insertNode, processModification } from './operations'
@@ -152,13 +152,14 @@ export class RPGEvolver {
       provider,
       apiKey: this.options.semantic?.apiKey,
       maxTokens: this.options.semantic?.maxTokens,
+      claudeCodeSettings: this.options.semantic?.claudeCodeSettings,
     })
   }
 
   /**
    * Detect available LLM provider from environment
    */
-  private detectProvider(): 'google' | 'anthropic' | 'openai' | null {
+  private detectProvider(): LLMProvider | null {
     if (process.env.GOOGLE_API_KEY) {
       return 'google'
     }
