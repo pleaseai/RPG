@@ -2,7 +2,7 @@ import type { ContextStore } from '../store/context-store'
 import type { DataFlowEdge, DependencyEdge, Edge, FunctionalEdge } from './edge'
 import type { HighLevelNode, LowLevelNode, Node, SemanticFeature, StructuralMetadata } from './node'
 import type { GraphStats, GraphStore } from './store'
-import { z } from 'zod'
+import { z } from 'zod/v4'
 import { attrsToEdge, attrsToNode, edgeToAttrs, nodeToAttrs, nodeToSearchFields } from './adapters'
 import {
   createDataFlowEdge,

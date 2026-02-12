@@ -1,4 +1,4 @@
-import { z } from 'zod'
+import { z } from 'zod/v4'
 
 /**
  * Node types in the Repository Planning Graph
@@ -55,7 +55,7 @@ export const StructuralMetadataSchema = z.object({
   /** Programming language */
   language: z.string().optional(),
   /** Additional metadata */
-  extra: z.record(z.unknown()).optional(),
+  extra: z.record(z.string(), z.unknown()).optional(),
 })
 
 export type StructuralMetadata = z.infer<typeof StructuralMetadataSchema>

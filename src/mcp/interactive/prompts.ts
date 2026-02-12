@@ -1,6 +1,6 @@
 import type { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import type { InteractiveEncoder } from './encoder'
-import { z } from 'zod'
+import { z } from 'zod/v4'
 import { ENCODING_WORKFLOW_INSTRUCTIONS, ROUTING_INSTRUCTIONS } from './prompt-texts'
 
 /**

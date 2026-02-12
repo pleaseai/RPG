@@ -1,4 +1,4 @@
-import { z } from 'zod'
+import { z } from 'zod/v4'
 
 /**
  * Edge types in the Repository Planning Graph

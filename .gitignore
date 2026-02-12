@@ -41,3 +41,4 @@ bun.lockb
 .please/cache/
 .please/memory/
 .please/tasklist.json
+/rpg.json
