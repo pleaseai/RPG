@@ -1,4 +1,5 @@
 import type { LLMProvider } from '../utils/llm'
+import { z } from 'zod/v4'
 import { LLMClient } from '../utils/llm'
 
 /**
@@ -16,16 +17,18 @@ export interface SemanticOptions {
 }
 
 /**
+ * Zod schema for semantic feature
+ */
+export const SemanticFeatureSchema = z.object({
+  description: z.string(),
+  subFeatures: z.array(z.string()).optional(),
+  keywords: z.array(z.string()),
+})
+
+/**
  * Semantic feature generated for an entity
  */
-export interface SemanticFeature {
-  /** Primary description (verb + object format) */
-  description: string
-  /** Additional sub-features */
-  subFeatures?: string[]
-  /** Keywords for search */
-  keywords: string[]
-}
+export type SemanticFeature = z.infer<typeof SemanticFeatureSchema>
 
 /**
  * Input for semantic extraction
@@ -197,7 +200,7 @@ Respond with valid JSON:
     const systemPrompt = `You are a senior software analyst. Synthesize file-level summaries from child entity features.
 Follow the same naming rules: verb + object format, lowercase, no implementation details, 3-8 words.`
 
-    const response = await this.llmClient?.completeJSON<SemanticFeature>(prompt, systemPrompt)
+    const response = await this.llmClient?.completeJSON<SemanticFeature>(prompt, systemPrompt, SemanticFeatureSchema)
     if (!response) {
       return this.aggregateWithHeuristic(childFeatures, fileName)
     }
@@ -301,7 +304,7 @@ Always respond with valid JSON in this exact format:
 
 If the entity has only one responsibility, leave subFeatures as an empty array.`
 
-    const response = await this.llmClient?.completeJSON<SemanticFeature>(prompt, systemPrompt)
+    const response = await this.llmClient?.completeJSON<SemanticFeature>(prompt, systemPrompt, SemanticFeatureSchema)
     if (!response) {
       return this.extractWithHeuristic(input)
     }

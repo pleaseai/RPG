@@ -1,7 +1,8 @@
+import type { ZodType } from 'zod/v4'
 import { createAnthropic } from '@ai-sdk/anthropic'
 import { createGoogleGenerativeAI } from '@ai-sdk/google'
 import { createOpenAI } from '@ai-sdk/openai'
-import { generateText } from 'ai'
+import { generateText, Output } from 'ai'
 
 /**
  * LLM provider type
@@ -192,11 +193,50 @@ export class LLMClient {
   }
 
   /**
-   * Generate structured JSON output
+   * Generate structured JSON output.
+   * When a Zod schema is provided, uses AI SDK's Output.object() for validated structured output.
+   * Falls back to regex-based JSON extraction when no schema is given.
    */
-  async completeJSON<T>(prompt: string, systemPrompt?: string): Promise<T> {
+  async completeJSON<T>(prompt: string, systemPrompt?: string, schema?: ZodType<T>): Promise<T> {
+    const modelId = this.options.model ?? DEFAULT_MODELS[this.options.provider]
+    const model = this.providerInstance(modelId)
+    const timeout = this.options.timeout ?? 120_000
+
+    if (schema) {
+      try {
+        const result = await generateText({
+          model,
+          output: Output.object({ schema }),
+          system: systemPrompt,
+          prompt,
+          maxOutputTokens: this.options.maxTokens,
+          temperature: this.options.temperature,
+          abortSignal: AbortSignal.timeout(timeout),
+        })
+
+        const inputTokens = result.usage?.inputTokens ?? 0
+        const outputTokens = result.usage?.outputTokens ?? 0
+        this.usageStats.totalPromptTokens += inputTokens
+        this.usageStats.totalCompletionTokens += outputTokens
+        this.usageStats.totalTokens += inputTokens + outputTokens
+        this.usageStats.requestCount++
+
+        if (result.output == null) {
+          throw new Error('No structured output returned from model')
+        }
+
+        return result.output
+      }
+      catch (error) {
+        const err = error instanceof Error ? error : new Error(String(error))
+        console.error(`[LLMClient] generateText+Output.object ${modelId} error: ${err.message}`)
+        this.options.onError?.(err, { model: modelId, promptLength: prompt.length })
+        throw err
+      }
+    }
+
+    // Fallback: regex-based JSON extraction for callers without schema
     const response = await this.complete(prompt, systemPrompt)
-    // Extract JSON from response (handle markdown code blocks)
     const jsonMatch
       = response.content.match(/```(?:json)?\n?([\s\S]*?)```/)
         || response.content.match(/\{[\s\S]*\}/)
