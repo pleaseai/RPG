@@ -2,6 +2,11 @@
 
 A unified framework for repository understanding and generation based on the Repository Planning Graph (RPG) representation.
 
+[![codecov](https://codecov.io/gh/pleaseai/rpg/graph/badge.svg?token=PfprF4qUBw)](https://codecov.io/gh/pleaseai/rpg)
+[![Security Rating](https://sonarcloud.io/api/project_badges/measure?project=pleaseai_rpg&metric=security_rating&token=689e64c38ea80939aaaa4089f723cfc1f879d9c1)](https://sonarcloud.io/summary/new_code?id=pleaseai_rpg)
+[![Vulnerabilities](https://sonarcloud.io/api/project_badges/measure?project=pleaseai_rpg&metric=vulnerabilities&token=689e64c38ea80939aaaa4089f723cfc1f879d9c1)](https://sonarcloud.io/summary/new_code?id=pleaseai_rpg)
+[![Bugs](https://sonarcloud.io/api/project_badges/measure?project=pleaseai_rpg&metric=bugs&token=689e64c38ea80939aaaa4089f723cfc1f879d9c1)](https://sonarcloud.io/summary/new_code?id=pleaseai_rpg)
+
 ## Overview
 
 This project implements the concepts from two research papers:
