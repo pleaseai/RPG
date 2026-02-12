@@ -79,9 +79,21 @@ export interface DiscoverFilesOptions {
  * Returns empty array for non-git directories or on failure (with warning).
  */
 function gitListFiles(repoPath: string): string[] {
+  let gitBinary: string
+  try {
+    gitBinary = resolveGitBinary()
+  }
+  catch {
+    console.warn(
+      `[discoverFiles] git binary not found on PATH. `
+      + `Cannot check .gitignore rules; falling back to directory walk.`,
+    )
+    return []
+  }
+
   try {
     const stdout = execFileSync(
-      resolveGitBinary(),
+      gitBinary,
       ['ls-files', '--cached', '--others', '--exclude-standard', '-z'],
       {
         cwd: repoPath,
@@ -95,13 +107,7 @@ function gitListFiles(repoPath: string): string[] {
   catch (error: unknown) {
     const err = error as { status?: number, code?: string, stderr?: string }
     const stderr = (err.stderr ?? '').trim()
-    if (err.code === 'ENOENT') {
-      console.warn(
-        `[discoverFiles] git binary not found on PATH. `
-        + `Cannot check .gitignore rules; falling back to directory walk.`,
-      )
-    }
-    else if (err.status === 128 && stderr.includes('not a git repository')) {
+    if (err.status === 128 && stderr.includes('not a git repository')) {
       // Normal "not a git repo" response — no warning needed
     }
     else {

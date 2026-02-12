@@ -337,8 +337,9 @@ export class DiffParser {
    * Execute a git command in the repo
    */
   private execGit(args: string[]): string {
+    const gitBinary = resolveGitBinary()
     try {
-      const stdout = execFileSync(resolveGitBinary(), args, {
+      const stdout = execFileSync(gitBinary, args, {
         cwd: this.repoPath,
         encoding: 'utf-8',
         maxBuffer: 10 * 1024 * 1024, // 10MB
