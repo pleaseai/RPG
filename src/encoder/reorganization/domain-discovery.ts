@@ -1,6 +1,6 @@
 import type { LLMClient } from '../../utils/llm'
 import type { DomainDiscoveryResult, FileFeatureGroup } from './types'
-import { buildDomainDiscoveryPrompt, parseSolutionTag } from './prompts'
+import { buildDomainDiscoveryPrompt, DomainDiscoveryResponseSchema } from './prompts'
 
 /**
  * Domain Discovery — identify functional areas from file-level features.
@@ -16,10 +16,9 @@ export class DomainDiscovery {
   async discover(fileGroups: FileFeatureGroup[]): Promise<DomainDiscoveryResult> {
     const { system, user } = buildDomainDiscoveryPrompt(fileGroups)
 
-    let response: string
+    let response: { functionalAreas: string[] }
     try {
-      const result = await this.llmClient.complete(user, system)
-      response = result.content
+      response = await this.llmClient.completeJSON(user, system, DomainDiscoveryResponseSchema)
     }
     catch (err) {
       throw new Error(
@@ -27,21 +26,8 @@ export class DomainDiscovery {
       )
     }
 
-    let areas: string[]
-    try {
-      areas = parseSolutionTag<string[]>(response)
-    }
-    catch {
-      // Retry once with format correction
-      const retryResult = await this.llmClient.complete(
-        `${user}\n\nIMPORTANT: Your previous response did not contain valid <solution> tags with a JSON array. Please respond with ONLY a JSON array of functional area names wrapped in <solution> tags.`,
-        system,
-      )
-      areas = parseSolutionTag<string[]>(retryResult.content)
-    }
-
     // Validate: ensure all returned areas are non-empty PascalCase strings
-    const validated = this.validateAreas(areas)
+    const validated = this.validateAreas(response.functionalAreas)
 
     return { functionalAreas: validated }
   }

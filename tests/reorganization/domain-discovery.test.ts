@@ -1,16 +1,11 @@
 import type { FileFeatureGroup } from '../../src/encoder/reorganization'
-import type { LLMResponse } from '../../src/utils/llm'
 import { describe, expect, it, vi } from 'vitest'
 import { DomainDiscovery } from '../../src/encoder/reorganization/domain-discovery'
 
-function createMockLLMClient(responseContent: string) {
+function createMockLLMClient(response: { functionalAreas: string[] }) {
   return {
-    complete: vi.fn().mockResolvedValue({
-      content: responseContent,
-      usage: { promptTokens: 100, completionTokens: 50, totalTokens: 150 },
-      model: 'test-model',
-    } satisfies LLMResponse),
-    completeJSON: vi.fn(),
+    complete: vi.fn(),
+    completeJSON: vi.fn().mockResolvedValue(response),
     getProvider: vi.fn().mockReturnValue('google'),
     getModel: vi.fn().mockReturnValue('test-model'),
   }
@@ -60,21 +55,21 @@ const sampleFileGroups: FileFeatureGroup[] = [
 
 describe('domainDiscovery', () => {
   it('returns correct PascalCase functional areas', async () => {
-    const mockClient = createMockLLMClient(
-      '<solution>\n["Authentication", "DataAccess", "ApiManagement"]\n</solution>',
-    )
+    const mockClient = createMockLLMClient({
+      functionalAreas: ['Authentication', 'DataAccess', 'ApiManagement'],
+    })
 
     const discovery = new DomainDiscovery(mockClient as any)
     const result = await discovery.discover(sampleFileGroups)
 
     expect(result.functionalAreas).toEqual(['Authentication', 'DataAccess', 'ApiManagement'])
-    expect(mockClient.complete).toHaveBeenCalledOnce()
+    expect(mockClient.completeJSON).toHaveBeenCalledOnce()
   })
 
   it('normalizes non-PascalCase names', async () => {
-    const mockClient = createMockLLMClient(
-      '<solution>\n["data processing", "user_authentication", "apiManagement"]\n</solution>',
-    )
+    const mockClient = createMockLLMClient({
+      functionalAreas: ['data processing', 'user_authentication', 'apiManagement'],
+    })
 
     const discovery = new DomainDiscovery(mockClient as any)
     const result = await discovery.discover(sampleFileGroups)
@@ -87,9 +82,9 @@ describe('domainDiscovery', () => {
   })
 
   it('deduplicates functional areas', async () => {
-    const mockClient = createMockLLMClient(
-      '<solution>\n["Authentication", "Authentication", "DataAccess"]\n</solution>',
-    )
+    const mockClient = createMockLLMClient({
+      functionalAreas: ['Authentication', 'Authentication', 'DataAccess'],
+    })
 
     const discovery = new DomainDiscovery(mockClient as any)
     const result = await discovery.discover(sampleFileGroups)
@@ -98,7 +93,9 @@ describe('domainDiscovery', () => {
   })
 
   it('handles single functional area', async () => {
-    const mockClient = createMockLLMClient('<solution>\n["CoreEngine"]\n</solution>')
+    const mockClient = createMockLLMClient({
+      functionalAreas: ['CoreEngine'],
+    })
 
     const singleGroup: FileFeatureGroup[] = [
       {
@@ -120,38 +117,18 @@ describe('domainDiscovery', () => {
     expect(result.functionalAreas).toEqual(['CoreEngine'])
   })
 
-  it('retries on malformed response (no solution tags)', async () => {
-    const mockClient = createMockLLMClient('Just some text without tags')
-    // Second call returns valid response
-    mockClient.complete
-      .mockResolvedValueOnce({
-        content: 'Just some text without tags',
-        usage: { promptTokens: 100, completionTokens: 50, totalTokens: 150 },
-        model: 'test-model',
-      })
-      .mockResolvedValueOnce({
-        content: '<solution>\n["Authentication"]\n</solution>',
-        usage: { promptTokens: 100, completionTokens: 50, totalTokens: 150 },
-        model: 'test-model',
-      })
-
-    const discovery = new DomainDiscovery(mockClient as any)
-    const result = await discovery.discover(sampleFileGroups)
-
-    expect(result.functionalAreas).toEqual(['Authentication'])
-    expect(mockClient.complete).toHaveBeenCalledTimes(2)
-  })
-
   it('throws when LLM returns no valid areas', async () => {
-    const mockClient = createMockLLMClient('<solution>\n[]\n</solution>')
+    const mockClient = createMockLLMClient({
+      functionalAreas: [],
+    })
 
     const discovery = new DomainDiscovery(mockClient as any)
     await expect(discovery.discover(sampleFileGroups)).rejects.toThrow('no valid functional areas')
   })
 
   it('throws when LLM call fails', async () => {
-    const mockClient = createMockLLMClient('')
-    mockClient.complete.mockRejectedValue(new Error('API rate limit'))
+    const mockClient = createMockLLMClient({ functionalAreas: [] })
+    mockClient.completeJSON.mockRejectedValue(new Error('API rate limit'))
 
     const discovery = new DomainDiscovery(mockClient as any)
     await expect(discovery.discover(sampleFileGroups)).rejects.toThrow(
@@ -160,9 +137,9 @@ describe('domainDiscovery', () => {
   })
 
   it('sanitizes non-alphanumeric characters in area names', async () => {
-    const mockClient = createMockLLMClient(
-      '<solution>\n["Data/Processing", "user.name", "___"]\n</solution>',
-    )
+    const mockClient = createMockLLMClient({
+      functionalAreas: ['Data/Processing', 'user.name', '___'],
+    })
 
     const discovery = new DomainDiscovery(mockClient as any)
     const result = await discovery.discover(sampleFileGroups)
@@ -172,9 +149,9 @@ describe('domainDiscovery', () => {
   })
 
   it('filters out empty strings from areas', async () => {
-    const mockClient = createMockLLMClient(
-      '<solution>\n["Authentication", "", "  ", "DataAccess"]\n</solution>',
-    )
+    const mockClient = createMockLLMClient({
+      functionalAreas: ['Authentication', '', '  ', 'DataAccess'],
+    })
 
     const discovery = new DomainDiscovery(mockClient as any)
     const result = await discovery.discover(sampleFileGroups)

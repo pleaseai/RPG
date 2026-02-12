@@ -1,7 +1,7 @@
 import type { RepositoryPlanningGraph } from '../../graph'
 import type { LLMClient } from '../../utils/llm'
 import type { FileFeatureGroup } from './types'
-import { buildHierarchicalConstructionPrompt, parseSolutionTag } from './prompts'
+import { buildHierarchicalConstructionPrompt, HierarchicalConstructionResponseSchema } from './prompts'
 
 /**
  * Hierarchy Builder — construct 3-level semantic hierarchy from functional areas.
@@ -107,10 +107,9 @@ export class HierarchyBuilder {
   ): Promise<Record<string, string[]>> {
     const { system, user } = buildHierarchicalConstructionPrompt(functionalAreas, fileGroups)
 
-    let response: string
+    let response: { assignments: Record<string, string[]> }
     try {
-      const result = await this.llmClient.complete(user, system)
-      response = result.content
+      response = await this.llmClient.completeJSON(user, system, HierarchicalConstructionResponseSchema)
     }
     catch (err) {
       throw new Error(
@@ -118,22 +117,8 @@ export class HierarchyBuilder {
       )
     }
 
-    let mapping: Record<string, string[]>
-    try {
-      mapping = parseSolutionTag<Record<string, string[]>>(response)
-      this.validatePaths(mapping)
-    }
-    catch (parseErr) {
-      // Retry once with format correction
-      const retryResult = await this.llmClient.complete(
-        `${user}\n\nIMPORTANT: Your previous response was invalid. ${parseErr instanceof Error ? parseErr.message : ''}\nEach path MUST have EXACTLY 3 levels separated by "/". Please respond with ONLY a JSON object mapping 3-level paths to arrays of group labels, wrapped in <solution> tags.`,
-        system,
-      )
-      mapping = parseSolutionTag<Record<string, string[]>>(retryResult.content)
-      this.validatePaths(mapping)
-    }
-
-    return mapping
+    this.validatePaths(response.assignments)
+    return response.assignments
   }
 
   private validatePaths(mapping: Record<string, string[]>): void {

@@ -1,4 +1,18 @@
 import type { FileFeatureGroup } from './types'
+import { z } from 'zod/v4'
+
+export const DomainDiscoveryResponseSchema = z.object({
+  functionalAreas: z.array(z.string()),
+})
+export type DomainDiscoveryResponse = z.infer<typeof DomainDiscoveryResponseSchema>
+
+export const HierarchicalConstructionResponseSchema = z.object({
+  assignments: z.record(
+    z.string().regex(/^[^/]+\/[^/]+\/[^/]+$/),
+    z.array(z.string()),
+  ),
+})
+export type HierarchicalConstructionResponse = z.infer<typeof HierarchicalConstructionResponseSchema>
 
 /**
  * Format file feature groups into a condensed text view for LLM input.
@@ -41,12 +55,10 @@ Your goal is to identify the high-level functional areas of a software repositor
 6. Exclude test/docs/vendor directories from the analysis.
 
 ## Output Format
-Wrap your answer in <solution> tags containing a JSON array of functional area names.
+Return a JSON object with a "functionalAreas" key containing an array of functional area names.
 
 Example:
-<solution>
-["DataProcessing", "UserInterface", "Authentication", "Configuration"]
-</solution>`
+{"functionalAreas": ["DataProcessing", "UserInterface", "Authentication", "Configuration"]}`
 
   const user = `Analyze the following repository file features and identify the high-level functional areas.
 
@@ -54,7 +66,7 @@ Example:
 
 ${formattedGroups}
 
-Identify the functional areas of this repository. Return ONLY the functional area names as a JSON array in <solution> tags.`
+Identify the functional areas of this repository.`
 
   return { system, user }
 }
@@ -93,16 +105,10 @@ Each path must have EXACTLY 3 levels: <functional_area>/<category>/<subcategory>
 5. Every non-excluded group must be assigned to a path.
 
 ## Output Format
-Wrap your answer in <solution> tags containing a JSON object mapping 3-level paths to arrays of group labels.
+Return a JSON object with an "assignments" key containing an object mapping 3-level paths to arrays of group labels.
 
 Example:
-<solution>
-{
-  "DataProcessing/pipeline orchestration/task scheduling": ["data_loader", "scheduler"],
-  "DataProcessing/data transformation/format conversion": ["converter"],
-  "UserInterface/component rendering/layout management": ["ui", "layout"]
-}
-</solution>`
+{"assignments": {"DataProcessing/pipeline orchestration/task scheduling": ["data_loader", "scheduler"], "DataProcessing/data transformation/format conversion": ["converter"], "UserInterface/component rendering/layout management": ["ui", "layout"]}}`
 
   const user = `Reorganize the following file groups into a 3-level semantic hierarchy.
 
@@ -113,20 +119,7 @@ ${areasStr}
 
 ${formattedGroups}
 
-Assign each group to a 3-level path (<functional_area>/<category>/<subcategory>). Return ONLY the mapping as a JSON object in <solution> tags.`
+Assign each group to a 3-level path (<functional_area>/<category>/<subcategory>).`
 
   return { system, user }
-}
-
-/**
- * Parse content from <solution>...</solution> tags and return as parsed JSON.
- *
- * Both prompts use the paper's <solution> wrapper format.
- */
-export function parseSolutionTag<T>(response: string): T {
-  const match = response.match(/<solution>([\s\S]*?)<\/solution>/)
-  if (!match?.[1]) {
-    throw new Error('No <solution> tag found in LLM response')
-  }
-  return JSON.parse(match[1].trim()) as T
 }

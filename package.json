@@ -45,7 +45,7 @@
     "dotenv": "^17.2.4",
     "graphology": "^0.25.4",
     "graphology-types": "^0.24.8",
-    "openai": "^6.21.0",
+
     "surrealdb": "^2.0.0-alpha.17",
     "tree-sitter": "^0.21.1",
     "tree-sitter-python": "^0.21.0",

@@ -1,6 +1,7 @@
 /**
  * LLM prompt templates for RPG Evolution operations
  */
+import { z } from 'zod/v4'
 
 /**
  * Semantic Routing Prompt — used by FindBestParent
@@ -37,9 +38,14 @@ Which category is the most semantically compatible parent for this entity?`,
 }
 
 /**
+ * Zod schema for semantic routing response
+ */
+export const SemanticRoutingResponseSchema = z.object({
+  selectedId: z.string().nullable(),
+  confidence: z.number().min(0).max(1),
+})
+
+/**
  * Response type for semantic routing
  */
-export interface SemanticRoutingResponse {
-  selectedId: string | null
-  confidence: number
-}
+export type SemanticRoutingResponse = z.infer<typeof SemanticRoutingResponseSchema>

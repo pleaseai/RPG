@@ -1,5 +1,4 @@
 import type { FileFeatureGroup } from '../../src/encoder/reorganization'
-import type { LLMResponse } from '../../src/utils/llm'
 import { describe, expect, it, vi } from 'vitest'
 import { DomainDiscovery } from '../../src/encoder/reorganization/domain-discovery'
 import { HierarchyBuilder } from '../../src/encoder/reorganization/hierarchy-builder'
@@ -85,31 +84,26 @@ describe('semantic Reorganization Integration', () => {
     },
   ]
 
+  const domainResponse = {
+    functionalAreas: ['GraphInfrastructure', 'SemanticEncoding', 'CoreUtilities'],
+  }
+
+  const hierarchyResponse = {
+    assignments: {
+      'GraphInfrastructure/data modeling/graph representation': ['graph'],
+      'SemanticEncoding/code analysis/feature extraction': ['encoder'],
+      'CoreUtilities/tool integration/parsing support': ['utils'],
+    },
+  }
+
   function createMockLLMClient() {
-    const domainResponse = `<solution>
-["GraphInfrastructure", "SemanticEncoding", "CoreUtilities"]
-</solution>`
-
-    const hierarchyResponse = `<solution>
-{
-  "GraphInfrastructure/data modeling/graph representation": ["graph"],
-  "SemanticEncoding/code analysis/feature extraction": ["encoder"],
-  "CoreUtilities/tool integration/parsing support": ["utils"]
-}
-</solution>`
-
     let callCount = 0
     return {
-      complete: vi.fn().mockImplementation(() => {
+      complete: vi.fn(),
+      completeJSON: vi.fn().mockImplementation(() => {
         callCount++
-        const content = callCount === 1 ? domainResponse : hierarchyResponse
-        return Promise.resolve({
-          content,
-          usage: { promptTokens: 200, completionTokens: 100, totalTokens: 300 },
-          model: 'test-model',
-        } satisfies LLMResponse)
+        return Promise.resolve(callCount === 1 ? domainResponse : hierarchyResponse)
       }),
-      completeJSON: vi.fn(),
       getProvider: vi.fn().mockReturnValue('google'),
       getModel: vi.fn().mockReturnValue('test-model'),
     }

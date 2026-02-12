@@ -185,6 +185,10 @@ Or with the installed package:
 }
 ```
 
+## Language Convention
+
+All git commit messages, code comments, GitHub issues, pull request titles/descriptions, and review comments must be written in **English**.
+
 ## Design Decisions
 
 - **Vitest over Bun Test**: Jest compatibility for planned MCP server development

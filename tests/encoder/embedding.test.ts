@@ -1,5 +1,10 @@
-import { describe, expect, it } from 'vitest'
-import { MockEmbedding, OpenAIEmbedding } from '../../src/encoder/embedding'
+import { describe, expect, it, vi } from 'vitest'
+import { AISDKEmbedding, MockEmbedding, OpenAIEmbedding } from '../../src/encoder/embedding'
+
+vi.mock('ai', () => ({
+  embed: vi.fn(),
+  embedMany: vi.fn(),
+}))
 
 describe('mockEmbedding', () => {
   it('should embed text and return correct dimension', async () => {
@@ -109,6 +114,63 @@ describe('openAIEmbedding', () => {
     expect(models['text-embedding-ada-002']).toBeDefined()
   })
 
+  it('should embed text using AI SDK embed()', async () => {
+    const { embed: embedFn } = await import('ai')
+
+    const mockVector = Array.from({ length: 1536 }, (_, i) => i * 0.001)
+    vi.mocked(embedFn).mockResolvedValueOnce({
+      embedding: mockVector,
+      usage: { tokens: 5 },
+      value: 'test',
+    } as any)
+
+    const embedding = new OpenAIEmbedding({ apiKey: 'test-key' })
+    const result = await embedding.embed('test text')
+
+    expect(result.vector).toEqual(mockVector)
+    expect(result.dimension).toBe(1536)
+  })
+
+  it('should embed batch using AI SDK embedMany()', async () => {
+    const { embedMany: embedManyFn } = await import('ai')
+
+    const mockEmbeddings = [[0.1, 0.2, 0.3], [0.4, 0.5, 0.6]]
+    vi.mocked(embedManyFn).mockResolvedValueOnce({
+      embeddings: mockEmbeddings,
+      usage: { tokens: 10 },
+      values: ['text1', 'text2'],
+    } as any)
+
+    const embedding = new OpenAIEmbedding({ apiKey: 'test-key' })
+    const results = await embedding.embedBatch(['text1', 'text2'])
+
+    expect(results).toHaveLength(2)
+    expect(results[0].vector).toEqual([0.1, 0.2, 0.3])
+    expect(results[1].vector).toEqual([0.4, 0.5, 0.6])
+  })
+
+  it('should handle empty batch', async () => {
+    const embedding = new OpenAIEmbedding({ apiKey: 'test-key' })
+    const results = await embedding.embedBatch([])
+    expect(results).toHaveLength(0)
+  })
+
+  it('should wrap errors with OpenAI prefix', async () => {
+    const { embed: embedFn } = await import('ai')
+    vi.mocked(embedFn).mockRejectedValueOnce(new Error('Rate limit exceeded'))
+
+    const embedding = new OpenAIEmbedding({ apiKey: 'test-key' })
+    await expect(embedding.embed('test')).rejects.toThrow('Failed to generate OpenAI embedding')
+  })
+
+  it('should wrap batch errors with OpenAI prefix', async () => {
+    const { embedMany: embedManyFn } = await import('ai')
+    vi.mocked(embedManyFn).mockRejectedValueOnce(new Error('Timeout'))
+
+    const embedding = new OpenAIEmbedding({ apiKey: 'test-key' })
+    await expect(embedding.embedBatch(['text'])).rejects.toThrow('Failed to generate OpenAI batch embeddings')
+  })
+
   // Integration test (skipped without real API key)
   it.skip('should generate real embeddings', async () => {
     const embedding = new OpenAIEmbedding({
@@ -118,5 +180,91 @@ describe('openAIEmbedding', () => {
 
     expect(result.dimension).toBe(1536)
     expect(result.vector).toHaveLength(1536)
+  })
+})
+
+describe('aISDKEmbedding', () => {
+  it('should return custom provider name', () => {
+    const mockModel = {} as any
+    const embedding = new AISDKEmbedding({
+      model: mockModel,
+      providerName: 'TestProvider',
+      dimension: 768,
+    })
+    expect(embedding.getProvider()).toBe('TestProvider')
+  })
+
+  it('should return default provider name AISDK', () => {
+    const mockModel = {} as any
+    const embedding = new AISDKEmbedding({ model: mockModel })
+    expect(embedding.getProvider()).toBe('AISDK')
+  })
+
+  it('should return configured dimension', () => {
+    const mockModel = {} as any
+    const embedding = new AISDKEmbedding({ model: mockModel, dimension: 1024 })
+    expect(embedding.getDimension()).toBe(1024)
+  })
+
+  it('should auto-detect dimension (0) by default', () => {
+    const mockModel = {} as any
+    const embedding = new AISDKEmbedding({ model: mockModel })
+    expect(embedding.getDimension()).toBe(0)
+  })
+
+  it('should embed text using AI SDK embed()', async () => {
+    const { embed: embedFn } = await import('ai')
+
+    const mockVector = [0.1, 0.2, 0.3]
+    vi.mocked(embedFn).mockResolvedValueOnce({
+      embedding: mockVector,
+      usage: { tokens: 5 },
+      value: 'test',
+    } as any)
+
+    const mockModel = {} as any
+    const embedding = new AISDKEmbedding({ model: mockModel, providerName: 'Test' })
+    const result = await embedding.embed('test')
+
+    expect(result.vector).toEqual(mockVector)
+    expect(result.dimension).toBe(3)
+    expect(embedding.getDimension()).toBe(3)
+  })
+
+  it('should embed batch using AI SDK embedMany()', async () => {
+    const { embedMany: embedManyFn } = await import('ai')
+
+    const mockEmbeddings = [[0.1, 0.2], [0.3, 0.4]]
+    vi.mocked(embedManyFn).mockResolvedValueOnce({
+      embeddings: mockEmbeddings,
+      usage: { tokens: 10 },
+      values: ['text1', 'text2'],
+    } as any)
+
+    const mockModel = {} as any
+    const embedding = new AISDKEmbedding({ model: mockModel, providerName: 'Test' })
+    const results = await embedding.embedBatch(['text1', 'text2'])
+
+    expect(results).toHaveLength(2)
+    expect(results[0].vector).toEqual([0.1, 0.2])
+    expect(results[1].vector).toEqual([0.3, 0.4])
+    expect(embedding.getDimension()).toBe(2)
+  })
+
+  it('should handle empty batch', async () => {
+    const mockModel = {} as any
+    const embedding = new AISDKEmbedding({ model: mockModel })
+    const results = await embedding.embedBatch([])
+    expect(results).toHaveLength(0)
+  })
+
+  it('should wrap errors with provider name', async () => {
+    const { embed: embedFn } = await import('ai')
+    vi.mocked(embedFn).mockRejectedValueOnce(new Error('API error'))
+
+    const mockModel = {} as any
+    const embedding = new AISDKEmbedding({ model: mockModel, providerName: 'Voyage' })
+
+    await expect(embedding.embed('test')).rejects.toThrow('Failed to generate Voyage embedding')
   })
 })

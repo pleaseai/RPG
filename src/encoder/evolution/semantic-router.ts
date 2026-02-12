@@ -4,7 +4,7 @@ import type { LLMClient } from '../../utils/llm'
 import type { Embedding } from '../embedding'
 import type { SemanticRoutingResponse } from './prompts'
 import { isHighLevelNode } from '../../graph/node'
-import { buildSemanticRoutingPrompt } from './prompts'
+import { buildSemanticRoutingPrompt, SemanticRoutingResponseSchema } from './prompts'
 
 /**
  * FindBestParent — LLM-based recursive top-down semantic routing
@@ -130,6 +130,7 @@ export class SemanticRouter {
       const response = await this.llmClient?.completeJSON<SemanticRoutingResponse>(
         prompt,
         systemPrompt,
+        SemanticRoutingResponseSchema,
       )
       this.llmCalls++
 

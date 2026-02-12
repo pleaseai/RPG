@@ -1,4 +1,6 @@
-import OpenAI from 'openai'
+import type { EmbeddingModel } from 'ai'
+import { createOpenAI } from '@ai-sdk/openai'
+import { embed, embedMany } from 'ai'
 
 // Lazy-loaded types to avoid immediate import
 type TransformersModule = typeof import('@huggingface/transformers')
@@ -67,6 +69,105 @@ export abstract class Embedding {
 }
 
 /**
+ * AI SDK Embedding configuration
+ */
+export interface AISDKEmbeddingConfig {
+  /** AI SDK EmbeddingModel instance */
+  model: EmbeddingModel
+  /** Vector dimension (0 = auto-detect on first call) */
+  dimension?: number
+  /** Provider display name (default: 'AISDK') */
+  providerName?: string
+  /** Max tokens for input truncation (default: 8192) */
+  maxTokens?: number
+}
+
+/**
+ * Generic AI SDK Embedding implementation
+ *
+ * Accepts any AI SDK EmbeddingModel instance and wraps it in the RPG Embedding interface.
+ * Supports all AI SDK providers: @ai-sdk/openai, @ai-sdk/google, voyage-ai-provider, etc.
+ *
+ * @example
+ * ```typescript
+ * import { createOpenAI } from '@ai-sdk/openai'
+ * const openai = createOpenAI({ apiKey: '...' })
+ * const embedding = new AISDKEmbedding({
+ *   model: openai.embedding('text-embedding-3-small'),
+ *   dimension: 1536,
+ * })
+ * ```
+ */
+export class AISDKEmbedding extends Embedding {
+  protected maxTokens: number
+  private readonly embeddingModel: EmbeddingModel
+  private dimension: number
+  private readonly providerName: string
+
+  constructor(config: AISDKEmbeddingConfig) {
+    super()
+    this.embeddingModel = config.model
+    this.dimension = config.dimension ?? 0
+    this.providerName = config.providerName ?? 'AISDK'
+    this.maxTokens = config.maxTokens ?? 8192
+  }
+
+  async embed(text: string): Promise<EmbeddingVector> {
+    const processedText = this.preprocessText(text)
+
+    try {
+      const result = await embed({ model: this.embeddingModel, value: processedText })
+
+      if (this.dimension === 0) {
+        this.dimension = result.embedding.length
+      }
+
+      return {
+        vector: result.embedding,
+        dimension: result.embedding.length,
+      }
+    }
+    catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      throw new Error(`Failed to generate ${this.providerName} embedding: ${message}`)
+    }
+  }
+
+  async embedBatch(texts: string[]): Promise<EmbeddingVector[]> {
+    if (texts.length === 0) {
+      return []
+    }
+
+    const processedTexts = this.preprocessTexts(texts)
+
+    try {
+      const result = await embedMany({ model: this.embeddingModel, values: processedTexts })
+
+      if (this.dimension === 0 && result.embeddings.length > 0) {
+        this.dimension = result.embeddings[0]!.length
+      }
+
+      return result.embeddings.map(emb => ({
+        vector: emb,
+        dimension: emb.length,
+      }))
+    }
+    catch (error) {
+      const message = error instanceof Error ? error.message : String(error)
+      throw new Error(`Failed to generate ${this.providerName} batch embeddings: ${message}`)
+    }
+  }
+
+  getDimension(): number {
+    return this.dimension
+  }
+
+  getProvider(): string {
+    return this.providerName
+  }
+}
+
+/**
  * OpenAI embedding configuration
  */
 export interface OpenAIEmbeddingConfig {
@@ -97,14 +198,14 @@ const OPENAI_MODELS: Record<string, { dimension: number, description: string }> 
 }
 
 /**
- * OpenAI Embedding implementation
+ * OpenAI Embedding implementation using AI SDK
  *
- * Uses OpenAI's text-embedding models to generate vector embeddings.
+ * Uses @ai-sdk/openai with embed()/embedMany() to generate vector embeddings.
  * Supports text-embedding-3-small (default), text-embedding-3-large, and ada-002.
  */
 export class OpenAIEmbedding extends Embedding {
-  private client: OpenAI
-  private model: string
+  private readonly embeddingModel: EmbeddingModel
+  private readonly model: string
   private dimension: number
   protected maxTokens = 8192
 
@@ -112,34 +213,23 @@ export class OpenAIEmbedding extends Embedding {
     super()
     this.model = config.model ?? 'text-embedding-3-small'
     this.dimension = OPENAI_MODELS[this.model]?.dimension ?? 1536
-    this.client = new OpenAI({
+    const provider = createOpenAI({
       apiKey: config.apiKey,
       baseURL: config.baseURL,
     })
+    this.embeddingModel = provider.embedding(this.model)
   }
 
-  /**
-   * Generate embedding for a single text
-   */
   async embed(text: string): Promise<EmbeddingVector> {
     const processedText = this.preprocessText(text)
 
     try {
-      const response = await this.client.embeddings.create({
-        model: this.model,
-        input: processedText,
-        encoding_format: 'float',
-      })
+      const result = await embed({ model: this.embeddingModel, value: processedText })
 
-      const firstResult = response.data[0]
-      if (!firstResult) {
-        throw new Error('OpenAI returned empty response')
-      }
-      const embedding = firstResult.embedding
-      this.dimension = embedding.length
+      this.dimension = result.embedding.length
 
       return {
-        vector: embedding,
+        vector: result.embedding,
         dimension: this.dimension,
       }
     }
@@ -149,9 +239,6 @@ export class OpenAIEmbedding extends Embedding {
     }
   }
 
-  /**
-   * Generate embeddings for multiple texts in a single API call
-   */
   async embedBatch(texts: string[]): Promise<EmbeddingVector[]> {
     if (texts.length === 0) {
       return []
@@ -160,20 +247,14 @@ export class OpenAIEmbedding extends Embedding {
     const processedTexts = this.preprocessTexts(texts)
 
     try {
-      const response = await this.client.embeddings.create({
-        model: this.model,
-        input: processedTexts,
-        encoding_format: 'float',
-      })
+      const result = await embedMany({ model: this.embeddingModel, values: processedTexts })
 
-      const firstResult = response.data[0]
-      if (!firstResult) {
-        throw new Error('OpenAI returned empty response')
+      if (result.embeddings.length > 0) {
+        this.dimension = result.embeddings[0]!.length
       }
-      this.dimension = firstResult.embedding.length
 
-      return response.data.map(item => ({
-        vector: item.embedding,
+      return result.embeddings.map(emb => ({
+        vector: emb,
         dimension: this.dimension,
       }))
     }
@@ -191,16 +272,10 @@ export class OpenAIEmbedding extends Embedding {
     return 'OpenAI'
   }
 
-  /**
-   * Get the current model name
-   */
   getModel(): string {
     return this.model
   }
 
-  /**
-   * Get list of supported models
-   */
   static getSupportedModels(): Record<string, { dimension: number, description: string }> {
     return { ...OPENAI_MODELS }
   }
@@ -361,9 +436,6 @@ export class HuggingFaceEmbedding extends Embedding {
     }
   }
 
-  /**
-   * Get list of supported LEAF models
-   */
   static getSupportedModels(): Record<
     string,
     {
@@ -376,9 +448,6 @@ export class HuggingFaceEmbedding extends Embedding {
     return { ...HUGGINGFACE_MODELS }
   }
 
-  /**
-   * Lazy load transformers module
-   */
   private async getTransformersModule(): Promise<TransformersModule> {
     if (!this.transformersModule) {
       this.transformersModule = await import('@huggingface/transformers')
@@ -391,29 +460,20 @@ export class HuggingFaceEmbedding extends Embedding {
     return this.transformersModule
   }
 
-  /**
-   * Lazy load model and tokenizer on first use
-   */
   private async ensureModel(): Promise<void> {
-    // If already loaded, return immediately
     if (this.model && this.tokenizer) {
       return
     }
 
-    // If loading is in progress, wait for it
     if (this.modelLoading) {
       await this.modelLoading
       return
     }
 
-    // Start loading
     this.modelLoading = this.loadModel()
     await this.modelLoading
   }
 
-  /**
-   * Actually load the model and tokenizer
-   */
   private async loadModel(): Promise<void> {
     try {
       const transformers = await this.getTransformersModule()
@@ -421,7 +481,6 @@ export class HuggingFaceEmbedding extends Embedding {
 
       console.log(`[HuggingFace] Loading model: ${modelId} (dtype: ${this.config.dtype})`)
 
-      // Load tokenizer and model in parallel
       const [tokenizer, model] = await Promise.all([
         transformers.AutoTokenizer.from_pretrained(modelId),
         transformers.AutoModel.from_pretrained(modelId, {
@@ -435,7 +494,7 @@ export class HuggingFaceEmbedding extends Embedding {
       console.log(`[HuggingFace] Model loaded successfully: ${modelId}`)
     }
     catch (error) {
-      this.modelLoading = null // Reset so it can be retried
+      this.modelLoading = null
       const errorMessage = error instanceof Error ? error.message : 'Unknown error'
       const err = new Error(
         `Failed to load HuggingFace model ${this.config.model}: ${errorMessage}`,
@@ -445,9 +504,6 @@ export class HuggingFaceEmbedding extends Embedding {
     }
   }
 
-  /**
-   * Apply query prefix if configured (for IR models)
-   */
   private applyQueryPrefix(text: string): string {
     if (this.config.queryPrefix) {
       return this.config.queryPrefix + text
@@ -455,9 +511,6 @@ export class HuggingFaceEmbedding extends Embedding {
     return text
   }
 
-  /**
-   * Detect embedding dimension (returns fixed dimension for LEAF models)
-   */
   async detectDimension(): Promise<number> {
     return this.dimension
   }
@@ -473,22 +526,18 @@ export class HuggingFaceEmbedding extends Embedding {
     const prefixedText = this.applyQueryPrefix(processedText)
 
     try {
-      // Tokenize with truncation to handle texts longer than maxTokens
       const inputs = await this.tokenizer([prefixedText], {
         padding: true,
         truncation: true,
         max_length: this.maxTokens,
       })
 
-      // Get embeddings
       const outputs = await this.model(inputs)
 
-      // Extract sentence embedding
       if (!outputs.sentence_embedding) {
         throw new Error('Model did not return sentence_embedding')
       }
 
-      // Convert tensor to array
       const embedding = outputs.sentence_embedding.tolist()[0] as number[]
 
       return {
@@ -519,22 +568,18 @@ export class HuggingFaceEmbedding extends Embedding {
     const prefixedTexts = processedTexts.map(text => this.applyQueryPrefix(text))
 
     try {
-      // Tokenize batch with truncation to handle texts longer than maxTokens
       const inputs = await this.tokenizer(prefixedTexts, {
         padding: true,
         truncation: true,
         max_length: this.maxTokens,
       })
 
-      // Get embeddings
       const outputs = await this.model(inputs)
 
-      // Extract sentence embeddings
       if (!outputs.sentence_embedding) {
         throw new Error('Model did not return sentence_embedding')
       }
 
-      // Convert tensor to array
       const embeddings = outputs.sentence_embedding.tolist() as number[][]
 
       return embeddings.map(embedding => ({
@@ -570,37 +615,22 @@ export class HuggingFaceEmbedding extends Embedding {
     return 'HuggingFace'
   }
 
-  /**
-   * Get the current model ID
-   */
   getModel(): string {
     return this.config.model ?? 'MongoDB/mdbr-leaf-ir'
   }
 
-  /**
-   * Get the current dtype setting
-   */
   getDtype(): HuggingFaceDtype {
     return this.config.dtype ?? 'fp32'
   }
 
-  /**
-   * Get the query prefix (if any)
-   */
   getQueryPrefix(): string | undefined {
     return this.config.queryPrefix
   }
 
-  /**
-   * Check if model is loaded
-   */
   isModelLoaded(): boolean {
     return this.model !== null && this.tokenizer !== null
   }
 
-  /**
-   * Preload the model (optional, for eager loading)
-   */
   async preload(): Promise<void> {
     await this.ensureModel()
   }

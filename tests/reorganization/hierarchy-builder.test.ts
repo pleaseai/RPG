@@ -1,17 +1,12 @@
 import type { FileFeatureGroup } from '../../src/encoder/reorganization'
-import type { LLMResponse } from '../../src/utils/llm'
 import { describe, expect, it, vi } from 'vitest'
 import { HierarchyBuilder } from '../../src/encoder/reorganization/hierarchy-builder'
 import { RepositoryPlanningGraph } from '../../src/graph/rpg'
 
-function createMockLLMClient(responseContent: string) {
+function createMockLLMClient(response: { assignments: Record<string, string[]> }) {
   return {
-    complete: vi.fn().mockResolvedValue({
-      content: responseContent,
-      usage: { promptTokens: 100, completionTokens: 50, totalTokens: 150 },
-      model: 'test-model',
-    } satisfies LLMResponse),
-    completeJSON: vi.fn(),
+    complete: vi.fn(),
+    completeJSON: vi.fn().mockResolvedValue(response),
     getProvider: vi.fn().mockReturnValue('google'),
     getModel: vi.fn().mockReturnValue('test-model'),
   }
@@ -48,12 +43,12 @@ const sampleFileGroups: FileFeatureGroup[] = [
   },
 ]
 
-const validMapping = `<solution>
-{
-  "Authentication/credential management/user verification": ["auth"],
-  "DataAccess/query execution/database operations": ["db"]
+const validAssignments = {
+  assignments: {
+    'Authentication/credential management/user verification': ['auth'],
+    'DataAccess/query execution/database operations': ['db'],
+  },
 }
-</solution>`
 
 describe('hierarchyBuilder', () => {
   it('creates 3-level HighLevelNode hierarchy correctly', async () => {
@@ -70,7 +65,7 @@ describe('hierarchyBuilder', () => {
       }
     }
 
-    const mockClient = createMockLLMClient(validMapping)
+    const mockClient = createMockLLMClient(validAssignments)
     const builder = new HierarchyBuilder(rpg, mockClient as any)
     await builder.build(['Authentication', 'DataAccess'], sampleFileGroups)
 
@@ -109,7 +104,7 @@ describe('hierarchyBuilder', () => {
       }
     }
 
-    const mockClient = createMockLLMClient(validMapping)
+    const mockClient = createMockLLMClient(validAssignments)
     const builder = new HierarchyBuilder(rpg, mockClient as any)
     await builder.build(['Authentication', 'DataAccess'], sampleFileGroups)
 
@@ -145,7 +140,7 @@ describe('hierarchyBuilder', () => {
       }
     }
 
-    const mockClient = createMockLLMClient(validMapping)
+    const mockClient = createMockLLMClient(validAssignments)
     const builder = new HierarchyBuilder(rpg, mockClient as any)
     await builder.build(['Authentication', 'DataAccess'], sampleFileGroups)
 
@@ -197,7 +192,7 @@ describe('hierarchyBuilder', () => {
     }
 
     // Only map auth and db, leave misc unassigned
-    const mockClient = createMockLLMClient(validMapping)
+    const mockClient = createMockLLMClient(validAssignments)
     const builder = new HierarchyBuilder(rpg, mockClient as any)
     await builder.build(['Authentication', 'DataAccess'], groupsWithExtra)
 
@@ -234,7 +229,7 @@ describe('hierarchyBuilder', () => {
       }
     }
 
-    const mockClient = createMockLLMClient(validMapping)
+    const mockClient = createMockLLMClient(validAssignments)
     const builder = new HierarchyBuilder(rpg, mockClient as any)
     await builder.build(['Authentication', 'DataAccess'], sampleFileGroups)
 
@@ -270,19 +265,13 @@ describe('hierarchyBuilder', () => {
       }
     }
 
-    const invalidMapping = `<solution>
-{
-  "Authentication/credential management": ["auth"]
-}
-</solution>`
+    const invalidAssignments = {
+      assignments: {
+        'Authentication/credential management': ['auth'],
+      },
+    }
 
-    const mockClient = createMockLLMClient(invalidMapping)
-    // Retry also fails with invalid paths
-    mockClient.complete.mockResolvedValue({
-      content: invalidMapping,
-      usage: { promptTokens: 100, completionTokens: 50, totalTokens: 150 },
-      model: 'test-model',
-    })
+    const mockClient = createMockLLMClient(invalidAssignments)
 
     const builder = new HierarchyBuilder(rpg, mockClient as any)
     await expect(builder.build(['Authentication'], sampleFileGroups)).rejects.toThrow(
@@ -303,7 +292,7 @@ describe('hierarchyBuilder', () => {
       }
     }
 
-    const mockClient = createMockLLMClient(validMapping)
+    const mockClient = createMockLLMClient(validAssignments)
     const builder = new HierarchyBuilder(rpg, mockClient as any)
     await builder.build(['Authentication', 'DataAccess'], sampleFileGroups)
 
