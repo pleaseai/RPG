@@ -117,6 +117,8 @@ export class SemanticCache {
    * Clear all cached entries
    */
   async clear(): Promise<void> {
+    if (!this.options.enabled)
+      return
     this.stmts.clear.run()
   }
 
@@ -131,6 +133,8 @@ export class SemanticCache {
    * Purge expired entries
    */
   async purge(): Promise<void> {
+    if (!this.options.enabled)
+      return
     const expireBefore = Date.now() - this.options.ttl
     this.stmts.purge.run(expireBefore)
   }
@@ -139,7 +143,7 @@ export class SemanticCache {
    * Get cache statistics
    */
   getStats(): { size: number, enabled: boolean } {
-    if (!this.options.enabled || !this.db) {
+    if (!this.options.enabled) {
       return { size: 0, enabled: this.options.enabled }
     }
 
