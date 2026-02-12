@@ -21,7 +21,7 @@ vi.mock('ai', () => ({
   },
 }))
 
-describe('lLMClient', () => {
+describe('LLMClient', () => {
   describe('constructor', () => {
     it('should use default model for openai provider', () => {
       const client = new LLMClient({ provider: 'openai' })
