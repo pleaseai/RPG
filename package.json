@@ -13,7 +13,7 @@
   "scripts": {
     "dev": "bun run --watch packages/cli/src/cli.ts",
     "mcp": "bun run packages/mcp/src/server.ts",
-    "build": "bun build src/index.ts packages/cli/src/cli.ts packages/mcp/src/server.ts --outdir dist --target node --external @lancedb/lancedb --external better-sqlite3 --external @surrealdb/node --external tree-sitter --external tree-sitter-typescript --external tree-sitter-python && npm run build:fix-shebang",
+    "build": "bun build src/index.ts packages/cli/src/cli.ts packages/mcp/src/server.ts --outdir dist --target node --external @lancedb/lancedb --external better-sqlite3 --external @surrealdb/node --external tree-sitter --external tree-sitter-typescript --external tree-sitter-python --external tree-sitter-rust --external tree-sitter-go --external tree-sitter-java && npm run build:fix-shebang",
     "build:fix-shebang": "sed -i.bak 's|#!/usr/bin/env bun|#!/usr/bin/env node|g' dist/packages/cli/src/cli.js dist/packages/mcp/src/server.js && rm -f dist/packages/cli/src/cli.js.bak dist/packages/mcp/src/server.js.bak",
     "test": "vitest run",
     "test:unit": "vitest run --project=unit",
@@ -59,6 +59,9 @@
     "better-sqlite3": "^12.6.2",
     "eslint": "^9.39.2",
     "eslint-plugin-import-x": "^4.16.1",
+    "tree-sitter-rust": "0.21.0",
+    "tree-sitter-go": "0.21.2",
+    "tree-sitter-java": "0.21.0",
     "turbo": "^2.8.3",
     "typescript": "^5.9.3",
     "vitest": "^4.0.18"

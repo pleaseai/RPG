@@ -1,113 +1,7 @@
+import type { CodeEntity, LanguageConfig, ParseResult, SupportedLanguage } from './types'
+
 import Parser from 'tree-sitter'
-
-// Tree-sitter language parsers - using require for CommonJS modules
-const TypeScript = require('tree-sitter-typescript').typescript
-const Python = require('tree-sitter-python')
-
-/**
- * Parsed code entity from AST
- */
-export interface CodeEntity {
-  /** Entity type */
-  type: 'function' | 'class' | 'method' | 'variable' | 'import'
-  /** Entity name */
-  name: string
-  /** Start line (1-indexed) */
-  startLine: number
-  /** End line (1-indexed) */
-  endLine: number
-  /** Start column */
-  startColumn: number
-  /** End column */
-  endColumn: number
-  /** Docstring or comment */
-  documentation?: string
-  /** Parameters for functions/methods */
-  parameters?: string[]
-  /** Return type annotation */
-  returnType?: string
-  /** Parent entity (for methods) */
-  parent?: string
-}
-
-/**
- * Result of parsing a file
- */
-export interface ParseResult {
-  /** Detected language */
-  language: string
-  /** Extracted entities */
-  entities: CodeEntity[]
-  /** Import statements */
-  imports: Array<{ module: string, names: string[] }>
-  /** Parsing errors */
-  errors: string[]
-}
-
-/**
- * Supported language names
- */
-type SupportedLanguage = 'typescript' | 'javascript' | 'python'
-
-/**
- * Node types that represent splittable code units per language
- */
-const ENTITY_NODE_TYPES: Record<SupportedLanguage, Record<string, CodeEntity['type']>> = {
-  typescript: {
-    function_declaration: 'function',
-    arrow_function: 'function',
-    class_declaration: 'class',
-    method_definition: 'method',
-    // export_statement: handled separately for imports
-  },
-  javascript: {
-    function_declaration: 'function',
-    arrow_function: 'function',
-    class_declaration: 'class',
-    method_definition: 'method',
-  },
-  python: {
-    function_definition: 'function',
-    async_function_definition: 'function',
-    class_definition: 'class',
-  },
-}
-
-/**
- * Import node types per language
- */
-const IMPORT_NODE_TYPES: Record<SupportedLanguage, string[]> = {
-  typescript: ['import_statement'],
-  javascript: ['import_statement'],
-  python: ['import_statement', 'import_from_statement'],
-}
-
-/**
- * Language configurations with parser and settings
- */
-interface LanguageConfig {
-  parser: unknown
-  entityTypes: Record<string, CodeEntity['type']>
-  importTypes: string[]
-}
-
-const LANGUAGE_CONFIGS: Record<SupportedLanguage, LanguageConfig> = {
-  typescript: {
-    parser: TypeScript,
-    entityTypes: ENTITY_NODE_TYPES.typescript,
-    importTypes: IMPORT_NODE_TYPES.typescript,
-  },
-  javascript: {
-    parser: TypeScript, // TypeScript parser handles JS as well
-    entityTypes: ENTITY_NODE_TYPES.javascript,
-    importTypes: IMPORT_NODE_TYPES.javascript,
-  },
-  python: {
-    parser: Python,
-    entityTypes: ENTITY_NODE_TYPES.python,
-    importTypes: IMPORT_NODE_TYPES.python,
-  },
-}
+import { LANGUAGE_CONFIGS } from './languages'
 
 /**
  * AST Parser using tree-sitter
@@ -132,7 +26,7 @@ export class ASTParser {
    * Type guard to check if language is a supported language
    */
   private isSupportedLanguage(language: string): language is SupportedLanguage {
-    return language in LANGUAGE_CONFIGS
+    return language in LANGUAGE_CONFIGS && LANGUAGE_CONFIGS[language as SupportedLanguage] !== undefined
   }
 
   /**
@@ -149,8 +43,6 @@ export class ASTParser {
       rs: 'rust',
       go: 'go',
       java: 'java',
-      kt: 'kotlin',
-      dart: 'dart',
     }
     return langMap[ext ?? ''] ?? 'unknown'
   }
@@ -181,7 +73,7 @@ export class ASTParser {
     try {
       // Set language parser
       this.parser.setLanguage(
-        config.parser as unknown as Parameters<typeof this.parser.setLanguage>[0],
+        config.parser as Parameters<typeof this.parser.setLanguage>[0],
       )
 
       // Parse the source
@@ -309,6 +201,12 @@ export class ASTParser {
       return null
     }
 
+    // For Rust impl_item - name is in the 'type' field
+    if (node.type === 'impl_item') {
+      const typeNode = node.childForFieldName('type')
+      return typeNode?.text ?? null
+    }
+
     // For function/class declarations and method definitions
     const nameNode = node.childForFieldName('name')
     if (nameNode) {
@@ -374,13 +272,37 @@ export class ASTParser {
    * Extract parent class name for methods
    */
   private extractParentClass(node: Parser.SyntaxNode): string | undefined {
+    // For Go methods, extract receiver type
+    if (node.type === 'method_declaration') {
+      return this.extractGoReceiverType(node)
+    }
+
     let current = node.parent
     while (current) {
-      if (current.type === 'class_declaration' || current.type === 'class_definition') {
-        const nameNode = current.childForFieldName('name')
+      if (current.type === 'class_declaration' || current.type === 'class_definition' || current.type === 'impl_item') {
+        const nameNode = current.childForFieldName('name') ?? current.childForFieldName('type')
         return nameNode?.text
       }
       current = current.parent
+    }
+    return undefined
+  }
+
+  /**
+   * Extract Go method receiver type (e.g., *User -> User)
+   */
+  private extractGoReceiverType(node: Parser.SyntaxNode): string | undefined {
+    const receiver = node.childForFieldName('receiver')
+    if (!receiver)
+      return undefined
+
+    for (const child of receiver.children) {
+      if (child.type === 'parameter_declaration') {
+        const typeNode = child.childForFieldName('type')
+        if (typeNode) {
+          return typeNode.text.replace(/^\*/, '')
+        }
+      }
     }
     return undefined
   }
@@ -396,6 +318,15 @@ export class ASTParser {
     if (language === 'python') {
       return this.extractPythonImport(node)
     }
+    if (language === 'rust') {
+      return this.extractRustImport(node)
+    }
+    if (language === 'go') {
+      return this.extractGoImport(node)
+    }
+    if (language === 'java') {
+      return this.extractJavaImport(node)
+    }
     return this.extractJSImport(node)
   }
 
@@ -407,7 +338,7 @@ export class ASTParser {
     if (!sourceNode)
       return null
 
-    const module = sourceNode.text.replace(/['"]/g, '')
+    const module = sourceNode.text.replaceAll('\'', '').replaceAll('"', '')
     const names: string[] = []
 
     for (const child of node.children) {
@@ -517,5 +448,51 @@ export class ASTParser {
     }
 
     return { module, names }
+  }
+
+  /**
+   * Extract Rust use declaration
+   */
+  private extractRustImport(node: Parser.SyntaxNode): { module: string, names: string[] } | null {
+    if (node.type !== 'use_declaration')
+      return null
+
+    // Get the full use path text, removing 'use' keyword and trailing semicolon
+    const text = node.text.replace(/^use\s+/, '').replace(/;$/, '').trim()
+    return { module: text, names: [] }
+  }
+
+  /**
+   * Extract Go import spec
+   */
+  private extractGoImport(node: Parser.SyntaxNode): { module: string, names: string[] } | null {
+    // Handle individual import_spec (both single and grouped imports recurse to this)
+    if (node.type === 'import_spec') {
+      const pathNode = node.childForFieldName('path')
+      if (pathNode) {
+        return { module: pathNode.text.replaceAll('"', ''), names: [] }
+      }
+      return null
+    }
+
+    // import_declaration without import_spec_list (skip, handled by recursion)
+    return null
+  }
+
+  /**
+   * Extract Java import declaration
+   */
+  private extractJavaImport(node: Parser.SyntaxNode): { module: string, names: string[] } | null {
+    if (node.type !== 'import_declaration')
+      return null
+
+    // Remove 'import', optional 'static', and trailing semicolon
+    const text = node.text
+      .replace(/^import\s+/, '')
+      .replace(/^static\s+/, '')
+      .replace(/;$/, '')
+      .trim()
+
+    return { module: text, names: [] }
   }
 }

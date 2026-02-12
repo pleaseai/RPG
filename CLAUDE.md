@@ -157,7 +157,7 @@ import { DefaultContextStore } from '@pleaseai/rpg-store/default-context-store'
 
 ### Key Libraries
 
-- **tree-sitter**: AST parsing for multiple languages
+- **tree-sitter**: AST parsing for multiple languages (TypeScript, JavaScript, Python, Rust, Go, Java)
 - **lancedb**: Vector DB for semantic search (Bun-native, disk-based)
 - **surrealdb** + **@surrealdb/node**: Embedded graph database (mem:// or surrealkv://)
 - **@huggingface/transformers**: Local embedding with MongoDB LEAF models

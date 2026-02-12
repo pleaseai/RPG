@@ -43,6 +43,18 @@ describe('ASTParser', () => {
       expect(parser.detectLanguage('file.py')).toBe('python')
     })
 
+    it('detects Rust from .rs extension', () => {
+      expect(parser.detectLanguage('main.rs')).toBe('rust')
+    })
+
+    it('detects Go from .go extension', () => {
+      expect(parser.detectLanguage('main.go')).toBe('go')
+    })
+
+    it('detects Java from .java extension', () => {
+      expect(parser.detectLanguage('Main.java')).toBe('java')
+    })
+
     it('returns unknown for unsupported extensions', () => {
       expect(parser.detectLanguage('file.xyz')).toBe('unknown')
     })
@@ -188,7 +200,7 @@ from typing import List, Dict`
   describe('parseFile', () => {
     it('parses file from path', async () => {
       // Use a file that exists in the project
-      const result = await parser.parseFile('./packages/utils/src/ast.ts')
+      const result = await parser.parseFile('./packages/utils/src/ast/parser.ts')
 
       expect(result.language).toBe('typescript')
       expect(result.entities.length).toBeGreaterThan(0)
