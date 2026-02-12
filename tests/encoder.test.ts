@@ -4,13 +4,14 @@ import os from 'node:os'
 import path from 'node:path'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { discoverFiles, RPGEncoder } from '../src/encoder'
+import { resolveGitBinary } from '../src/utils/git-path'
 
 // Get current project root for testing
 const PROJECT_ROOT = path.resolve(__dirname, '..')
 
 function hasGitAncestor(repoPath: string, ref: string): boolean {
   try {
-    execFileSync('git', ['rev-parse', '--verify', ref], { cwd: repoPath, stdio: 'pipe' })
+    execFileSync(resolveGitBinary(), ['rev-parse', '--verify', ref], { cwd: repoPath, stdio: 'pipe' })
     return true
   }
   catch {
@@ -278,7 +279,7 @@ describe('RPGEncoder.discoverFiles', () => {
     const tmpDir = path.join(os.tmpdir(), `rpg-gitfail-${Date.now()}`)
     fs.mkdirSync(tmpDir, { recursive: true })
     // Init git repo but corrupt the index to trigger git ls-files failure
-    execFileSync('git', ['init'], { cwd: tmpDir, stdio: 'pipe' })
+    execFileSync(resolveGitBinary(), ['init'], { cwd: tmpDir, stdio: 'pipe' })
     fs.writeFileSync(path.join(tmpDir, 'hello.ts'), '// hello')
     // Corrupt the git index
     fs.writeFileSync(path.join(tmpDir, '.git', 'index'), 'corrupted')
