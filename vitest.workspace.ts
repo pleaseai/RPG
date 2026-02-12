@@ -10,11 +10,6 @@ export default defineWorkspace([
       exclude: ['tests/fixtures/**', 'tests/**/*.integration.test.ts'],
       testTimeout: 15000,
     },
-    resolve: {
-      alias: {
-        '@': './src',
-      },
-    },
   },
   {
     test: {
@@ -24,11 +19,6 @@ export default defineWorkspace([
       include: ['tests/**/*.integration.test.ts'],
       exclude: ['tests/fixtures/**'],
       testTimeout: 30000,
-    },
-    resolve: {
-      alias: {
-        '@': './src',
-      },
     },
   },
 ])

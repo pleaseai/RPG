@@ -1,9 +1,9 @@
 import { rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { MockEmbedding } from '@pleaseai/rpg-encoder/embedding'
+import { SemanticSearch } from '@pleaseai/rpg-encoder/semantic-search'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { MockEmbedding } from '../../src/encoder/embedding'
-import { SemanticSearch } from '../../src/encoder/semantic-search'
 
 describe('semanticSearch', () => {
   let search: SemanticSearch

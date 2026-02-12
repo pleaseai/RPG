@@ -9,19 +9,14 @@ export default defineConfig({
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
-      include: ['src/**/*.ts'],
-      exclude: ['src/cli.ts'],
+      include: ['packages/*/src/**/*.ts'],
+      exclude: ['packages/cli/src/cli.ts'],
     },
     testTimeout: 10000,
     server: {
       deps: {
         external: [],
       },
-    },
-  },
-  resolve: {
-    alias: {
-      '@': './src',
     },
   },
 })

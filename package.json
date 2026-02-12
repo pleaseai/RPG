@@ -3,17 +3,18 @@
   "version": "0.1.3",
   "description": "Repository Planning Graph - A unified framework for repository understanding and generation",
   "type": "module",
-  "main": "dist/index.js",
-  "types": "dist/index.d.ts",
+  "main": "dist/src/index.js",
+  "types": "dist/src/index.d.ts",
   "bin": {
-    "rpg": "dist/cli.js",
-    "rpg-mcp": "dist/mcp/server.js"
+    "rpg": "dist/packages/cli/src/cli.js",
+    "rpg-mcp": "dist/packages/mcp/src/server.js"
   },
+  "workspaces": ["packages/*"],
   "scripts": {
-    "dev": "bun run --watch src/cli.ts",
-    "mcp": "bun run src/mcp/server.ts",
-    "build": "bun build src/index.ts src/cli.ts src/mcp/server.ts --outdir dist --target node --external @lancedb/lancedb --external better-sqlite3 --external @surrealdb/node --external tree-sitter --external tree-sitter-typescript --external tree-sitter-python && npm run build:fix-shebang",
-    "build:fix-shebang": "sed -i.bak 's|#!/usr/bin/env bun|#!/usr/bin/env node|g' dist/cli.js dist/mcp/server.js && rm -f dist/cli.js.bak dist/mcp/server.js.bak",
+    "dev": "bun run --watch packages/cli/src/cli.ts",
+    "mcp": "bun run packages/mcp/src/server.ts",
+    "build": "bun build src/index.ts packages/cli/src/cli.ts packages/mcp/src/server.ts --outdir dist --target node --external @lancedb/lancedb --external better-sqlite3 --external @surrealdb/node --external tree-sitter --external tree-sitter-typescript --external tree-sitter-python && npm run build:fix-shebang",
+    "build:fix-shebang": "sed -i.bak 's|#!/usr/bin/env bun|#!/usr/bin/env node|g' dist/packages/cli/src/cli.js dist/packages/mcp/src/server.js && rm -f dist/packages/cli/src/cli.js.bak dist/packages/mcp/src/server.js.bak",
     "test": "vitest run",
     "test:unit": "vitest run --project=unit",
     "test:integration": "vitest run --project=integration",
@@ -31,25 +32,15 @@
   },
   "packageManager": "bun@1.3.7",
   "dependencies": {
-    "@ai-sdk/anthropic": "^3.0.36",
-    "@ai-sdk/google": "^3.0.21",
-    "@ai-sdk/openai": "^3.0.25",
-    "@anthropic-ai/sdk": "^0.30.1",
-    "@huggingface/transformers": "^3.8.1",
-    "@lancedb/lancedb": "^0.13.0",
-    "@modelcontextprotocol/sdk": "^1.26.0",
-    "@surrealdb/node": "^2.6.0",
-    "ai": "^6.0.70",
-    "better-sqlite3": "^12.6.2",
-    "commander": "^12.1.0",
-    "dotenv": "^17.2.4",
-    "graphology": "^0.25.4",
-    "graphology-types": "^0.24.8",
-
-    "surrealdb": "^2.0.0-alpha.17",
-    "tree-sitter": "^0.21.1",
-    "tree-sitter-python": "^0.21.0",
-    "tree-sitter-typescript": "^0.21.2"
+    "@pleaseai/rpg-utils": "workspace:*",
+    "@pleaseai/rpg-store": "workspace:*",
+    "@pleaseai/rpg-graph": "workspace:*",
+    "@pleaseai/rpg-encoder": "workspace:*",
+    "@pleaseai/rpg-tools": "workspace:*",
+    "@pleaseai/rpg-zerorepo": "workspace:*",
+    "@pleaseai/rpg-mcp": "workspace:*",
+    "@pleaseai/rpg-cli": "workspace:*",
+    "@anthropic-ai/sdk": "^0.30.1"
   },
   "peerDependencies": {
     "zod": "^3.25.0 || ^4.0.0"

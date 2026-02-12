@@ -9,7 +9,7 @@
  */
 import { writeFile } from 'node:fs/promises'
 import path from 'node:path'
-import { RPGEncoder } from '../src/encoder'
+import { RPGEncoder } from '@pleaseai/rpg-encoder'
 
 const REPO_PATH = path.resolve(import.meta.dirname, '..', 'tests/fixtures/nextjs/packages/next')
 const OUTPUT_PATH = path.resolve(import.meta.dirname, '..', 'agent-evals/fixtures/nextjs-rpg.json')

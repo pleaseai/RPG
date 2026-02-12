@@ -1,15 +1,15 @@
-import type { OperationContext } from '../../src/encoder/evolution/operations'
-import type { ChangedEntity } from '../../src/encoder/evolution/types'
-import { beforeEach, describe, expect, it } from 'vitest'
+import type { OperationContext } from '@pleaseai/rpg-encoder/evolution/operations'
+import type { ChangedEntity } from '@pleaseai/rpg-encoder/evolution/types'
 import {
   deleteNode,
   findMatchingNode,
   insertNode,
   processModification,
-} from '../../src/encoder/evolution/operations'
-import { SemanticRouter } from '../../src/encoder/evolution/semantic-router'
-import { SemanticExtractor } from '../../src/encoder/semantic'
-import { RepositoryPlanningGraph } from '../../src/graph/rpg'
+} from '@pleaseai/rpg-encoder/evolution/operations'
+import { SemanticRouter } from '@pleaseai/rpg-encoder/evolution/semantic-router'
+import { SemanticExtractor } from '@pleaseai/rpg-encoder/semantic'
+import { RepositoryPlanningGraph } from '@pleaseai/rpg-graph/rpg'
+import { beforeEach, describe, expect, it } from 'vitest'
 
 describe('deleteNode (AC-2)', () => {
   let rpg: RepositoryPlanningGraph
@@ -127,16 +127,16 @@ describe('insertNode (AC-4)', () => {
 
     // Create a directory hierarchy
     await rpg.addHighLevelNode({
-      id: 'dir:src',
-      feature: { description: 'source directory' },
-      directoryPath: 'src',
+      id: 'dir:packages/utils',
+      feature: { description: 'utils package directory' },
+      directoryPath: 'packages/utils',
     })
     await rpg.addHighLevelNode({
-      id: 'dir:src/utils',
+      id: 'dir:packages/utils/src',
       feature: { description: 'utility functions' },
-      directoryPath: 'src/utils',
+      directoryPath: 'packages/utils/src',
     })
-    await rpg.addFunctionalEdge({ source: 'dir:src', target: 'dir:src/utils' })
+    await rpg.addFunctionalEdge({ source: 'dir:packages/utils', target: 'dir:packages/utils/src' })
 
     const semanticExtractor = new SemanticExtractor({ useLLM: false })
     const semanticRouter = new SemanticRouter(rpg)
@@ -150,8 +150,8 @@ describe('insertNode (AC-4)', () => {
 
   it('creates a new LowLevelNode in the graph', async () => {
     const entity: ChangedEntity = {
-      id: 'src/utils/helper.ts:function:processData',
-      filePath: 'src/utils/helper.ts',
+      id: 'packages/utils/src/helper.ts:function:processData',
+      filePath: 'packages/utils/src/helper.ts',
       entityType: 'function',
       entityName: 'processData',
       qualifiedName: 'processData',
@@ -167,8 +167,8 @@ describe('insertNode (AC-4)', () => {
 
   it('creates functional edge from parent to new node', async () => {
     const entity: ChangedEntity = {
-      id: 'src/utils/helper.ts:function:doStuff',
-      filePath: 'src/utils/helper.ts',
+      id: 'packages/utils/src/helper.ts:function:doStuff',
+      filePath: 'packages/utils/src/helper.ts',
       entityType: 'function',
       entityName: 'doStuff',
       qualifiedName: 'doStuff',

@@ -2,9 +2,9 @@ import { existsSync, mkdirSync, writeFileSync } from 'node:fs'
 import { mkdtemp, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { InteractiveEncoder } from '@pleaseai/rpg-mcp/interactive/encoder'
+import { InteractiveState } from '@pleaseai/rpg-mcp/interactive/state'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { InteractiveEncoder } from '../src/mcp/interactive/encoder'
-import { InteractiveState } from '../src/mcp/interactive/state'
 
 describe('MCP Interactive Encoding Integration', () => {
   let tmpDir: string

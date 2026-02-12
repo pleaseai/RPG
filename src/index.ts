@@ -1,17 +1,17 @@
 // Encoder module (Code → RPG)
-export * from './encoder'
+export * from '@pleaseai/rpg-encoder'
 
 // Core graph module
-export * from './graph'
+export * from '@pleaseai/rpg-graph'
 
 // MCP Server
-export * from './mcp'
+export * from '@pleaseai/rpg-mcp'
 
 // Agentic tools
-export * from './tools'
+export * from '@pleaseai/rpg-tools'
 
 // Utilities
-export * from './utils'
+export * from '@pleaseai/rpg-utils'
 
 // ZeroRepo module (Intent → Code)
-export * from './zerorepo'
+export * from '@pleaseai/rpg-zerorepo'

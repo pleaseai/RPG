@@ -5,24 +5,15 @@
     "": {
       "name": "@pleaseai/rpg",
       "dependencies": {
-        "@ai-sdk/anthropic": "^3.0.36",
-        "@ai-sdk/google": "^3.0.21",
-        "@ai-sdk/openai": "^3.0.25",
         "@anthropic-ai/sdk": "^0.30.1",
-        "@huggingface/transformers": "^3.8.1",
-        "@lancedb/lancedb": "^0.13.0",
-        "@modelcontextprotocol/sdk": "^1.26.0",
-        "@surrealdb/node": "^2.6.0",
-        "ai": "^6.0.70",
-        "better-sqlite3": "^12.6.2",
-        "commander": "^12.1.0",
-        "dotenv": "^17.2.4",
-        "graphology": "^0.25.4",
-        "graphology-types": "^0.24.8",
-        "surrealdb": "^2.0.0-alpha.17",
-        "tree-sitter": "^0.21.1",
-        "tree-sitter-python": "^0.21.0",
-        "tree-sitter-typescript": "^0.21.2",
+        "@pleaseai/rpg-cli": "workspace:*",
+        "@pleaseai/rpg-encoder": "workspace:*",
+        "@pleaseai/rpg-graph": "workspace:*",
+        "@pleaseai/rpg-mcp": "workspace:*",
+        "@pleaseai/rpg-store": "workspace:*",
+        "@pleaseai/rpg-tools": "workspace:*",
+        "@pleaseai/rpg-utils": "workspace:*",
+        "@pleaseai/rpg-zerorepo": "workspace:*",
       },
       "devDependencies": {
         "@antfu/eslint-config": "^7.2.0",
@@ -39,6 +30,103 @@
       },
       "peerDependencies": {
         "zod": "^3.25.0 || ^4.0.0",
+      },
+    },
+    "packages/cli": {
+      "name": "@pleaseai/rpg-cli",
+      "version": "0.1.3",
+      "dependencies": {
+        "@pleaseai/rpg-encoder": "workspace:*",
+        "@pleaseai/rpg-graph": "workspace:*",
+        "@pleaseai/rpg-tools": "workspace:*",
+        "@pleaseai/rpg-zerorepo": "workspace:*",
+        "commander": "^12.1.0",
+        "dotenv": "^17.2.4",
+      },
+    },
+    "packages/encoder": {
+      "name": "@pleaseai/rpg-encoder",
+      "version": "0.1.3",
+      "dependencies": {
+        "@huggingface/transformers": "^3.8.1",
+        "@pleaseai/rpg-graph": "workspace:*",
+        "@pleaseai/rpg-utils": "workspace:*",
+        "openai": "^6.21.0",
+      },
+      "peerDependencies": {
+        "zod": "^3.25.0 || ^4.0.0",
+      },
+    },
+    "packages/graph": {
+      "name": "@pleaseai/rpg-graph",
+      "version": "0.1.3",
+      "dependencies": {
+        "@pleaseai/rpg-store": "workspace:*",
+        "@surrealdb/node": "^2.6.0",
+        "better-sqlite3": "^12.6.2",
+        "graphology": "^0.25.4",
+        "graphology-types": "^0.24.8",
+        "surrealdb": "^2.0.0-alpha.17",
+      },
+      "peerDependencies": {
+        "zod": "^3.25.0 || ^4.0.0",
+      },
+    },
+    "packages/mcp": {
+      "name": "@pleaseai/rpg-mcp",
+      "version": "0.1.3",
+      "dependencies": {
+        "@modelcontextprotocol/sdk": "^1.26.0",
+        "@pleaseai/rpg-encoder": "workspace:*",
+        "@pleaseai/rpg-graph": "workspace:*",
+        "@pleaseai/rpg-tools": "workspace:*",
+        "@pleaseai/rpg-utils": "workspace:*",
+      },
+      "peerDependencies": {
+        "zod": "^3.25.0 || ^4.0.0",
+      },
+    },
+    "packages/store": {
+      "name": "@pleaseai/rpg-store",
+      "version": "0.1.3",
+      "dependencies": {
+        "@lancedb/lancedb": "^0.13.0",
+        "@surrealdb/node": "^2.6.0",
+        "better-sqlite3": "^12.6.2",
+        "surrealdb": "^2.0.0-alpha.17",
+      },
+    },
+    "packages/tools": {
+      "name": "@pleaseai/rpg-tools",
+      "version": "0.1.3",
+      "dependencies": {
+        "@pleaseai/rpg-encoder": "workspace:*",
+        "@pleaseai/rpg-graph": "workspace:*",
+      },
+    },
+    "packages/utils": {
+      "name": "@pleaseai/rpg-utils",
+      "version": "0.1.3",
+      "dependencies": {
+        "@ai-sdk/anthropic": "^3.0.36",
+        "@ai-sdk/google": "^3.0.21",
+        "@ai-sdk/openai": "^3.0.25",
+        "@lancedb/lancedb": "^0.13.0",
+        "ai": "^6.0.70",
+        "tree-sitter": "^0.21.1",
+        "tree-sitter-python": "^0.21.0",
+        "tree-sitter-typescript": "^0.21.2",
+      },
+      "peerDependencies": {
+        "zod": "^3.25.0 || ^4.0.0",
+      },
+    },
+    "packages/zerorepo": {
+      "name": "@pleaseai/rpg-zerorepo",
+      "version": "0.1.3",
+      "dependencies": {
+        "@pleaseai/rpg-graph": "workspace:*",
+        "@pleaseai/rpg-utils": "workspace:*",
       },
     },
   },
@@ -256,6 +344,22 @@
     "@pkgjs/parseargs": ["@pkgjs/parseargs@0.11.0", "", {}, "sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg=="],
 
     "@pkgr/core": ["@pkgr/core@0.2.9", "", {}, "sha512-QNqXyfVS2wm9hweSYD2O7F0G06uurj9kZ96TRQE5Y9hU7+tgdZwIkbAKc5Ocy1HxEY2kuDQa6cQ1WRs/O5LFKA=="],
+
+    "@pleaseai/rpg-cli": ["@pleaseai/rpg-cli@workspace:packages/cli"],
+
+    "@pleaseai/rpg-encoder": ["@pleaseai/rpg-encoder@workspace:packages/encoder"],
+
+    "@pleaseai/rpg-graph": ["@pleaseai/rpg-graph@workspace:packages/graph"],
+
+    "@pleaseai/rpg-mcp": ["@pleaseai/rpg-mcp@workspace:packages/mcp"],
+
+    "@pleaseai/rpg-store": ["@pleaseai/rpg-store@workspace:packages/store"],
+
+    "@pleaseai/rpg-tools": ["@pleaseai/rpg-tools@workspace:packages/tools"],
+
+    "@pleaseai/rpg-utils": ["@pleaseai/rpg-utils@workspace:packages/utils"],
+
+    "@pleaseai/rpg-zerorepo": ["@pleaseai/rpg-zerorepo@workspace:packages/zerorepo"],
 
     "@polka/url": ["@polka/url@1.0.0-next.29", "", {}, "sha512-wwQAWhWSuHaag8c4q/KN/vCoeOJYshAIvMQwD4GpSb3OiZklFfvAgmj0VCBBImRpuF/aFgIRzllXlVX93Jevww=="],
 
@@ -1100,6 +1204,8 @@
     "onnxruntime-node": ["onnxruntime-node@1.21.0", "", { "dependencies": { "global-agent": "^3.0.0", "onnxruntime-common": "1.21.0", "tar": "^7.0.1" }, "os": [ "linux", "win32", "darwin", ] }, "sha512-NeaCX6WW2L8cRCSqy3bInlo5ojjQqu2fD3D+9W5qb5irwxhEyWKXeH2vZ8W9r6VxaMPUan+4/7NDwZMtouZxEw=="],
 
     "onnxruntime-web": ["onnxruntime-web@1.22.0-dev.20250409-89f8206ba4", "", { "dependencies": { "flatbuffers": "^25.1.24", "guid-typescript": "^1.0.9", "long": "^5.2.3", "onnxruntime-common": "1.22.0-dev.20250409-89f8206ba4", "platform": "^1.3.6", "protobufjs": "^7.2.4" } }, "sha512-0uS76OPgH0hWCPrFKlL8kYVV7ckM7t/36HfbgoFw6Nd0CZVVbQC4PkrR8mBX8LtNUFZO25IQBqV2Hx2ho3FlbQ=="],
+
+    "openai": ["openai@6.21.0", "", { "peerDependencies": { "ws": "^8.18.0", "zod": "^3.25 || ^4.0" }, "optionalPeers": ["ws", "zod"], "bin": { "openai": "bin/cli" } }, "sha512-26dQFi76dB8IiN/WKGQOV+yKKTTlRCxQjoi2WLt0kMcH8pvxVyvfdBDkld5GTl7W1qvBpwVOtFcsqktj3fBRpA=="],
 
     "optionator": ["optionator@0.9.4", "", { "dependencies": { "deep-is": "^0.1.3", "fast-levenshtein": "^2.0.6", "levn": "^0.4.1", "prelude-ls": "^1.2.1", "type-check": "^0.4.0", "word-wrap": "^1.2.5" } }, "sha512-6IpQ7mKUxRcZNLIObR0hz7lxsapSSIYNZJwXPGeF0mTVqGKFIXj1DQcMoT22S3ROcLyY/rz0PWaWZ9ayWmad9g=="],
 

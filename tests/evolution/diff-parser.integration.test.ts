@@ -1,8 +1,8 @@
 import { execFileSync } from 'node:child_process'
 import path from 'node:path'
+import { DiffParser } from '@pleaseai/rpg-encoder/evolution/diff-parser'
+import { resolveGitBinary } from '@pleaseai/rpg-utils/git-path'
 import { describe, expect, it } from 'vitest'
-import { DiffParser } from '../../src/encoder/evolution/diff-parser'
-import { resolveGitBinary } from '../../src/utils/git-path'
 
 function hasGitAncestor(repoPath: string, ref: string): boolean {
   let git: string

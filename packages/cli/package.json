@@ -1,0 +1,19 @@
+{
+  "name": "@pleaseai/rpg-cli",
+  "version": "0.1.3",
+  "private": true,
+  "type": "module",
+  "main": "src/cli.ts",
+  "types": "src/cli.ts",
+  "exports": {
+    ".": "./src/cli.ts"
+  },
+  "dependencies": {
+    "@pleaseai/rpg-encoder": "workspace:*",
+    "@pleaseai/rpg-graph": "workspace:*",
+    "@pleaseai/rpg-tools": "workspace:*",
+    "@pleaseai/rpg-zerorepo": "workspace:*",
+    "commander": "^12.1.0",
+    "dotenv": "^17.2.4"
+  }
+}

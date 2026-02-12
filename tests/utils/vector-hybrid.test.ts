@@ -1,8 +1,8 @@
 import { rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { VectorStore } from '@pleaseai/rpg-utils/vector'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { VectorStore } from '../../src/utils/vector'
 
 describe('vectorStore Hybrid Search', () => {
   let store: VectorStore

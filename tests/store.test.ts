@@ -5,10 +5,10 @@ import type {
   HighLevelNode,
   LowLevelNode,
   Node,
-} from '../src/graph'
+} from '@pleaseai/rpg-graph'
+import { SQLiteStore } from '@pleaseai/rpg-graph/sqlite-store'
+import { SurrealStore } from '@pleaseai/rpg-graph/surreal-store'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { SQLiteStore } from '../src/graph/sqlite-store'
-import { SurrealStore } from '../src/graph/surreal-store'
 
 // ==================== Test Fixtures ====================
 

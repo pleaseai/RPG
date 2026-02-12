@@ -1,11 +1,11 @@
 import { rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
+import { RPGEncoder } from '@pleaseai/rpg-encoder'
+import { MockEmbedding } from '@pleaseai/rpg-encoder/embedding'
+import { SemanticSearch } from '@pleaseai/rpg-encoder/semantic-search'
+import { RepositoryPlanningGraph } from '@pleaseai/rpg-graph'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { RPGEncoder } from '../../src/encoder'
-import { MockEmbedding } from '../../src/encoder/embedding'
-import { SemanticSearch } from '../../src/encoder/semantic-search'
-import { RepositoryPlanningGraph } from '../../src/graph'
 
 // This test suite encodes the actual rpg repository
 const PROJECT_ROOT = resolve(__dirname, '../..')
@@ -14,7 +14,7 @@ describe('e2E: Encode Real Repository', () => {
   describe('encode rpg Project', () => {
     it('should encode the entire src directory', async () => {
       const encoder = new RPGEncoder(PROJECT_ROOT, {
-        include: ['src/**/*.ts'],
+        include: ['packages/*/src/**/*.ts'],
         exclude: ['**/node_modules/**', '**/dist/**'],
       })
 
@@ -43,12 +43,12 @@ describe('e2E: Encode Real Repository', () => {
 
     it('should produce consistent results across multiple runs', async () => {
       const encoder1 = new RPGEncoder(PROJECT_ROOT, {
-        include: ['src/graph/**/*.ts'],
+        include: ['packages/graph/src/**/*.ts'],
         exclude: [],
       })
 
       const encoder2 = new RPGEncoder(PROJECT_ROOT, {
-        include: ['src/graph/**/*.ts'],
+        include: ['packages/graph/src/**/*.ts'],
         exclude: [],
       })
 
@@ -67,7 +67,7 @@ describe('e2E: Encode Real Repository', () => {
 
     it('should correctly identify module dependencies', async () => {
       const encoder = new RPGEncoder(PROJECT_ROOT, {
-        include: ['src/encoder/**/*.ts'],
+        include: ['packages/encoder/src/**/*.ts'],
         exclude: [],
       })
 
@@ -76,7 +76,7 @@ describe('e2E: Encode Real Repository', () => {
       // encoder.ts should import from semantic.ts, cache.ts
       const edges = await result.rpg.getDependencyEdges()
       const encoderFile = (await result.rpg.getNodes()).find(
-        n => n.metadata?.path === 'src/encoder/encoder.ts',
+        n => n.metadata?.path === 'packages/encoder/src/encoder.ts',
       )
 
       expect(encoderFile).toBeDefined()
@@ -101,7 +101,7 @@ describe('e2E: Encode Real Repository', () => {
 
     it('should skip functional hierarchy without LLM and still have file→entity edges', async () => {
       const encoder = new RPGEncoder(PROJECT_ROOT, {
-        include: ['src/encoder/encoder.ts'],
+        include: ['packages/encoder/src/encoder.ts'],
         exclude: [],
       })
 
@@ -120,7 +120,7 @@ describe('e2E: Encode Real Repository', () => {
   describe('serialization Roundtrip', () => {
     it('should serialize and restore full RPG without data loss', async () => {
       const encoder = new RPGEncoder(PROJECT_ROOT, {
-        include: ['src/graph/**/*.ts'],
+        include: ['packages/graph/src/**/*.ts'],
         exclude: [],
       })
 
@@ -180,7 +180,7 @@ describe('e2E: Encode Real Repository', () => {
     it('should enable semantic search over encoded repository', async () => {
       // Encode a subset of the repository
       const encoder = new RPGEncoder(PROJECT_ROOT, {
-        include: ['src/encoder/**/*.ts'],
+        include: ['packages/encoder/src/**/*.ts'],
         exclude: [],
       })
 
@@ -213,7 +213,7 @@ describe('e2E: Encode Real Repository', () => {
 
     it('should find specific classes and functions by description', async () => {
       const encoder = new RPGEncoder(PROJECT_ROOT, {
-        include: ['src/encoder/encoder.ts'],
+        include: ['packages/encoder/src/encoder.ts'],
         exclude: [],
       })
 
@@ -252,7 +252,7 @@ describe('e2E: Encode Real Repository', () => {
   describe('performance', () => {
     it('should encode large codebase efficiently', async () => {
       const encoder = new RPGEncoder(PROJECT_ROOT, {
-        include: ['src/**/*.ts'],
+        include: ['packages/*/src/**/*.ts'],
         exclude: ['**/node_modules/**', '**/dist/**'],
       })
 

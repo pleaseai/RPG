@@ -1,9 +1,9 @@
 import { execFileSync } from 'node:child_process'
 import path from 'node:path'
+import { RPGEncoder } from '@pleaseai/rpg-encoder/encoder'
+import { RPGEvolver } from '@pleaseai/rpg-encoder/evolution/evolve'
+import { resolveGitBinary } from '@pleaseai/rpg-utils/git-path'
 import { describe, expect, it } from 'vitest'
-import { RPGEncoder } from '../../src/encoder/encoder'
-import { RPGEvolver } from '../../src/encoder/evolution/evolve'
-import { resolveGitBinary } from '../../src/utils/git-path'
 
 const FIXTURE_REPO = path.resolve(__dirname, '../fixtures/superjson')
 

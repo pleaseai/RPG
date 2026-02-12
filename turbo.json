@@ -2,25 +2,29 @@
   "$schema": "https://turbo.build/schema.json",
   "tasks": {
     "typecheck": {
-      "inputs": ["src/**/*.ts", "tests/**/*.ts", "tsconfig.json"],
+      "dependsOn": ["^typecheck"],
+      "inputs": ["src/**/*.ts", "tsconfig.json"],
       "outputs": []
     },
     "lint": {
-      "inputs": ["src/**/*.ts", "tests/**/*.ts", "eslint.config.js"],
+      "inputs": ["packages/*/src/**/*.ts", "tests/**/*.ts", "eslint.config.js"],
       "outputs": [".eslintcache"]
     },
     "test:unit": {
-      "inputs": ["src/**/*.ts", "tests/**/*.test.ts", "vitest.config.ts", "vitest.workspace.ts"],
+      "inputs": ["packages/*/src/**/*.ts", "tests/**/*.test.ts", "vitest.config.ts", "vitest.workspace.ts"],
       "outputs": []
     },
     "test:integration": {
-      "inputs": ["src/**/*.ts", "tests/**/*.integration.test.ts", "vitest.config.ts", "vitest.workspace.ts"],
+      "inputs": ["packages/*/src/**/*.ts", "tests/**/*.integration.test.ts", "vitest.config.ts", "vitest.workspace.ts"],
       "outputs": []
     },
     "build": {
       "dependsOn": ["typecheck"],
-      "inputs": ["src/**/*.ts"],
+      "inputs": ["src/**/*.ts", "packages/*/src/**/*.ts"],
       "outputs": ["dist/**"]
+    },
+    "clean": {
+      "cache": false
     }
   }
 }

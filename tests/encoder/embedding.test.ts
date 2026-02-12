@@ -1,5 +1,5 @@
+import { AISDKEmbedding, MockEmbedding, OpenAIEmbedding } from '@pleaseai/rpg-encoder/embedding'
 import { describe, expect, it, vi } from 'vitest'
-import { AISDKEmbedding, MockEmbedding, OpenAIEmbedding } from '../../src/encoder/embedding'
 
 vi.mock('ai', () => ({
   embed: vi.fn(),

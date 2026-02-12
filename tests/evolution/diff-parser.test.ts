@@ -1,5 +1,5 @@
+import { DiffParser } from '@pleaseai/rpg-encoder/evolution/diff-parser'
 import { describe, expect, it } from 'vitest'
-import { DiffParser } from '../../src/encoder/evolution/diff-parser'
 
 describe('diffParser.parseNameStatus', () => {
   const parser = new DiffParser('/tmp/test-repo')

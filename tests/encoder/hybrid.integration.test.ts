@@ -1,13 +1,13 @@
-import type { RepositoryPlanningGraph } from '../../src/graph'
+import type { RepositoryPlanningGraph } from '@pleaseai/rpg-graph'
 import { rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join, resolve } from 'node:path'
+import { RPGEncoder } from '@pleaseai/rpg-encoder'
+import { MockEmbedding } from '@pleaseai/rpg-encoder/embedding'
+import { SemanticSearch } from '@pleaseai/rpg-encoder/semantic-search'
+import { executeSearch } from '@pleaseai/rpg-mcp/tools'
+import { SearchNode } from '@pleaseai/rpg-tools'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
-import { RPGEncoder } from '../../src/encoder'
-import { MockEmbedding } from '../../src/encoder/embedding'
-import { SemanticSearch } from '../../src/encoder/semantic-search'
-import { executeSearch } from '../../src/mcp/tools'
-import { SearchNode } from '../../src/tools'
 
 const SUPERJSON_ROOT = resolve(__dirname, '../fixtures/superjson')
 

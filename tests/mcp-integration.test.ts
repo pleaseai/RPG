@@ -1,8 +1,8 @@
 import { join } from 'node:path'
+import { RepositoryPlanningGraph } from '@pleaseai/rpg-graph'
+import { createMcpServer, loadRPG } from '@pleaseai/rpg-mcp/server'
+import { executeExplore, executeFetch, executeSearch, executeStats } from '@pleaseai/rpg-mcp/tools'
 import { beforeAll, describe, expect, it } from 'vitest'
-import { RepositoryPlanningGraph } from '../src/graph'
-import { createMcpServer, loadRPG } from '../src/mcp/server'
-import { executeExplore, executeFetch, executeSearch, executeStats } from '../src/mcp/tools'
 
 describe('MCP Integration Tests', () => {
   let rpg: RepositoryPlanningGraph

@@ -1,6 +1,6 @@
-import type { DataFlowEdge } from '../src/graph/edge'
+import type { DataFlowEdge } from '@pleaseai/rpg-graph/edge'
+import { DataFlowDetector } from '@pleaseai/rpg-encoder/data-flow'
 import { describe, expect, it } from 'vitest'
-import { DataFlowDetector } from '../src/encoder/data-flow'
 
 describe('DataFlowDetector', () => {
   describe('constructor', () => {

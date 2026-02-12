@@ -1,8 +1,8 @@
-import type { EntityInput, SemanticFeature } from '../src/encoder/semantic'
+import type { EntityInput, SemanticFeature } from '@pleaseai/rpg-encoder/semantic'
 import { existsSync } from 'node:fs'
 import { rm } from 'node:fs/promises'
+import { createCachedExtractor, SemanticCache } from '@pleaseai/rpg-encoder/cache'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { createCachedExtractor, SemanticCache } from '../src/encoder/cache'
 
 const TEST_CACHE_DIR = '.test-cache'
 

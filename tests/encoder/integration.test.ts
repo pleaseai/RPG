@@ -1,11 +1,11 @@
 import { mkdir, rm, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
+import { RPGEncoder } from '@pleaseai/rpg-encoder'
+import { MockEmbedding } from '@pleaseai/rpg-encoder/embedding'
+import { SemanticSearch } from '@pleaseai/rpg-encoder/semantic-search'
+import { RepositoryPlanningGraph } from '@pleaseai/rpg-graph'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { RPGEncoder } from '../../src/encoder'
-import { MockEmbedding } from '../../src/encoder/embedding'
-import { SemanticSearch } from '../../src/encoder/semantic-search'
-import { RepositoryPlanningGraph } from '../../src/graph'
 
 describe('encoder Integration Tests', () => {
   let testDir: string

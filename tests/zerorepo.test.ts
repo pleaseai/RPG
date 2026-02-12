@@ -1,5 +1,5 @@
+import { ZeroRepo } from '@pleaseai/rpg-zerorepo'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { ZeroRepo } from '../src/zerorepo'
 
 describe('zeroRepo', () => {
   let zerorepo: ZeroRepo

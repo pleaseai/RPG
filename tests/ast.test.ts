@@ -1,5 +1,5 @@
+import { ASTParser } from '@pleaseai/rpg-utils/ast'
 import { beforeEach, describe, expect, it } from 'vitest'
-import { ASTParser } from '../src/utils/ast'
 
 describe('ASTParser', () => {
   let parser: ASTParser
@@ -188,7 +188,7 @@ from typing import List, Dict`
   describe('parseFile', () => {
     it('parses file from path', async () => {
       // Use a file that exists in the project
-      const result = await parser.parseFile('./src/utils/ast.ts')
+      const result = await parser.parseFile('./packages/utils/src/ast.ts')
 
       expect(result.language).toBe('typescript')
       expect(result.entities.length).toBeGreaterThan(0)

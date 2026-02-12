@@ -1,5 +1,5 @@
+import { HuggingFaceEmbedding } from '@pleaseai/rpg-encoder/embedding'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { HuggingFaceEmbedding } from '../../src/encoder/embedding'
 
 /**
  * Integration tests for HuggingFace embedding with MongoDB LEAF models

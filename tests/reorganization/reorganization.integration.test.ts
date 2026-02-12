@@ -1,8 +1,8 @@
-import type { FileFeatureGroup } from '../../src/encoder/reorganization'
+import type { FileFeatureGroup } from '@pleaseai/rpg-encoder/reorganization'
+import { DomainDiscovery } from '@pleaseai/rpg-encoder/reorganization/domain-discovery'
+import { HierarchyBuilder } from '@pleaseai/rpg-encoder/reorganization/hierarchy-builder'
+import { RepositoryPlanningGraph } from '@pleaseai/rpg-graph/rpg'
 import { describe, expect, it, vi } from 'vitest'
-import { DomainDiscovery } from '../../src/encoder/reorganization/domain-discovery'
-import { HierarchyBuilder } from '../../src/encoder/reorganization/hierarchy-builder'
-import { RepositoryPlanningGraph } from '../../src/graph/rpg'
 
 /**
  * Integration test: Full semantic reorganization pipeline
@@ -17,26 +17,26 @@ describe('semantic Reorganization Integration', () => {
       groupLabel: 'graph',
       fileFeatures: [
         {
-          fileId: 'src/graph/rpg.ts:file',
-          filePath: 'src/graph/rpg.ts',
+          fileId: 'packages/graph/src/rpg.ts:file',
+          filePath: 'packages/graph/src/rpg.ts',
           description: 'define repository planning graph data structure',
           keywords: ['graph', 'rpg'],
         },
         {
-          fileId: 'src/graph/node.ts:file',
-          filePath: 'src/graph/node.ts',
+          fileId: 'packages/graph/src/node.ts:file',
+          filePath: 'packages/graph/src/node.ts',
           description: 'define graph node types and schemas',
           keywords: ['graph', 'node'],
         },
         {
-          fileId: 'src/graph/edge.ts:file',
-          filePath: 'src/graph/edge.ts',
+          fileId: 'packages/graph/src/edge.ts:file',
+          filePath: 'packages/graph/src/edge.ts',
           description: 'define graph edge types',
           keywords: ['graph', 'edge'],
         },
         {
-          fileId: 'src/graph/store.ts:file',
-          filePath: 'src/graph/store.ts',
+          fileId: 'packages/graph/src/store.ts:file',
+          filePath: 'packages/graph/src/store.ts',
           description: 'define graph storage interface',
           keywords: ['graph', 'store'],
         },
@@ -46,20 +46,20 @@ describe('semantic Reorganization Integration', () => {
       groupLabel: 'encoder',
       fileFeatures: [
         {
-          fileId: 'src/encoder/encoder.ts:file',
-          filePath: 'src/encoder/encoder.ts',
+          fileId: 'packages/encoder/src/encoder.ts:file',
+          filePath: 'packages/encoder/src/encoder.ts',
           description: 'encode repository into planning graph',
           keywords: ['encoder'],
         },
         {
-          fileId: 'src/encoder/semantic.ts:file',
-          filePath: 'src/encoder/semantic.ts',
+          fileId: 'packages/encoder/src/semantic.ts:file',
+          filePath: 'packages/encoder/src/semantic.ts',
           description: 'extract semantic features from code entities',
           keywords: ['encoder', 'semantic'],
         },
         {
-          fileId: 'src/encoder/cache.ts:file',
-          filePath: 'src/encoder/cache.ts',
+          fileId: 'packages/encoder/src/cache.ts:file',
+          filePath: 'packages/encoder/src/cache.ts',
           description: 'cache semantic extraction results',
           keywords: ['encoder', 'cache'],
         },
@@ -69,14 +69,14 @@ describe('semantic Reorganization Integration', () => {
       groupLabel: 'utils',
       fileFeatures: [
         {
-          fileId: 'src/utils/ast.ts:file',
-          filePath: 'src/utils/ast.ts',
+          fileId: 'packages/utils/src/ast.ts:file',
+          filePath: 'packages/utils/src/ast.ts',
           description: 'parse source code using tree-sitter AST',
           keywords: ['utils', 'ast'],
         },
         {
-          fileId: 'src/utils/llm.ts:file',
-          filePath: 'src/utils/llm.ts',
+          fileId: 'packages/utils/src/llm.ts:file',
+          filePath: 'packages/utils/src/llm.ts',
           description: 'provide LLM client interface',
           keywords: ['utils', 'llm'],
         },

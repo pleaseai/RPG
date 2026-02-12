@@ -1,7 +1,7 @@
-import type { TextSearchStore } from '../../src/store/text-search-store'
+import type { TextSearchStore } from '@pleaseai/rpg-store/text-search-store'
+import { SQLiteTextSearchStore } from '@pleaseai/rpg-store/sqlite'
+import { SurrealTextSearchStore } from '@pleaseai/rpg-store/surreal'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { SQLiteTextSearchStore } from '../../src/store/sqlite/text-search-store'
-import { SurrealTextSearchStore } from '../../src/store/surreal/text-search-store'
 
 function runTextSearchTests(name: string, createStore: () => TextSearchStore) {
   describe(`${name}: TextSearchStore conformance`, () => {

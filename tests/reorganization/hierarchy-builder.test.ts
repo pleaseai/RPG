@@ -1,7 +1,7 @@
-import type { FileFeatureGroup } from '../../src/encoder/reorganization'
+import type { FileFeatureGroup } from '@pleaseai/rpg-encoder/reorganization'
+import { HierarchyBuilder } from '@pleaseai/rpg-encoder/reorganization/hierarchy-builder'
+import { RepositoryPlanningGraph } from '@pleaseai/rpg-graph/rpg'
 import { describe, expect, it, vi } from 'vitest'
-import { HierarchyBuilder } from '../../src/encoder/reorganization/hierarchy-builder'
-import { RepositoryPlanningGraph } from '../../src/graph/rpg'
 
 function createMockLLMClient(response: { assignments: Record<string, string[]> }) {
   return {

@@ -1,6 +1,6 @@
-import type { FileFeatureGroup } from '../../src/encoder/reorganization'
+import type { FileFeatureGroup } from '@pleaseai/rpg-encoder/reorganization'
+import { DomainDiscovery } from '@pleaseai/rpg-encoder/reorganization/domain-discovery'
 import { describe, expect, it, vi } from 'vitest'
-import { DomainDiscovery } from '../../src/encoder/reorganization/domain-discovery'
 
 function createMockLLMClient(response: { functionalAreas: string[] }) {
   return {

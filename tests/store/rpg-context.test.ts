@@ -1,6 +1,6 @@
-import type { HighLevelNode, Node } from '../../src/graph'
+import type { HighLevelNode, Node } from '@pleaseai/rpg-graph'
+import { RepositoryPlanningGraph } from '@pleaseai/rpg-graph/rpg'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { RepositoryPlanningGraph } from '../../src/graph/rpg'
 
 describe('RPG with ContextStore (default)', () => {
   let rpg: RepositoryPlanningGraph

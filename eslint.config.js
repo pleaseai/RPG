@@ -15,6 +15,7 @@ export default antfu({
     'tests/fixtures/**',
     'docs/**',
     '.please/**',
+    'packages/*/dist/**',
     '**/*.md',
     '**/*.json',
   ],

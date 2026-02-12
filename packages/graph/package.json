@@ -1,0 +1,29 @@
+{
+  "name": "@pleaseai/rpg-graph",
+  "version": "0.1.3",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./node": "./src/node.ts",
+    "./edge": "./src/edge.ts",
+    "./rpg": "./src/rpg.ts",
+    "./store": "./src/store.ts",
+    "./adapters": "./src/adapters.ts",
+    "./sqlite-store": "./src/sqlite-store.ts",
+    "./surreal-store": "./src/surreal-store.ts"
+  },
+  "dependencies": {
+    "@pleaseai/rpg-store": "workspace:*",
+    "graphology": "^0.25.4",
+    "graphology-types": "^0.24.8",
+    "better-sqlite3": "^12.6.2",
+    "surrealdb": "^2.0.0-alpha.17",
+    "@surrealdb/node": "^2.6.0"
+  },
+  "peerDependencies": {
+    "zod": "^3.25.0 || ^4.0.0"
+  }
+}

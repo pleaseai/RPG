@@ -1,6 +1,6 @@
-import type { EntityInput } from '../src/encoder/semantic'
+import type { EntityInput } from '@pleaseai/rpg-encoder/semantic'
+import { SemanticExtractor } from '@pleaseai/rpg-encoder/semantic'
 import { describe, expect, it } from 'vitest'
-import { SemanticExtractor } from '../src/encoder/semantic'
 
 describe('semanticExtractor', () => {
   const extractor = new SemanticExtractor({ useLLM: false })
@@ -10,7 +10,7 @@ describe('semanticExtractor', () => {
       const input: EntityInput = {
         type: 'function',
         name: 'validateUserInput',
-        filePath: 'src/utils/validation.ts',
+        filePath: 'packages/utils/src/validation.ts',
       }
 
       const feature = await extractor.extract(input)
@@ -53,7 +53,7 @@ describe('semanticExtractor', () => {
       const input: EntityInput = {
         type: 'file',
         name: 'encoder',
-        filePath: 'src/encoder/encoder.ts',
+        filePath: 'packages/encoder/src/encoder.ts',
       }
 
       const feature = await extractor.extract(input)

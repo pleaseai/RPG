@@ -1,4 +1,3 @@
-import { describe, expect, it } from 'vitest'
 import {
   createDependencyEdge,
   createFunctionalEdge,
@@ -11,7 +10,8 @@ import {
   isLowLevelNode,
   NodeType,
   RepositoryPlanningGraph,
-} from '../src/graph'
+} from '@pleaseai/rpg-graph'
+import { describe, expect, it } from 'vitest'
 
 describe('node', () => {
   it('createHighLevelNode creates valid node', () => {
