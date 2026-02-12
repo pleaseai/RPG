@@ -17,7 +17,7 @@ describe('semanticCache', () => {
   })
 
   afterEach(async () => {
-    // Clean up test cache
+    cache.close()
     if (existsSync(TEST_CACHE_DIR)) {
       await rm(TEST_CACHE_DIR, { recursive: true })
     }
@@ -123,9 +123,9 @@ describe('semanticCache', () => {
     }
 
     await cache.set(input, feature)
-    await cache.save()
+    cache.close()
 
-    // Create new cache instance
+    // Create new cache instance pointing to same DB
     const newCache = new SemanticCache({
       cacheDir: TEST_CACHE_DIR,
       enabled: true,
@@ -133,6 +133,7 @@ describe('semanticCache', () => {
 
     const retrieved = await newCache.get(input)
     expect(retrieved).toEqual(feature)
+    newCache.close()
   })
 
   it('returns stats', async () => {
@@ -167,6 +168,32 @@ describe('semanticCache', () => {
 
     expect(result).toBeNull()
   })
+
+  it('purges expired entries', async () => {
+    const shortTtlCache = new SemanticCache({
+      cacheDir: TEST_CACHE_DIR,
+      ttl: 1, // 1ms TTL
+      enabled: true,
+    })
+
+    const input: EntityInput = {
+      type: 'function',
+      name: 'testFunc',
+      filePath: 'test.ts',
+    }
+
+    await shortTtlCache.set(input, { description: 'test', keywords: [] })
+
+    // Wait for TTL to expire
+    await new Promise(resolve => setTimeout(resolve, 10))
+
+    await shortTtlCache.purge()
+
+    // Stats should show 0 after purge
+    const stats = shortTtlCache.getStats()
+    expect(stats.size).toBe(0)
+    shortTtlCache.close()
+  })
 })
 
 describe('createCachedExtractor', () => {
@@ -182,6 +209,7 @@ describe('createCachedExtractor', () => {
   })
 
   afterEach(async () => {
+    cache.close()
     if (existsSync(TEST_CACHE_DIR)) {
       await rm(TEST_CACHE_DIR, { recursive: true })
     }
