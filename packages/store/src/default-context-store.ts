@@ -63,12 +63,16 @@ export class DefaultContextStore implements ContextStore {
   }
 
   async close(): Promise<void> {
-    await this._vector.close()
-    await this._text.close()
-    await this._graph.close()
-    if (this._tempVectorPath) {
-      rmSync(this._tempVectorPath, { recursive: true, force: true })
-      this._tempVectorPath = undefined
+    try {
+      await this._vector.close()
+      await this._text.close()
+      await this._graph.close()
+    }
+    finally {
+      if (this._tempVectorPath) {
+        rmSync(this._tempVectorPath, { recursive: true, force: true })
+        this._tempVectorPath = undefined
+      }
     }
   }
 }
