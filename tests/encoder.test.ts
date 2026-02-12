@@ -1,14 +1,17 @@
 import { execFileSync } from 'node:child_process'
+import fs from 'node:fs'
+import os from 'node:os'
 import path from 'node:path'
-import { beforeEach, describe, expect, it } from 'vitest'
-import { RPGEncoder } from '../src/encoder'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { discoverFiles, RPGEncoder } from '../src/encoder'
+import { resolveGitBinary } from '../src/utils/git-path'
 
 // Get current project root for testing
 const PROJECT_ROOT = path.resolve(__dirname, '..')
 
 function hasGitAncestor(repoPath: string, ref: string): boolean {
   try {
-    execFileSync('git', ['rev-parse', '--verify', ref], { cwd: repoPath, stdio: 'pipe' })
+    execFileSync(resolveGitBinary(), ['rev-parse', '--verify', ref], { cwd: repoPath, stdio: 'pipe' })
     return true
   }
   catch {
@@ -164,6 +167,139 @@ describe('RPGEncoder.discoverFiles', () => {
 
     // Should return empty result, not throw
     expect(result.filesProcessed).toBe(0)
+  })
+
+  it('excludes gitignored files when respectGitignore is true', async () => {
+    const files = await discoverFiles(PROJECT_ROOT, {
+      include: ['**/*.ts', '**/*.js', '**/*.json'],
+      respectGitignore: true,
+    })
+    const relativePaths = files.map(f => path.relative(PROJECT_ROOT, f))
+
+    // dist/ is in .gitignore — should not appear
+    const distFiles = relativePaths.filter(p => p.startsWith('dist/'))
+    expect(distFiles).toHaveLength(0)
+
+    // node_modules/ is in .gitignore — should not appear
+    const nmFiles = relativePaths.filter(p => p.startsWith('node_modules/'))
+    expect(nmFiles).toHaveLength(0)
+
+    // src/ files should still be present
+    const srcFiles = relativePaths.filter(p => p.startsWith('src/'))
+    expect(srcFiles.length).toBeGreaterThan(0)
+  })
+
+  it('defaults to respectGitignore=true when option is omitted', async () => {
+    const files = await discoverFiles(PROJECT_ROOT, {
+      include: ['**/*.ts', '**/*.json'],
+    })
+    const relativePaths = files.map(f => path.relative(PROJECT_ROOT, f))
+
+    // dist/ is in .gitignore — should not appear even without explicit respectGitignore
+    const distFiles = relativePaths.filter(p => p.startsWith('dist/'))
+    expect(distFiles).toHaveLength(0)
+  })
+
+  it('falls back to walkDirectory when respectGitignore is false', async () => {
+    const files = await discoverFiles(PROJECT_ROOT, {
+      include: ['**/*.ts'],
+      exclude: ['**/node_modules/**', '**/.git/**'],
+      respectGitignore: false,
+    })
+    const relativePaths = files.map(f => path.relative(PROJECT_ROOT, f))
+
+    // Should still find src files via walkDirectory
+    const srcFiles = relativePaths.filter(p => p.startsWith('src/'))
+    expect(srcFiles.length).toBeGreaterThan(0)
+  })
+
+  it('handles non-git directory gracefully with respectGitignore', async () => {
+    const tmpDir = path.join(os.tmpdir(), `rpg-nongit-${Date.now()}`)
+    fs.mkdirSync(tmpDir, { recursive: true })
+    fs.writeFileSync(path.join(tmpDir, 'test.ts'), '// test')
+    try {
+      const files = await discoverFiles(tmpDir, {
+        include: ['**/*.ts'],
+        respectGitignore: true,
+      })
+      expect(files).toHaveLength(1)
+      expect(files[0]).toContain('test.ts')
+    }
+    finally {
+      fs.rmSync(tmpDir, { recursive: true, force: true })
+    }
+  })
+
+  it('applies maxDepth with git ls-files mode', async () => {
+    const shallowFiles = await discoverFiles(PROJECT_ROOT, {
+      include: ['**/*.ts'],
+      respectGitignore: true,
+      maxDepth: 0,
+    })
+    const relativePaths = shallowFiles.map(f => path.relative(PROJECT_ROOT, f))
+
+    expect(shallowFiles.length).toBeGreaterThan(0)
+    // maxDepth 0 means only root-level files (depth = 0 segments before file)
+    for (const p of relativePaths) {
+      const depth = p.split('/').length - 1
+      expect(depth).toBeLessThanOrEqual(0)
+    }
+  })
+
+  it('applies include/exclude patterns with git ls-files mode', async () => {
+    const files = await discoverFiles(PROJECT_ROOT, {
+      include: ['src/encoder/**/*.ts'],
+      exclude: ['**/evolution/**'],
+      respectGitignore: true,
+    })
+    const relativePaths = files.map(f => path.relative(PROJECT_ROOT, f))
+
+    expect(relativePaths.length).toBeGreaterThan(0)
+    // All files should be under src/encoder
+    for (const p of relativePaths) {
+      expect(p.startsWith('src/encoder/')).toBe(true)
+    }
+
+    // No evolution files should be included
+    const evolutionFiles = relativePaths.filter(p => p.includes('evolution'))
+    expect(evolutionFiles).toHaveLength(0)
+
+    // Should still find encoder.ts
+    expect(relativePaths).toContain('src/encoder/encoder.ts')
+  })
+
+  it('throws for non-existent repository path', async () => {
+    await expect(
+      discoverFiles('/non/existent/path', { include: ['**/*.ts'] }),
+    ).rejects.toThrow('Repository path does not exist')
+  })
+
+  it('warns and falls back when git ls-files fails', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {})
+    const tmpDir = path.join(os.tmpdir(), `rpg-gitfail-${Date.now()}`)
+    fs.mkdirSync(tmpDir, { recursive: true })
+    // Init git repo but corrupt the index to trigger git ls-files failure
+    execFileSync(resolveGitBinary(), ['init'], { cwd: tmpDir, stdio: 'pipe' })
+    fs.writeFileSync(path.join(tmpDir, 'hello.ts'), '// hello')
+    // Corrupt the git index
+    fs.writeFileSync(path.join(tmpDir, '.git', 'index'), 'corrupted')
+    try {
+      const files = await discoverFiles(tmpDir, {
+        include: ['**/*.ts'],
+        respectGitignore: true,
+      })
+      // Should fall back to walkDirectory and still find the file
+      expect(files).toHaveLength(1)
+      expect(files[0]).toContain('hello.ts')
+      // Should have logged a warning about git failure
+      expect(warnSpy).toHaveBeenCalledWith(
+        expect.stringContaining('git ls-files failed'),
+      )
+    }
+    finally {
+      warnSpy.mockRestore()
+      fs.rmSync(tmpDir, { recursive: true, force: true })
+    }
   })
 })
 

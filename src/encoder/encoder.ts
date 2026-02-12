@@ -7,11 +7,13 @@ import type { FileParseInfo } from './data-flow'
 import type { EvolutionResult } from './evolution/types'
 import type { FileFeatureGroup } from './reorganization'
 import type { EntityInput, SemanticFeature, SemanticOptions } from './semantic'
+import { execFileSync } from 'node:child_process'
 import fs from 'node:fs'
 import { readdir, readFile, stat } from 'node:fs/promises'
 import path from 'node:path'
 import { RepositoryPlanningGraph } from '../graph'
 import { ASTParser } from '../utils/ast'
+import { resolveGitBinary } from '../utils/git-path'
 import { LLMClient } from '../utils/llm'
 import { SemanticCache } from './cache'
 import { DataFlowDetector } from './data-flow'
@@ -34,6 +36,8 @@ export interface EncoderOptions {
   exclude?: string[]
   /** Maximum depth for directory traversal */
   maxDepth?: number
+  /** Respect .gitignore rules via git ls-files (default: true) */
+  respectGitignore?: boolean
   /** Semantic extraction options */
   semantic?: SemanticOptions
   /** Cache options */
@@ -65,10 +69,83 @@ export interface DiscoverFilesOptions {
   include?: string[]
   exclude?: string[]
   maxDepth?: number
+  /** Respect .gitignore rules via git ls-files (default: true) */
+  respectGitignore?: boolean
+}
+
+/**
+ * List files known to git: tracked + untracked-but-not-ignored.
+ * Returns relative paths (forward-slash separated).
+ * Returns empty array for non-git directories or on failure (with warning).
+ */
+function gitListFiles(repoPath: string): string[] {
+  let gitBinary: string
+  try {
+    gitBinary = resolveGitBinary()
+  }
+  catch {
+    console.warn(
+      `[discoverFiles] git binary not found on PATH. `
+      + `Cannot check .gitignore rules; falling back to directory walk.`,
+    )
+    return []
+  }
+
+  try {
+    const stdout = execFileSync(
+      gitBinary,
+      ['ls-files', '--cached', '--others', '--exclude-standard', '-z'],
+      {
+        cwd: repoPath,
+        encoding: 'utf-8',
+        stdio: 'pipe',
+        maxBuffer: 10 * 1024 * 1024, // 10MB
+      },
+    )
+    return [...new Set(stdout.split('\0').filter(Boolean))]
+  }
+  catch (error: unknown) {
+    const err = error as { status?: number, code?: string, stderr?: string }
+    const stderr = (err.stderr ?? '').trim()
+    if (err.status === 128 && stderr.includes('not a git repository')) {
+      // Normal "not a git repo" response — no warning needed
+    }
+    else {
+      console.warn(
+        `[discoverFiles] git ls-files failed`
+        + ` (exit ${err.status ?? '?'}, code=${err.code ?? 'unknown'}): `
+        + `${stderr || (error instanceof Error ? error.message : String(error))}. `
+        + `Falling back to directory walk (gitignore rules will NOT be applied).`,
+      )
+    }
+    return []
+  }
+}
+
+function filterGitFiles(
+  repoPath: string,
+  gitFiles: string[],
+  includePatterns: string[],
+  excludePatterns: string[],
+  maxDepth: number,
+): string[] {
+  return gitFiles
+    .filter((relativePath) => {
+      const normalizedPath = relativePath.replaceAll('\\', '/')
+      const depth = normalizedPath.split('/').length - 1
+      return depth <= maxDepth
+        && !matchesPattern(normalizedPath, excludePatterns)
+        && matchesPattern(normalizedPath, includePatterns)
+    })
+    .map(relativePath => path.join(repoPath, relativePath))
 }
 
 /**
  * Discover files in a repository matching the given patterns.
+ *
+ * When respectGitignore is true (default), uses `git ls-files` to respect
+ * .gitignore rules. Falls back to walkDirectory for non-git repos, when
+ * git is unavailable, or when respectGitignore is false.
  *
  * Shared between RPGEncoder and interactive encoder.
  */
@@ -80,7 +157,6 @@ export async function discoverFiles(
     throw new Error(`Repository path does not exist: ${repoPath}`)
   }
 
-  const files: string[] = []
   const includePatterns = opts?.include ?? ['**/*.ts', '**/*.js', '**/*.py']
   const excludePatterns = opts?.exclude ?? [
     '**/node_modules/**',
@@ -88,10 +164,27 @@ export async function discoverFiles(
     '**/.git/**',
   ]
   const maxDepth = opts?.maxDepth ?? 10
+  const respectGitignore = opts?.respectGitignore !== false
 
+  if (respectGitignore) {
+    const gitFiles = gitListFiles(repoPath)
+    if (gitFiles.length > 0) {
+      const filtered = filterGitFiles(repoPath, gitFiles, includePatterns, excludePatterns, maxDepth)
+      if (filtered.length === 0) {
+        console.warn(
+          `[discoverFiles] git ls-files found ${gitFiles.length} files, `
+          + `but 0 matched the configured filters (include/exclude/maxDepth). `
+          + `Please check your configuration.`,
+        )
+      }
+      return filtered.sort((a, b) => a.localeCompare(b))
+    }
+  }
+
+  const files: string[] = []
   await walkDirectory(repoPath, repoPath, files, includePatterns, excludePatterns, 0, maxDepth)
 
-  return files.sort()
+  return files.sort((a, b) => a.localeCompare(b))
 }
 
 async function walkDirectory(
@@ -165,8 +258,8 @@ function matchesPattern(filePath: string, patterns: string[]): boolean {
 }
 
 function globMatch(filePath: string, pattern: string): boolean {
-  const normalizedPath = filePath.replace(/\\/g, '/')
-  const normalizedPattern = pattern.replace(/\\/g, '/')
+  const normalizedPath = filePath.replaceAll('\\', '/')
+  const normalizedPattern = pattern.replaceAll('\\', '/')
   const pathSegments = normalizedPath.split('/')
   const patternSegments = normalizedPattern.split('/')
   return matchSegments(pathSegments, patternSegments, 0, 0)
@@ -212,9 +305,9 @@ function matchSegments(
 
 function matchSegment(pathSeg: string, patternSeg: string): boolean {
   const regexPattern = patternSeg
-    .replace(/\./g, '\\.') // Escape dots
-    .replace(/\*/g, '.*') // * matches anything
-    .replace(/\?/g, '.') // ? matches single char
+    .replaceAll('.', '\\.') // Escape dots
+    .replaceAll('*', '.*') // * matches anything
+    .replaceAll('?', '.') // ? matches single char
   const regex = new RegExp(`^${regexPattern}$`)
   return regex.test(pathSeg)
 }
@@ -356,11 +449,11 @@ export function resolveImportPath(
   const candidates: string[] = []
 
   for (const ext of extensions) {
-    candidates.push((resolvedPath + ext).replace(/\\/g, '/'))
+    candidates.push((resolvedPath + ext).replaceAll('\\', '/'))
   }
 
   for (const ext of extensions) {
-    candidates.push(path.join(resolvedPath, `index${ext}`).replace(/\\/g, '/'))
+    candidates.push(path.join(resolvedPath, `index${ext}`).replaceAll('\\', '/'))
   }
 
   if (knownFiles) {
@@ -368,7 +461,7 @@ export function resolveImportPath(
   }
 
   // Fallback: return first non-absolute path candidate
-  return candidates.find(c => !c.startsWith('/')) ?? resolvedPath.replace(/\\/g, '/')
+  return candidates.find(c => !c.startsWith('/')) ?? resolvedPath.replaceAll('\\', '/')
 }
 
 /**
@@ -561,6 +654,7 @@ export class RPGEncoder {
         include: this.options.include,
         exclude: this.options.exclude,
         maxDepth: this.options.maxDepth,
+        respectGitignore: this.options.respectGitignore,
       })
     }
     catch (error) {

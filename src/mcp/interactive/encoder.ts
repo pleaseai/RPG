@@ -74,7 +74,7 @@ export class InteractiveEncoder {
    */
   async buildIndex(
     repoPath: string,
-    opts?: { include?: string[], exclude?: string[] },
+    opts?: { include?: string[], exclude?: string[], respectGitignore?: boolean },
   ): Promise<BuildResult> {
     this.state.reset()
     this.state.repoPath = repoPath
@@ -89,6 +89,7 @@ export class InteractiveEncoder {
     const files = await discoverFiles(repoPath, {
       include: opts?.include,
       exclude: opts?.exclude,
+      respectGitignore: opts?.respectGitignore,
     })
 
     const allEntities: LiftableEntity[] = []

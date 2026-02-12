@@ -28,6 +28,7 @@ program
     'Exclude file patterns (default: **/node_modules/**,**/dist/**)',
   )
   .option('-d, --max-depth <depth>', 'Maximum directory depth', '10')
+  .option('--no-gitignore', 'Disable .gitignore filtering (include all files)')
   .option('--verbose', 'Show detailed progress')
   .action(
     async (
@@ -38,6 +39,7 @@ program
         include?: string[]
         exclude?: string[]
         maxDepth: string
+        gitignore?: boolean
         verbose?: boolean
       },
     ) => {
@@ -57,6 +59,7 @@ program
         include: options.include,
         exclude: options.exclude,
         maxDepth: Number.parseInt(options.maxDepth),
+        respectGitignore: options.gitignore !== false,
       })
 
       const result = await encoder.encode()

@@ -3,6 +3,7 @@ import type { CodeEntity } from '../../utils/ast'
 import type { ChangedEntity, DiffResult, FileChange, FileChangeStatus } from './types'
 import { execFileSync } from 'node:child_process'
 import { ASTParser } from '../../utils/ast'
+import { resolveGitBinary } from '../../utils/git-path'
 
 /**
  * Parse git diff between two commits and produce entity-level change sets.
@@ -336,8 +337,9 @@ export class DiffParser {
    * Execute a git command in the repo
    */
   private execGit(args: string[]): string {
+    const gitBinary = resolveGitBinary()
     try {
-      const stdout = execFileSync('git', args, {
+      const stdout = execFileSync(gitBinary, args, {
         cwd: this.repoPath,
         encoding: 'utf-8',
         maxBuffer: 10 * 1024 * 1024, // 10MB

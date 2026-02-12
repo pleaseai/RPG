@@ -70,6 +70,7 @@ export type ExploreInput = z.infer<typeof ExploreInputSchema>
 export const EncodeInputSchema = z.object({
   repoPath: z.string().describe('Repository path to encode'),
   includeSource: z.boolean().default(false),
+  respectGitignore: z.boolean().default(true).describe('Respect .gitignore rules via git ls-files'),
   outputPath: z.string().optional(),
 })
 
@@ -239,6 +240,7 @@ export async function executeEncode(input: EncodeInput) {
   try {
     const encoder = new RPGEncoder(input.repoPath, {
       includeSource: input.includeSource,
+      respectGitignore: input.respectGitignore,
     })
 
     const result = await encoder.encode()

@@ -3,12 +3,13 @@ import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
 import { RPGEncoder } from '../src/encoder/encoder'
 import { executeEvolve } from '../src/mcp/tools'
+import { resolveGitBinary } from '../src/utils/git-path'
 
 const FIXTURE_REPO = resolve(__dirname, 'fixtures/superjson')
 
 function hasGitAncestor(repoPath: string, ref: string): boolean {
   try {
-    execFileSync('git', ['rev-parse', '--verify', ref], { cwd: repoPath, stdio: 'pipe' })
+    execFileSync(resolveGitBinary(), ['rev-parse', '--verify', ref], { cwd: repoPath, stdio: 'pipe' })
     return true
   }
   catch {
