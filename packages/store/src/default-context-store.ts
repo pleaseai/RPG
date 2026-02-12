@@ -4,7 +4,7 @@ import type { TextSearchStore } from './text-search-store'
 
 import type { ContextStoreConfig } from './types'
 import type { VectorStore } from './vector-store'
-import { mkdtempSync } from 'node:fs'
+import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 
@@ -17,6 +17,7 @@ export class DefaultContextStore implements ContextStore {
   private _graph!: GraphStore
   private _text!: TextSearchStore
   private _vector!: VectorStore
+  private _tempVectorPath?: string
 
   get graph(): GraphStore {
     return this._graph
@@ -46,11 +47,14 @@ export class DefaultContextStore implements ContextStore {
 
     // Create vector store
     const vectorStore = new LanceDBVectorStore()
+    const isMemory = config.path === 'memory' && !config.vectorPath
     const vectorPath
       = config.vectorPath
-        ?? (config.path === 'memory'
+        ?? (isMemory
           ? mkdtempSync(join(tmpdir(), 'rpg-vectors-'))
           : `${config.path}-vectors`)
+    if (isMemory)
+      this._tempVectorPath = vectorPath
     await vectorStore.open({ path: vectorPath })
 
     this._graph = graphStore
@@ -62,5 +66,9 @@ export class DefaultContextStore implements ContextStore {
     await this._vector.close()
     await this._text.close()
     await this._graph.close()
+    if (this._tempVectorPath) {
+      rmSync(this._tempVectorPath, { recursive: true, force: true })
+      this._tempVectorPath = undefined
+    }
   }
 }
