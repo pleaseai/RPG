@@ -13,7 +13,7 @@
     "@pleaseai/rpg-graph": "workspace:*",
     "@pleaseai/rpg-tools": "workspace:*",
     "@pleaseai/rpg-zerorepo": "workspace:*",
-    "commander": "^12.1.0",
+    "commander": "^14.0.3",
     "dotenv": "^17.2.4"
   }
 }
