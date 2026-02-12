@@ -1,4 +1,4 @@
-import { LLMClient } from '@pleaseai/rpg-utils/llm'
+import { LLMClient, parseModelString } from '@pleaseai/rpg-utils/llm'
 import { describe, expect, it, vi } from 'vitest'
 import { z } from 'zod/v4'
 
@@ -14,12 +14,46 @@ vi.mock('@ai-sdk/google', () => ({
   createGoogleGenerativeAI: vi.fn(() => vi.fn(() => 'mock-model')),
 }))
 
+vi.mock('ai-sdk-provider-claude-code', () => ({
+  createClaudeCode: vi.fn(() => vi.fn(() => 'mock-claude-code-model')),
+}))
+
 vi.mock('ai', () => ({
   generateText: vi.fn(),
   Output: {
     object: vi.fn(({ schema }: any) => ({ type: 'object', schema })),
   },
 }))
+
+describe('parseModelString', () => {
+  it('should parse provider/model format', () => {
+    expect(parseModelString('openai/gpt-5.2')).toEqual({ provider: 'openai', model: 'gpt-5.2' })
+  })
+
+  it('should parse claude-code/haiku', () => {
+    expect(parseModelString('claude-code/haiku')).toEqual({ provider: 'claude-code', model: 'haiku' })
+  })
+
+  it('should parse claude-code/sonnet', () => {
+    expect(parseModelString('claude-code/sonnet')).toEqual({ provider: 'claude-code', model: 'sonnet' })
+  })
+
+  it('should parse provider-only string (no slash)', () => {
+    expect(parseModelString('google')).toEqual({ provider: 'google', model: undefined })
+  })
+
+  it('should throw for unknown provider', () => {
+    expect(() => parseModelString('invalid/model')).toThrow('Unknown LLM provider: "invalid"')
+  })
+
+  it('should treat trailing slash as provider-only', () => {
+    expect(parseModelString('openai/')).toEqual({ provider: 'openai', model: undefined })
+  })
+
+  it('should handle model with slashes (e.g., org/model)', () => {
+    expect(parseModelString('openai/org/model-name')).toEqual({ provider: 'openai', model: 'org/model-name' })
+  })
+})
 
 describe('LLMClient', () => {
   describe('constructor', () => {
@@ -37,6 +71,17 @@ describe('LLMClient', () => {
     it('should use default model for google provider', () => {
       const client = new LLMClient({ provider: 'google' })
       expect(client.getModel()).toBe('gemini-3-flash-preview')
+    })
+
+    it('should use default model for claude-code provider', () => {
+      const client = new LLMClient({ provider: 'claude-code' })
+      expect(client.getModel()).toBe('sonnet')
+      expect(client.getProvider()).toBe('claude-code')
+    })
+
+    it('should accept custom model for claude-code provider', () => {
+      const client = new LLMClient({ provider: 'claude-code', model: 'opus' })
+      expect(client.getModel()).toBe('opus')
     })
 
     it('should accept custom model', () => {
@@ -97,6 +142,58 @@ describe('LLMClient', () => {
       expect(result.usage.promptTokens).toBe(0)
       expect(result.usage.completionTokens).toBe(0)
       expect(result.usage.totalTokens).toBe(0)
+    })
+
+    it('should call generateText with claude-code provider', async () => {
+      const { generateText } = await import('ai')
+
+      vi.mocked(generateText).mockResolvedValueOnce({
+        text: 'claude-code response',
+        usage: { inputTokens: 8, outputTokens: 4 },
+      } as any)
+
+      const client = new LLMClient({ provider: 'claude-code' })
+      const result = await client.complete('test prompt')
+
+      expect(result.content).toBe('claude-code response')
+      expect(result.model).toBe('sonnet')
+    })
+
+    it('should pass claudeCodeSettings to createClaudeCode', async () => {
+      const { createClaudeCode } = await import('ai-sdk-provider-claude-code')
+      vi.mocked(createClaudeCode).mockClear()
+
+      const settings = {
+        cwd: '/tmp/test',
+        permissionMode: 'bypassPermissions' as const,
+        maxTurns: 5,
+        allowedTools: ['Read', 'Write'],
+      }
+
+      // eslint-disable-next-line no-new
+      new LLMClient({ provider: 'claude-code', claudeCodeSettings: settings })
+
+      expect(vi.mocked(createClaudeCode)).toHaveBeenCalledWith({ defaultSettings: settings })
+    })
+
+    it('should call createClaudeCode with undefined when no settings provided', async () => {
+      const { createClaudeCode } = await import('ai-sdk-provider-claude-code')
+      vi.mocked(createClaudeCode).mockClear()
+
+      // eslint-disable-next-line no-new
+      new LLMClient({ provider: 'claude-code' })
+
+      expect(vi.mocked(createClaudeCode)).toHaveBeenCalledWith(undefined)
+    })
+
+    it('should not pass apiKey to createClaudeCode', async () => {
+      const { createClaudeCode } = await import('ai-sdk-provider-claude-code')
+      vi.mocked(createClaudeCode).mockClear()
+
+      // eslint-disable-next-line no-new
+      new LLMClient({ provider: 'claude-code', apiKey: 'should-be-ignored' })
+
+      expect(vi.mocked(createClaudeCode)).toHaveBeenCalledWith(undefined)
     })
 
     it('should throw and call onError on failure', async () => {
@@ -249,6 +346,48 @@ describe('LLMClient', () => {
       expect(cost.inputCost).toBe(2.50) // $2.50/M input
       expect(cost.outputCost).toBe(5.00) // $10.00/M * 0.5M
       expect(cost.totalCost).toBe(7.50)
+    })
+
+    it('should estimate cost for claude-code sonnet model', () => {
+      const client = new LLMClient({ provider: 'claude-code', model: 'sonnet' })
+      const cost = client.estimateCost({
+        totalPromptTokens: 1_000_000,
+        totalCompletionTokens: 1_000_000,
+        totalTokens: 2_000_000,
+        requestCount: 5,
+      })
+
+      expect(cost.inputCost).toBe(3.00) // $3.00/M input
+      expect(cost.outputCost).toBe(15.00) // $15.00/M output
+      expect(cost.totalCost).toBe(18.00)
+    })
+
+    it('should estimate cost for claude-code opus model', () => {
+      const client = new LLMClient({ provider: 'claude-code', model: 'opus' })
+      const cost = client.estimateCost({
+        totalPromptTokens: 1_000_000,
+        totalCompletionTokens: 1_000_000,
+        totalTokens: 2_000_000,
+        requestCount: 1,
+      })
+
+      expect(cost.inputCost).toBe(15.00)
+      expect(cost.outputCost).toBe(75.00)
+      expect(cost.totalCost).toBe(90.00)
+    })
+
+    it('should estimate cost for claude-code haiku model', () => {
+      const client = new LLMClient({ provider: 'claude-code', model: 'haiku' })
+      const cost = client.estimateCost({
+        totalPromptTokens: 1_000_000,
+        totalCompletionTokens: 1_000_000,
+        totalTokens: 2_000_000,
+        requestCount: 1,
+      })
+
+      expect(cost.inputCost).toBe(1.00)
+      expect(cost.outputCost).toBe(5.00)
+      expect(cost.totalCost).toBe(6.00)
     })
 
     it('should return zero cost for unknown model', () => {

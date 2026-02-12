@@ -1,19 +1,21 @@
+import type { ClaudeCodeSettings } from 'ai-sdk-provider-claude-code'
 import type { ZodType } from 'zod/v4'
 import { createAnthropic } from '@ai-sdk/anthropic'
 import { createGoogleGenerativeAI } from '@ai-sdk/google'
 import { createOpenAI } from '@ai-sdk/openai'
 import { generateText, Output } from 'ai'
+import { createClaudeCode } from 'ai-sdk-provider-claude-code'
 
 /**
  * LLM provider type
  */
-export type LLMProvider = 'openai' | 'anthropic' | 'google'
+export type LLMProvider = 'openai' | 'anthropic' | 'google' | 'claude-code'
 
 /**
  * LLM client options
  */
 export interface LLMOptions {
-  /** Provider (openai, anthropic, or google) */
+  /** Provider (openai, anthropic, google, or claude-code) */
   provider: LLMProvider
   /** API key (defaults to environment variable) */
   apiKey?: string
@@ -27,7 +29,11 @@ export interface LLMOptions {
   timeout?: number
   /** Error callback */
   onError?: (error: Error, context: { model: string, promptLength: number }) => void
+  /** Claude Code provider settings (only used when provider is 'claude-code') */
+  claudeCodeSettings?: ClaudeCodeSettings
 }
+
+export type { ClaudeCodeSettings }
 
 /**
  * LLM response
@@ -49,30 +55,40 @@ export interface LLMResponse {
  * Default models for each provider
  */
 const DEFAULT_MODELS: Record<LLMProvider, string> = {
-  openai: 'gpt-4o',
-  anthropic: 'claude-sonnet-4.5',
-  google: 'gemini-3-flash-preview',
+  'openai': 'gpt-4o',
+  'anthropic': 'claude-sonnet-4.5',
+  'google': 'gemini-3-flash-preview',
+  'claude-code': 'sonnet',
 }
 
 /**
  * Pricing per million tokens (input, output) in USD
  */
+const CLAUDE_SONNET_PRICING = { input: 3.00, output: 15.00 }
+const CLAUDE_HAIKU_PRICING = { input: 1.00, output: 5.00 }
+
 const MODEL_PRICING: Record<string, { input: number, output: number }> = {
   'gpt-4o': { input: 2.50, output: 10.00 },
   'gpt-4.1': { input: 2.00, output: 8.00 },
   'gpt-5': { input: 1.25, output: 10.00 },
   'gpt-5-mini': { input: 0.25, output: 2.00 },
-  'claude-sonnet-4.5': { input: 3.00, output: 15.00 },
-  'claude-haiku-4.5': { input: 1.00, output: 5.00 },
+  'claude-sonnet-4.5': CLAUDE_SONNET_PRICING,
+  'claude-haiku-4.5': CLAUDE_HAIKU_PRICING,
   'gemini-3-flash-preview': { input: 0.50, output: 3.00 },
   'gemini-3-pro-preview': { input: 2.00, output: 12.00 },
   'gemini-2.0-flash': { input: 0.30, output: 2.50 },
+  // Claude Code provider uses model shortcuts (sonnet/opus/haiku).
+  // Pricing reflects equivalent Claude API rates for cost estimation,
+  // not actual charges (Claude Code uses subscription billing).
+  'sonnet': CLAUDE_SONNET_PRICING,
+  'opus': { input: 15.00, output: 75.00 },
+  'haiku': CLAUDE_HAIKU_PRICING,
 }
 
 /**
  * Create provider instance
  */
-function createProvider(provider: LLMProvider, apiKey?: string) {
+function createProvider(provider: LLMProvider, apiKey?: string, claudeCodeSettings?: ClaudeCodeSettings) {
   switch (provider) {
     case 'openai':
       return createOpenAI({
@@ -86,31 +102,12 @@ function createProvider(provider: LLMProvider, apiKey?: string) {
       return createGoogleGenerativeAI({
         apiKey: apiKey ?? process.env.GOOGLE_API_KEY,
       })
+    case 'claude-code':
+      return createClaudeCode(claudeCodeSettings ? { defaultSettings: claudeCodeSettings } : undefined)
+    default:
+      throw new Error(`Unsupported LLM provider: ${String(provider satisfies never)}`)
   }
 }
-
-/**
- * LLM Client for semantic operations using Vercel AI SDK
- *
- * Used for:
- * - Semantic feature extraction
- * - Functional hierarchy construction
- * - Code generation
- *
- * Supports OpenAI, Anthropic, and Google providers with unified interface.
- *
- * @example
- * ```typescript
- * // Use Gemini 3 Flash (recommended - free tier, best performance)
- * const client = new LLMClient({ provider: 'google', model: 'gemini-2.0-flash' })
- *
- * // Use Claude Haiku (fast, cost-effective)
- * const client = new LLMClient({ provider: 'anthropic', model: 'claude-3-5-haiku-latest' })
- *
- * // Use GPT-4o (paper baseline)
- * const client = new LLMClient({ provider: 'openai', model: 'gpt-4o' })
- * ```
- */
 
 /**
  * Cumulative token usage statistics
@@ -130,7 +127,55 @@ const INITIAL_USAGE_STATS: TokenUsageStats = {
 }
 
 /**
+ * Parse a "provider/model" format string into provider and model components.
+ *
+ * @example
+ * parseModelString('openai/gpt-5.2') // { provider: 'openai', model: 'gpt-5.2' }
+ * parseModelString('claude-code/haiku') // { provider: 'claude-code', model: 'haiku' }
+ * parseModelString('google') // { provider: 'google', model: undefined }
+ */
+export function parseModelString(modelString: string): { provider: LLMProvider, model?: string } {
+  const slashIndex = modelString.indexOf('/')
+  if (slashIndex === -1) {
+    return { provider: validateProvider(modelString) }
+  }
+  const provider = validateProvider(modelString.substring(0, slashIndex))
+  const model = modelString.substring(slashIndex + 1)
+  return { provider, model: model || undefined }
+}
+
+function validateProvider(name: string): LLMProvider {
+  const valid = Object.keys(DEFAULT_MODELS) as LLMProvider[]
+  if (!valid.includes(name as LLMProvider)) {
+    throw new Error(`Unknown LLM provider: "${name}". Valid providers: ${valid.join(', ')}`)
+  }
+  return name as LLMProvider
+}
+
+/**
  * LLM Client for semantic operations using Vercel AI SDK
+ *
+ * Used for:
+ * - Semantic feature extraction
+ * - Functional hierarchy construction
+ * - Code generation
+ *
+ * Supports OpenAI, Anthropic, Google, and Claude Code providers with unified interface.
+ *
+ * @example
+ * ```typescript
+ * // Use Gemini 3 Flash (recommended - free tier, best performance)
+ * const client = new LLMClient({ provider: 'google', model: 'gemini-2.0-flash' })
+ *
+ * // Use Claude Haiku (fast, cost-effective)
+ * const client = new LLMClient({ provider: 'anthropic', model: 'claude-3-5-haiku-latest' })
+ *
+ * // Use GPT-4o (paper baseline)
+ * const client = new LLMClient({ provider: 'openai', model: 'gpt-4o' })
+ *
+ * // Use Claude Code (no API key needed, requires Claude Pro/Max subscription)
+ * const client = new LLMClient({ provider: 'claude-code', model: 'sonnet' })
+ * ```
  */
 export class LLMClient {
   private readonly options: LLMOptions
@@ -144,7 +189,7 @@ export class LLMClient {
       temperature: 0,
       ...options,
     }
-    this.providerInstance = createProvider(options.provider, options.apiKey)
+    this.providerInstance = createProvider(options.provider, options.apiKey, options.claudeCodeSettings)
   }
 
   /**

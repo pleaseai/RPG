@@ -17,6 +17,7 @@
     "@ai-sdk/google": "^3.0.21",
     "@ai-sdk/openai": "^3.0.25",
     "ai": "^6.0.70",
+    "ai-sdk-provider-claude-code": "^3.4.0",
     "@lancedb/lancedb": "^0.13.0",
     "tree-sitter": "^0.21.1",
     "tree-sitter-python": "^0.21.0",

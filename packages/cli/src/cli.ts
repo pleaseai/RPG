@@ -1,9 +1,11 @@
 #!/usr/bin/env node
-import { readFile, writeFile } from 'node:fs/promises'
+import type { SemanticOptions } from '@pleaseai/rpg-encoder/semantic'
 
+import { readFile, writeFile } from 'node:fs/promises'
 import { RPGEncoder } from '@pleaseai/rpg-encoder'
 import { RepositoryPlanningGraph } from '@pleaseai/rpg-graph'
 import { ExploreRPG, FetchNode, SearchNode } from '@pleaseai/rpg-tools'
+import { parseModelString } from '@pleaseai/rpg-utils/llm'
 import { ZeroRepo } from '@pleaseai/rpg-zerorepo'
 import { program } from 'commander'
 import { config } from 'dotenv'
@@ -31,6 +33,8 @@ program
   )
   .option('-d, --max-depth <depth>', 'Maximum directory depth', '10')
   .option('--no-gitignore', 'Disable .gitignore filtering (include all files)')
+  .option('-m, --model <provider/model>', 'LLM provider/model (e.g., claude-code/haiku, openai/gpt-5.2, google)')
+  .option('--no-llm', 'Disable LLM (use heuristic extraction)')
   .option('--verbose', 'Show detailed progress')
   .action(
     async (
@@ -42,6 +46,8 @@ program
         exclude?: string[]
         maxDepth: string
         gitignore?: boolean
+        model?: string
+        llm?: boolean
         verbose?: boolean
       },
     ) => {
@@ -56,12 +62,15 @@ program
         console.log(`  Max depth: ${options.maxDepth}`)
       }
 
+      const semantic = buildSemanticOptions(options.model, options.llm)
+
       const encoder = new RPGEncoder(repoPath, {
         includeSource: options.includeSource,
         include: options.include,
         exclude: options.exclude,
         maxDepth: Number.parseInt(options.maxDepth),
         respectGitignore: options.gitignore !== false,
+        semantic,
       })
 
       const result = await encoder.encode()
@@ -227,10 +236,34 @@ program
   .description('Update RPG with new commits')
   .requiredOption('--rpg <file>', 'RPG file path')
   .option('-c, --commits <range>', 'Commit range', 'HEAD~1..HEAD')
-  .action(async (options: { rpg: string, commits: string }) => {
+  .option('-m, --model <provider/model>', 'LLM provider/model (e.g., claude-code/haiku, openai/gpt-5.2, google)')
+  .option('--no-llm', 'Disable LLM (use heuristic extraction)')
+  .action(async (options: { rpg: string, commits: string, model?: string, llm?: boolean }) => {
     console.log(`Evolving RPG with commits: ${options.commits}`)
-    // TODO: Implement evolution
-    console.log('Evolution not yet implemented')
+
+    const json = await readFile(options.rpg, 'utf-8')
+    const rpg = await RepositoryPlanningGraph.fromJSON(json)
+    const repoPath = rpg.getConfig().rootPath ?? '.'
+
+    const semantic = buildSemanticOptions(options.model, options.llm)
+
+    const encoder = new RPGEncoder(repoPath, { semantic })
+    const result = await encoder.evolve(rpg, { commitRange: options.commits })
+
+    await writeFile(options.rpg, await rpg.toJSON())
+
+    console.log('\nEvolution complete:')
+    console.log(`  Inserted: ${result.inserted}`)
+    console.log(`  Modified: ${result.modified}`)
+    console.log(`  Deleted: ${result.deleted}`)
+    console.log(`  Rerouted: ${result.rerouted}`)
+    console.log(`  Duration: ${result.duration}ms`)
+    if (result.errors.length > 0) {
+      console.warn(`\n  Errors (${result.errors.length}):`)
+      for (const err of result.errors) {
+        console.warn(`    - [${err.phase}] ${err.entity}: ${err.error}`)
+      }
+    }
   })
 
 // Stats command
@@ -252,5 +285,18 @@ program
     console.log(`    Functional: ${stats.functionalEdgeCount}`)
     console.log(`    Dependency: ${stats.dependencyEdgeCount}`)
   })
+
+/**
+ * Build SemanticOptions from CLI --model and --no-llm flags
+ */
+function buildSemanticOptions(model?: string, llm?: boolean): SemanticOptions | undefined {
+  if (!model && llm !== false) {
+    return undefined
+  }
+  return {
+    ...(model ? parseModelString(model) : {}),
+    useLLM: llm !== false,
+  }
+}
 
 program.parse()

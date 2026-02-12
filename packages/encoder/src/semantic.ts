@@ -1,4 +1,4 @@
-import type { LLMProvider } from '@pleaseai/rpg-utils/llm'
+import type { ClaudeCodeSettings, LLMProvider } from '@pleaseai/rpg-utils/llm'
 import { SemanticFeatureSchema as NodeSemanticFeatureSchema } from '@pleaseai/rpg-graph/node'
 import { LLMClient } from '@pleaseai/rpg-utils/llm'
 import { z } from 'zod/v4'
@@ -9,12 +9,16 @@ import { z } from 'zod/v4'
 export interface SemanticOptions {
   /** LLM provider to use */
   provider?: LLMProvider
+  /** Model name (e.g., 'gpt-5.2', 'haiku', 'gemini-3-flash-preview') */
+  model?: string
   /** API key (defaults to environment variable) */
   apiKey?: string
   /** Whether to use LLM for semantic extraction (if false, uses heuristic) */
   useLLM?: boolean
   /** Maximum tokens per request */
   maxTokens?: number
+  /** Claude Code provider settings (only used when provider is 'claude-code') */
+  claudeCodeSettings?: ClaudeCodeSettings
 }
 
 /**
@@ -53,6 +57,7 @@ export interface EntityInput {
 export class SemanticExtractor {
   private readonly llmClient?: LLMClient
   private readonly options: SemanticOptions
+  private readonly warnings: string[] = []
 
   constructor(options: SemanticOptions = {}) {
     this.options = {
@@ -67,8 +72,10 @@ export class SemanticExtractor {
       if (provider) {
         this.llmClient = new LLMClient({
           provider,
+          model: this.options.model,
           apiKey: this.options.apiKey,
           maxTokens: this.options.maxTokens,
+          claudeCodeSettings: this.options.claudeCodeSettings,
         })
       }
     }
@@ -79,6 +86,13 @@ export class SemanticExtractor {
    */
   getLLMClient(): LLMClient | undefined {
     return this.llmClient
+  }
+
+  /**
+   * Get accumulated warnings from LLM fallback events
+   */
+  getWarnings(): readonly string[] {
+    return this.warnings
   }
 
   /**
@@ -107,8 +121,11 @@ export class SemanticExtractor {
       try {
         return await this.extractWithLLM(input)
       }
-      catch {
-        // Fall back to heuristic on error
+      catch (error) {
+        const msg = error instanceof Error ? error.message : String(error)
+        const warning = `[SemanticExtractor] LLM extraction failed for ${input.name}: ${msg}. Falling back to heuristic.`
+        this.warnings.push(warning)
+        console.warn(warning)
       }
     }
 
@@ -158,8 +175,11 @@ export class SemanticExtractor {
       try {
         return await this.aggregateWithLLM(childFeatures, fileName, filePath)
       }
-      catch {
-        // Fall back to heuristic
+      catch (error) {
+        const msg = error instanceof Error ? error.message : String(error)
+        const warning = `[SemanticExtractor] LLM aggregation failed for ${fileName}: ${msg}. Falling back to heuristic.`
+        this.warnings.push(warning)
+        console.warn(warning)
       }
     }
 

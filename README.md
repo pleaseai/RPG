@@ -211,7 +211,7 @@ rpg/
 │   └── utils/                # Utilities
 │       ├── index.ts
 │       ├── ast.ts            # AST analysis (tree-sitter)
-│       ├── llm.ts            # LLM interface (OpenAI/Anthropic)
+│       ├── llm.ts            # LLM interface (OpenAI/Anthropic/Google/Claude Code)
 │       └── vector.ts         # Vector database (LanceDB)
 │
 ├── tests/
@@ -243,7 +243,9 @@ rpg/
 ## Requirements
 
 - Bun 1.0+
-- OpenAI or Anthropic API key (for LLM operations)
+- LLM provider access (choose one):
+  - OpenAI, Anthropic, or Google API key (for API-based providers)
+  - Claude Desktop with Pro/Max subscription (for Claude Code provider, no API key needed)
 
 ## Citation
 
