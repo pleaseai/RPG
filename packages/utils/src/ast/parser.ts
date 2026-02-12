@@ -203,6 +203,12 @@ export class ASTParser {
       return null
     }
 
+    // For Rust impl_item - name is in the 'type' field
+    if (node.type === 'impl_item') {
+      const typeNode = node.childForFieldName('type')
+      return typeNode?.text ?? null
+    }
+
     // For function/class declarations and method definitions
     const nameNode = node.childForFieldName('name')
     if (nameNode) {
@@ -289,6 +295,15 @@ export class ASTParser {
   ): { module: string, names: string[] } | null {
     if (language === 'python') {
       return this.extractPythonImport(node)
+    }
+    if (language === 'rust') {
+      return this.extractRustImport(node)
+    }
+    if (language === 'go') {
+      return this.extractGoImport(node)
+    }
+    if (language === 'java') {
+      return this.extractJavaImport(node)
     }
     return this.extractJSImport(node)
   }
@@ -411,5 +426,51 @@ export class ASTParser {
     }
 
     return { module, names }
+  }
+
+  /**
+   * Extract Rust use declaration
+   */
+  private extractRustImport(node: Parser.SyntaxNode): { module: string, names: string[] } | null {
+    if (node.type !== 'use_declaration')
+      return null
+
+    // Get the full use path text, removing 'use' keyword and trailing semicolon
+    const text = node.text.replace(/^use\s+/, '').replace(/;$/, '').trim()
+    return { module: text, names: [] }
+  }
+
+  /**
+   * Extract Go import spec
+   */
+  private extractGoImport(node: Parser.SyntaxNode): { module: string, names: string[] } | null {
+    // Handle individual import_spec (both single and grouped imports recurse to this)
+    if (node.type === 'import_spec') {
+      const pathNode = node.childForFieldName('path')
+      if (pathNode) {
+        return { module: pathNode.text.replace(/"/g, ''), names: [] }
+      }
+      return null
+    }
+
+    // import_declaration without import_spec_list (skip, handled by recursion)
+    return null
+  }
+
+  /**
+   * Extract Java import declaration
+   */
+  private extractJavaImport(node: Parser.SyntaxNode): { module: string, names: string[] } | null {
+    if (node.type !== 'import_declaration')
+      return null
+
+    // Remove 'import', optional 'static', and trailing semicolon
+    const text = node.text
+      .replace(/^import\s+/, '')
+      .replace(/^static\s+/, '')
+      .replace(/;$/, '')
+      .trim()
+
+    return { module: text, names: [] }
   }
 }

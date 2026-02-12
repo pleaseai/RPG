@@ -21,37 +21,37 @@ describe('Language Configurations', () => {
     let config: LanguageConfig
 
     it('has parser', () => {
-      config = LANGUAGE_CONFIGS.typescript!
+      config = LANGUAGE_CONFIGS.typescript
       expect(config.parser).toBeDefined()
     })
 
     it('has entity types with function_declaration', () => {
-      config = LANGUAGE_CONFIGS.typescript!
+      config = LANGUAGE_CONFIGS.typescript
       expect(config.entityTypes.function_declaration).toBe('function')
     })
 
     it('has entity types with arrow_function', () => {
-      config = LANGUAGE_CONFIGS.typescript!
+      config = LANGUAGE_CONFIGS.typescript
       expect(config.entityTypes.arrow_function).toBe('function')
     })
 
     it('has entity types with class_declaration', () => {
-      config = LANGUAGE_CONFIGS.typescript!
+      config = LANGUAGE_CONFIGS.typescript
       expect(config.entityTypes.class_declaration).toBe('class')
     })
 
     it('has entity types with method_definition', () => {
-      config = LANGUAGE_CONFIGS.typescript!
+      config = LANGUAGE_CONFIGS.typescript
       expect(config.entityTypes.method_definition).toBe('method')
     })
 
     it('has import types with import_statement', () => {
-      config = LANGUAGE_CONFIGS.typescript!
+      config = LANGUAGE_CONFIGS.typescript
       expect(config.importTypes).toContain('import_statement')
     })
 
     it('import types contains only import_statement', () => {
-      config = LANGUAGE_CONFIGS.typescript!
+      config = LANGUAGE_CONFIGS.typescript
       expect(config.importTypes).toEqual(['import_statement'])
     })
   })
@@ -60,43 +60,43 @@ describe('Language Configurations', () => {
     let config: LanguageConfig
 
     it('has parser', () => {
-      config = LANGUAGE_CONFIGS.javascript!
+      config = LANGUAGE_CONFIGS.javascript
       expect(config.parser).toBeDefined()
     })
 
     it('has entity types with function_declaration', () => {
-      config = LANGUAGE_CONFIGS.javascript!
+      config = LANGUAGE_CONFIGS.javascript
       expect(config.entityTypes.function_declaration).toBe('function')
     })
 
     it('has entity types with arrow_function', () => {
-      config = LANGUAGE_CONFIGS.javascript!
+      config = LANGUAGE_CONFIGS.javascript
       expect(config.entityTypes.arrow_function).toBe('function')
     })
 
     it('has entity types with class_declaration', () => {
-      config = LANGUAGE_CONFIGS.javascript!
+      config = LANGUAGE_CONFIGS.javascript
       expect(config.entityTypes.class_declaration).toBe('class')
     })
 
     it('has entity types with method_definition', () => {
-      config = LANGUAGE_CONFIGS.javascript!
+      config = LANGUAGE_CONFIGS.javascript
       expect(config.entityTypes.method_definition).toBe('method')
     })
 
     it('has import types with import_statement', () => {
-      config = LANGUAGE_CONFIGS.javascript!
+      config = LANGUAGE_CONFIGS.javascript
       expect(config.importTypes).toContain('import_statement')
     })
 
     it('import types contains only import_statement', () => {
-      config = LANGUAGE_CONFIGS.javascript!
+      config = LANGUAGE_CONFIGS.javascript
       expect(config.importTypes).toEqual(['import_statement'])
     })
 
     it('uses same parser as typescript', () => {
-      const tsConfig = LANGUAGE_CONFIGS.typescript!
-      const jsConfig = LANGUAGE_CONFIGS.javascript!
+      const tsConfig = LANGUAGE_CONFIGS.typescript
+      const jsConfig = LANGUAGE_CONFIGS.javascript
       expect(jsConfig.parser).toEqual(tsConfig.parser)
     })
   })
@@ -105,37 +105,37 @@ describe('Language Configurations', () => {
     let config: LanguageConfig
 
     it('has parser', () => {
-      config = LANGUAGE_CONFIGS.python!
+      config = LANGUAGE_CONFIGS.python
       expect(config.parser).toBeDefined()
     })
 
     it('has entity types with function_definition', () => {
-      config = LANGUAGE_CONFIGS.python!
+      config = LANGUAGE_CONFIGS.python
       expect(config.entityTypes.function_definition).toBe('function')
     })
 
     it('has entity types with async_function_definition', () => {
-      config = LANGUAGE_CONFIGS.python!
+      config = LANGUAGE_CONFIGS.python
       expect(config.entityTypes.async_function_definition).toBe('function')
     })
 
     it('has entity types with class_definition', () => {
-      config = LANGUAGE_CONFIGS.python!
+      config = LANGUAGE_CONFIGS.python
       expect(config.entityTypes.class_definition).toBe('class')
     })
 
     it('has import types with import_statement', () => {
-      config = LANGUAGE_CONFIGS.python!
+      config = LANGUAGE_CONFIGS.python
       expect(config.importTypes).toContain('import_statement')
     })
 
     it('has import types with import_from_statement', () => {
-      config = LANGUAGE_CONFIGS.python!
+      config = LANGUAGE_CONFIGS.python
       expect(config.importTypes).toContain('import_from_statement')
     })
 
     it('import types contains import_statement and import_from_statement', () => {
-      config = LANGUAGE_CONFIGS.python!
+      config = LANGUAGE_CONFIGS.python
       expect(config.importTypes).toEqual(['import_statement', 'import_from_statement'])
     })
   })

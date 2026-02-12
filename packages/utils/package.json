@@ -24,10 +24,10 @@
     "ai-sdk-provider-claude-code": "^3.4.0",
     "consola": "^3.4.2",
     "tree-sitter": "^0.21.1",
-    "tree-sitter-go": "^0.25.0",
-    "tree-sitter-java": "^0.23.5",
+    "tree-sitter-go": "0.21.2",
+    "tree-sitter-java": "0.21.0",
     "tree-sitter-python": "^0.21.0",
-    "tree-sitter-rust": "^0.24.0",
+    "tree-sitter-rust": "0.21.0",
     "tree-sitter-typescript": "^0.21.2"
   },
   "peerDependencies": {
