@@ -118,13 +118,12 @@ export class AISDKEmbedding extends Embedding {
     try {
       const result = await embed({ model: this.embeddingModel, value: processedText })
 
-      if (this.dimension === 0) {
-        this.dimension = result.embedding.length
-      }
+      // Always update dimension from the model response to ensure consistency.
+      this.dimension = result.embedding.length
 
       return {
         vector: result.embedding,
-        dimension: result.embedding.length,
+        dimension: this.dimension,
       }
     }
     catch (error) {
@@ -143,13 +142,13 @@ export class AISDKEmbedding extends Embedding {
     try {
       const result = await embedMany({ model: this.embeddingModel, values: processedTexts })
 
-      if (this.dimension === 0 && result.embeddings.length > 0) {
+      if (result.embeddings.length > 0) {
         this.dimension = result.embeddings[0]!.length
       }
 
       return result.embeddings.map(emb => ({
         vector: emb,
-        dimension: emb.length,
+        dimension: this.dimension,
       }))
     }
     catch (error) {
