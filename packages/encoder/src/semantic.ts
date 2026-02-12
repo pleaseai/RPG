@@ -1,7 +1,7 @@
 import type { LLMProvider } from '@pleaseai/rpg-utils/llm'
-import { z } from 'zod/v4'
 import { SemanticFeatureSchema as NodeSemanticFeatureSchema } from '@pleaseai/rpg-graph/node'
 import { LLMClient } from '@pleaseai/rpg-utils/llm'
+import { z } from 'zod/v4'
 
 /**
  * Options for semantic extraction

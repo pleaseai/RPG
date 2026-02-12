@@ -1,6 +1,6 @@
+import { LLMClient } from '@pleaseai/rpg-utils/llm'
 import { describe, expect, it, vi } from 'vitest'
 import { z } from 'zod/v4'
-import { LLMClient } from '../../src/utils/llm'
 
 vi.mock('@ai-sdk/openai', () => ({
   createOpenAI: vi.fn(() => vi.fn(() => 'mock-model')),

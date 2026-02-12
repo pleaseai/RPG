@@ -31,56 +31,56 @@ component_management:
         target: 80%
   individual_components:
     - component_id: utils
-      name: "@pleaseai/rpg-utils"
+      name: '@pleaseai/rpg-utils'
       paths:
         - packages/utils/src/**
       flag_regexes:
         - unit
         - integration
     - component_id: store
-      name: "@pleaseai/rpg-store"
+      name: '@pleaseai/rpg-store'
       paths:
         - packages/store/src/**
       flag_regexes:
         - unit
         - integration
     - component_id: graph
-      name: "@pleaseai/rpg-graph"
+      name: '@pleaseai/rpg-graph'
       paths:
         - packages/graph/src/**
       flag_regexes:
         - unit
         - integration
     - component_id: encoder
-      name: "@pleaseai/rpg-encoder"
+      name: '@pleaseai/rpg-encoder'
       paths:
         - packages/encoder/src/**
       flag_regexes:
         - unit
         - integration
     - component_id: tools
-      name: "@pleaseai/rpg-tools"
+      name: '@pleaseai/rpg-tools'
       paths:
         - packages/tools/src/**
       flag_regexes:
         - unit
         - integration
     - component_id: zerorepo
-      name: "@pleaseai/rpg-zerorepo"
+      name: '@pleaseai/rpg-zerorepo'
       paths:
         - packages/zerorepo/src/**
       flag_regexes:
         - unit
         - integration
     - component_id: mcp
-      name: "@pleaseai/rpg-mcp"
+      name: '@pleaseai/rpg-mcp'
       paths:
         - packages/mcp/src/**
       flag_regexes:
         - unit
         - integration
     - component_id: cli
-      name: "@pleaseai/rpg-cli"
+      name: '@pleaseai/rpg-cli'
       paths:
         - packages/cli/src/**
       flag_regexes:
