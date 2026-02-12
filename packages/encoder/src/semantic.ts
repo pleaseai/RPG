@@ -57,6 +57,7 @@ export interface EntityInput {
 export class SemanticExtractor {
   private readonly llmClient?: LLMClient
   private readonly options: SemanticOptions
+  private readonly warnings: string[] = []
 
   constructor(options: SemanticOptions = {}) {
     this.options = {
@@ -88,6 +89,13 @@ export class SemanticExtractor {
   }
 
   /**
+   * Get accumulated warnings from LLM fallback events
+   */
+  getWarnings(): readonly string[] {
+    return this.warnings
+  }
+
+  /**
    * Detect available LLM provider from environment
    * Priority: Google (free tier) > Anthropic > OpenAI
    */
@@ -115,7 +123,9 @@ export class SemanticExtractor {
       }
       catch (error) {
         const msg = error instanceof Error ? error.message : String(error)
-        console.warn(`[SemanticExtractor] LLM extraction failed for ${input.name}: ${msg}. Falling back to heuristic.`)
+        const warning = `[SemanticExtractor] LLM extraction failed for ${input.name}: ${msg}. Falling back to heuristic.`
+        this.warnings.push(warning)
+        console.warn(warning)
       }
     }
 
@@ -167,7 +177,9 @@ export class SemanticExtractor {
       }
       catch (error) {
         const msg = error instanceof Error ? error.message : String(error)
-        console.warn(`[SemanticExtractor] LLM aggregation failed for ${fileName}: ${msg}. Falling back to heuristic.`)
+        const warning = `[SemanticExtractor] LLM aggregation failed for ${fileName}: ${msg}. Falling back to heuristic.`
+        this.warnings.push(warning)
+        console.warn(warning)
       }
     }
 

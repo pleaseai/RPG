@@ -64,22 +64,25 @@ const DEFAULT_MODELS: Record<LLMProvider, string> = {
 /**
  * Pricing per million tokens (input, output) in USD
  */
+const CLAUDE_SONNET_PRICING = { input: 3.00, output: 15.00 }
+const CLAUDE_HAIKU_PRICING = { input: 1.00, output: 5.00 }
+
 const MODEL_PRICING: Record<string, { input: number, output: number }> = {
   'gpt-4o': { input: 2.50, output: 10.00 },
   'gpt-4.1': { input: 2.00, output: 8.00 },
   'gpt-5': { input: 1.25, output: 10.00 },
   'gpt-5-mini': { input: 0.25, output: 2.00 },
-  'claude-sonnet-4.5': { input: 3.00, output: 15.00 },
-  'claude-haiku-4.5': { input: 1.00, output: 5.00 },
+  'claude-sonnet-4.5': CLAUDE_SONNET_PRICING,
+  'claude-haiku-4.5': CLAUDE_HAIKU_PRICING,
   'gemini-3-flash-preview': { input: 0.50, output: 3.00 },
   'gemini-3-pro-preview': { input: 2.00, output: 12.00 },
   'gemini-2.0-flash': { input: 0.30, output: 2.50 },
   // Claude Code provider uses model shortcuts (sonnet/opus/haiku).
   // Pricing reflects equivalent Claude API rates for cost estimation,
   // not actual charges (Claude Code uses subscription billing).
-  'sonnet': { input: 3.00, output: 15.00 },
+  'sonnet': CLAUDE_SONNET_PRICING,
   'opus': { input: 15.00, output: 75.00 },
-  'haiku': { input: 1.00, output: 5.00 },
+  'haiku': CLAUDE_HAIKU_PRICING,
 }
 
 /**
