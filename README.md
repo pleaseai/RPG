@@ -165,15 +165,34 @@ await encoder.evolve({ commitRange: 'HEAD~5..HEAD' })
 # Encode a repository
 rpg encode ./my_project -o rpg.json
 
+# Encode with a specific LLM provider/model
+rpg encode ./my_project -m google                    # Google Gemini (default model)
+rpg encode ./my_project -m openai/gpt-5.2            # OpenAI with specific model
+rpg encode ./my_project -m anthropic/claude-haiku-4.5 # Anthropic Haiku
+rpg encode ./my_project -m claude-code/haiku          # Claude Code (no API key needed)
+rpg encode ./my_project --no-llm                      # Heuristic only (no LLM)
+
 # Generate from specification
 rpg generate --spec "A REST API for user management" -o ./output
 
 # Search in RPG
 rpg search --rpg rpg.json --term "authentication"
 
-# Evolve with commits
+# Evolve with commits (also supports -m/--model)
 rpg evolve --rpg rpg.json --commits HEAD~5..HEAD
+rpg evolve --rpg rpg.json -m google --commits HEAD~5..HEAD
 ```
+
+#### Model Configuration
+
+The `-m, --model` option uses `provider/model` format. If the model is omitted, a default is used.
+
+| Provider | Format | Default Model | API Key Env Var |
+|----------|--------|---------------|-----------------|
+| `openai` | `openai/gpt-5.2` | `gpt-4o` | `OPENAI_API_KEY` |
+| `anthropic` | `anthropic/claude-haiku-4.5` | `claude-sonnet-4.5` | `ANTHROPIC_API_KEY` |
+| `google` | `google/gemini-3-pro-preview` | `gemini-3-flash-preview` | `GOOGLE_API_KEY` |
+| `claude-code` | `claude-code/haiku` | `sonnet` | Not required (uses subscription) |
 
 ## Project Structure
 
