@@ -7,3 +7,6 @@
 [submodule "tests/fixtures/nextjs"]
 	path = tests/fixtures/nextjs
 	url = https://github.com/vercel/next.js.git
+[submodule "vendor/RGP-ZeroRepo"]
+	path = vendor/RGP-ZeroRepo
+	url = git@github.com:microsoft/RPG-ZeroRepo.git
