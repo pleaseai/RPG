@@ -1,6 +1,6 @@
 {
   "name": "@pleaseai/rpg",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "Repository Planning Graph - A unified framework for repository understanding and generation",
   "type": "module",
   "main": "dist/src/index.js",
@@ -9,7 +9,9 @@
     "rpg": "dist/packages/cli/src/cli.js",
     "rpg-mcp": "dist/packages/mcp/src/server.js"
   },
-  "workspaces": ["packages/*"],
+  "workspaces": [
+    "packages/*"
+  ],
   "scripts": {
     "dev": "bun run --watch packages/cli/src/cli.ts",
     "mcp": "bun run packages/mcp/src/server.ts",

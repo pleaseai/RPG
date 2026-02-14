@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.1.4](https://github.com/pleaseai/RPG/compare/v0.1.3...v0.1.4) (2026-02-14)
+
+
+### Features
+
+* **ast:** add multi-language support (Rust, Go, Java) ([#68](https://github.com/pleaseai/RPG/issues/68)) ([931b345](https://github.com/pleaseai/RPG/commit/931b3454539e8716637fb7faa759c21385bc6121))
+* **cli:** add two-tier RPG data management (CI + local) ([#71](https://github.com/pleaseai/RPG/issues/71)) ([2b00bdf](https://github.com/pleaseai/RPG/commit/2b00bdf2a6489d6f1224ab344f7cd8d649ce2d8a))
+* **encoder:** add .gitignore support via git ls-files ([#57](https://github.com/pleaseai/RPG/issues/57)) ([fad382c](https://github.com/pleaseai/RPG/commit/fad382c736d360cd8a9e864fe8ae74de670c7b98))
+* **encoder:** add progress logging and incremental cache with token tracking ([#55](https://github.com/pleaseai/RPG/issues/55)) ([4ddd490](https://github.com/pleaseai/RPG/commit/4ddd4909dbcfb912bde3f3751a6e3a3f3e962f75))
+* **evals:** add RPG-powered agent evaluation with Next.js codebase ([#42](https://github.com/pleaseai/RPG/issues/42)) ([d2d8c5c](https://github.com/pleaseai/RPG/commit/d2d8c5c9b7334fc0f1d7291dcca3b5de265ce8ef))
+* **mcp:** add interactive agent-driven semantic encoding protocol ([#44](https://github.com/pleaseai/RPG/issues/44)) ([0c5c67e](https://github.com/pleaseai/RPG/commit/0c5c67e2eb194b3a53b7ce1e02ba3c7b2773055b))
+* **utils:** add claude-code LLM provider ([#66](https://github.com/pleaseai/RPG/issues/66)) ([00d8ce2](https://github.com/pleaseai/RPG/commit/00d8ce2165c568e41ca0cf890e2d328c450fbe25))
+* **utils:** add Codex CLI LLM provider ([#73](https://github.com/pleaseai/RPG/issues/73)) ([de76959](https://github.com/pleaseai/RPG/commit/de76959321b351eb8b760252cc9804473de0dd89))
+
 ## [0.1.3](https://github.com/pleaseai/rpg/compare/v0.1.2...v0.1.3) (2026-02-10)
 
 
