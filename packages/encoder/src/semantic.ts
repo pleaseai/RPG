@@ -29,6 +29,8 @@ export interface SemanticOptions {
   minBatchTokens?: number
   /** Maximum tokens per batch - group entities until this limit (default: 50000) */
   maxBatchTokens?: number
+  /** Maximum parse iterations for retry on LLM extraction failure (default: 1, vendor uses 10) */
+  maxParseIterations?: number
 }
 
 /**
@@ -75,6 +77,7 @@ export class SemanticExtractor {
       maxTokens: 1024,
       minBatchTokens: 10000,
       maxBatchTokens: 50000,
+      maxParseIterations: 1,
       ...options,
     }
 
@@ -131,14 +134,21 @@ export class SemanticExtractor {
   async extract(input: EntityInput): Promise<SemanticFeature> {
     // Try LLM extraction if available
     if (this.llmClient && input.sourceCode) {
-      try {
-        return await this.extractWithLLM(input)
-      }
-      catch (error) {
-        const msg = error instanceof Error ? error.message : String(error)
-        const warning = `[SemanticExtractor] LLM extraction failed for ${input.name}: ${msg}. Falling back to heuristic.`
-        this.warnings.push(warning)
-        console.warn(warning)
+      const maxIterations = this.options.maxParseIterations ?? 1
+      for (let attempt = 1; attempt <= maxIterations; attempt++) {
+        try {
+          return await this.extractWithLLM(input)
+        }
+        catch (error) {
+          const msg = error instanceof Error ? error.message : String(error)
+          if (attempt < maxIterations) {
+            log.debug(`LLM extraction attempt ${attempt}/${maxIterations} failed for ${input.name}: ${msg}. Retrying...`)
+            continue
+          }
+          const warning = `[SemanticExtractor] LLM extraction failed for ${input.name} after ${maxIterations} attempts: ${msg}. Falling back to heuristic.`
+          this.warnings.push(warning)
+          console.warn(warning)
+        }
       }
     }
 
