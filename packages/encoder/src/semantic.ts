@@ -145,9 +145,9 @@ export class SemanticExtractor {
             log.debug(`LLM extraction attempt ${attempt}/${maxIterations} failed for ${input.name}: ${msg}. Retrying...`)
             continue
           }
-          const warning = `[SemanticExtractor] LLM extraction failed for ${input.name} after ${maxIterations} attempts: ${msg}. Falling back to heuristic.`
-          this.warnings.push(warning)
-          log.warn(warning)
+          const warningMsg = `LLM extraction failed for ${input.name} after ${maxIterations} attempts: ${msg}. Falling back to heuristic.`
+          this.warnings.push(`[SemanticExtractor] ${warningMsg}`)
+          log.warn(warningMsg)
         }
       }
     }
