@@ -22,7 +22,8 @@
     "./evolution/types": "./src/evolution/types.ts",
     "./reorganization": "./src/reorganization/index.ts",
     "./reorganization/domain-discovery": "./src/reorganization/domain-discovery.ts",
-    "./reorganization/hierarchy-builder": "./src/reorganization/hierarchy-builder.ts"
+    "./reorganization/hierarchy-builder": "./src/reorganization/hierarchy-builder.ts",
+    "./embedding-manager": "./src/embedding-manager.ts"
   },
   "dependencies": {
     "@pleaseai/rpg-graph": "workspace:*",

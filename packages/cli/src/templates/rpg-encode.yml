@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths-ignore:
       - .rpg/graph.json
+      - .rpg/embeddings.json
 
 permissions:
   contents: write
@@ -27,22 +28,32 @@ jobs:
       - name: Encode or evolve RPG
         env:
           GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+          VOYAGE_API_KEY: ${{ secrets.VOYAGE_API_KEY }}
         run: |
+          EMBED_FLAG=""
+          if [ -n "$VOYAGE_API_KEY" ]; then
+            EMBED_FLAG="--embed"
+          fi
+
           if [ ! -f ".rpg/graph.json" ]; then
             echo "No existing graph — running full encode"
             mkdir -p .rpg
-            rpg encode . -o .rpg/graph.json --stamp
+            rpg encode . -o .rpg/graph.json --stamp $EMBED_FLAG
           else
             LAST_COMMIT=$(rpg last-commit .rpg/graph.json 2>/dev/null || echo "")
             if [ -z "$LAST_COMMIT" ]; then
               echo "No commit stamp — running full encode"
-              rpg encode . -o .rpg/graph.json --stamp
+              rpg encode . -o .rpg/graph.json --stamp $EMBED_FLAG
             else
               echo "Evolving from $LAST_COMMIT..HEAD"
               rpg evolve --rpg .rpg/graph.json -c "$LAST_COMMIT..HEAD" --stamp || {
                 echo "Evolve failed, falling back to full encode"
-                rpg encode . -o .rpg/graph.json --stamp
+                rpg encode . -o .rpg/graph.json --stamp $EMBED_FLAG
               }
+              # Re-generate embeddings after evolve if API key is available
+              if [ -n "$VOYAGE_API_KEY" ]; then
+                rpg embed --rpg .rpg/graph.json --stamp || true
+              fi
             fi
           fi
 
@@ -51,6 +62,9 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add .rpg/graph.json
+          if [ -f ".rpg/embeddings.json" ]; then
+            git add .rpg/embeddings.json
+          fi
           if git diff --cached --quiet; then
             echo "No changes to commit"
           else

@@ -242,13 +242,30 @@ export async function main(): Promise<void> {
 }
 
 /**
- * Initialize semantic search with HuggingFace embedding and index RPG nodes
+ * Initialize semantic search with HuggingFace embedding and index RPG nodes.
+ *
+ * If `.rpg/embeddings.json` exists alongside the RPG file, pre-computed
+ * embeddings are loaded directly into LanceDB, skipping HuggingFace model loading.
  */
 async function initSemanticSearch(
   rpg: RepositoryPlanningGraph,
   rpgPath: string,
 ): Promise<SemanticSearch> {
   const dbPath = join(dirname(rpgPath), `${rpgPath}.vectors`)
+
+  // Check for pre-computed embeddings
+  const embeddingsPath = join(dirname(rpgPath), 'embeddings.json')
+  if (existsSync(embeddingsPath)) {
+    try {
+      return await initFromPrecomputedEmbeddings(rpg, rpgPath, embeddingsPath, dbPath)
+    }
+    catch (error) {
+      log.warn(
+        `Failed to load pre-computed embeddings: ${error instanceof Error ? error.message : String(error)}`,
+      )
+      log.warn('Falling back to HuggingFace embedding')
+    }
+  }
 
   const embedding = new HuggingFaceEmbedding({
     model: 'MongoDB/mdbr-leaf-ir',
@@ -283,6 +300,73 @@ async function initSemanticSearch(
     await semanticSearch.indexBatch(documents)
     log.success(`Semantic search ready (${documents.length} nodes indexed)`)
   }
+
+  return semanticSearch
+}
+
+/**
+ * Initialize semantic search from pre-computed embeddings.json.
+ * Loads float16 vectors into LanceDB without HuggingFace model loading.
+ */
+async function initFromPrecomputedEmbeddings(
+  rpg: RepositoryPlanningGraph,
+  _rpgPath: string,
+  embeddingsPath: string,
+  dbPath: string,
+): Promise<SemanticSearch> {
+  const { parseEmbeddings, decodeAllEmbeddings } = await import('@pleaseai/rpg-graph/embeddings')
+  const { MockEmbedding } = await import('@pleaseai/rpg-encoder/embedding')
+
+  log.start('Loading pre-computed embeddings...')
+  const embeddingsJson = await readFile(embeddingsPath, 'utf-8')
+  const embeddingsData = parseEmbeddings(embeddingsJson)
+  const vectors = decodeAllEmbeddings(embeddingsData)
+
+  // Use a MockEmbedding with matching dimension for the SemanticSearch wrapper.
+  // Search queries will still use embedBatch for query vectors,
+  // but indexing is done with pre-computed vectors.
+  const mockEmbedding = new MockEmbedding(embeddingsData.config.dimension)
+
+  const semanticSearch = new SemanticSearch({
+    dbPath,
+    tableName: 'rpg_nodes',
+    embedding: mockEmbedding,
+  })
+
+  // Build documents with pre-computed vectors
+  const nodes = await rpg.getNodes()
+  const nodeMap = new Map(nodes.map(n => [n.id, n]))
+
+  const { VectorStore } = await import('@pleaseai/rpg-utils/vector')
+  const vectorStore = new VectorStore({
+    dbPath,
+    tableName: 'rpg_nodes',
+    dimension: embeddingsData.config.dimension,
+  })
+
+  const docs = Array.from(vectors.entries())
+    .filter(([id]) => nodeMap.has(id))
+    .map(([id, vector]) => {
+      const node = nodeMap.get(id)!
+      return {
+        id,
+        text: `${node.feature.description} ${(node.feature.keywords ?? []).join(' ')} ${node.metadata?.path ?? ''}`,
+        vector,
+        metadata: {
+          entityType: node.metadata?.entityType,
+          path: node.metadata?.path,
+        },
+      }
+    })
+
+  if (docs.length > 0) {
+    await vectorStore.add(docs)
+  }
+  await vectorStore.close()
+
+  log.success(
+    `Pre-computed embeddings loaded: ${docs.length} vectors (${embeddingsData.config.provider}/${embeddingsData.config.model})`,
+  )
 
   return semanticSearch
 }

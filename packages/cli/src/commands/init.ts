@@ -11,6 +11,12 @@ export interface RPGProjectConfig {
   exclude?: string[]
   model?: string
   useLLM?: boolean
+  embedding?: {
+    provider: string
+    model: string
+    dimension: number
+    space?: string
+  }
 }
 
 const DEFAULT_CONFIG: RPGProjectConfig = {
@@ -26,6 +32,7 @@ export function registerInitCommand(program: Command): void {
     .option('--hooks', 'Install git hooks (post-merge, post-checkout)')
     .option('--ci', 'Generate GitHub Actions workflow file')
     .option('--encode', 'Run initial full encode immediately')
+    .option('--embed', 'Include embedding configuration (voyage-ai/voyage-code-3)')
     .action(
       async (
         repoPath: string,
@@ -33,6 +40,7 @@ export function registerInitCommand(program: Command): void {
           hooks?: boolean
           ci?: boolean
           encode?: boolean
+          embed?: boolean
         },
       ) => {
         try {
@@ -47,9 +55,18 @@ export function registerInitCommand(program: Command): void {
           }
           else {
             await mkdir(rpgDir, { recursive: true })
+            const configToWrite: RPGProjectConfig = { ...DEFAULT_CONFIG }
+            if (options.embed) {
+              configToWrite.embedding = {
+                provider: 'voyage-ai',
+                model: 'voyage-code-3',
+                dimension: 1024,
+                space: 'voyage-v4',
+              }
+            }
             await writeFile(
               path.join(rpgDir, 'config.json'),
-              JSON.stringify(DEFAULT_CONFIG, null, 2),
+              JSON.stringify(configToWrite, null, 2),
             )
             log.success('Created .rpg/config.json')
           }
