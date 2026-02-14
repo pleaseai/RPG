@@ -10,7 +10,8 @@
     "./node": "./src/node.ts",
     "./edge": "./src/edge.ts",
     "./rpg": "./src/rpg.ts",
-    "./adapters": "./src/adapters.ts"
+    "./adapters": "./src/adapters.ts",
+    "./embeddings": "./src/embeddings.ts"
   },
   "dependencies": {
     "@pleaseai/rpg-store": "workspace:*",

@@ -74,12 +74,20 @@ export class RPGEvolver {
 
     const errors: Array<{ entity: string, phase: string, error: string }> = []
 
+    // Track changed node IDs for incremental embedding updates
+    const embeddingChanges = {
+      added: [] as string[],
+      removed: [] as string[],
+      modified: [] as string[],
+    }
+
     // 2. Process deletions first (structural hygiene — paper scheduling)
     for (const entity of diffResult.deletions) {
       try {
         const pruned = await deleteNode(this.rpg, entity.id)
         result.deleted++
         result.prunedNodes += pruned
+        embeddingChanges.removed.push(entity.id)
       }
       catch (error) {
         errors.push({
@@ -97,9 +105,13 @@ export class RPGEvolver {
 
         if (modResult.rerouted) {
           result.rerouted++
+          // Rerouted = old deleted + new inserted
+          embeddingChanges.removed.push(mod.old.id)
+          embeddingChanges.added.push(mod.new.id)
         }
         else {
           result.modified++
+          embeddingChanges.modified.push(mod.new.id)
         }
         result.prunedNodes += modResult.prunedNodes
       }
@@ -117,6 +129,7 @@ export class RPGEvolver {
       try {
         await insertNode(this.rpg, entity, ctx)
         result.inserted++
+        embeddingChanges.added.push(entity.id)
       }
       catch (error) {
         errors.push({
@@ -130,6 +143,7 @@ export class RPGEvolver {
     // 5. Collect statistics
     result.llmCalls = this.semanticRouter.getLLMCalls()
     result.errors = errors
+    result.embeddingChanges = embeddingChanges
     result.duration = Date.now() - startTime
 
     return result
