@@ -1,6 +1,6 @@
 {
   "name": "@pleaseai/rpg",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Repository Planning Graph - A unified framework for repository understanding and generation",
   "type": "module",
   "main": "dist/src/index.js",
