@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.5](https://github.com/pleaseai/RPG/compare/v0.1.4...v0.1.5) (2026-02-14)
+
+
+### Features
+
+* **submodule:** add Microsoft RPG-ZeroRepo as vendor submodule ([#75](https://github.com/pleaseai/RPG/issues/75)) ([7e0aa00](https://github.com/pleaseai/RPG/commit/7e0aa005f5adb4a07ed65cd451d23752a8dea5b6))
+
 ## [0.1.4](https://github.com/pleaseai/RPG/compare/v0.1.3...v0.1.4) (2026-02-14)
 
 
