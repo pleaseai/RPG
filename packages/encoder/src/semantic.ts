@@ -21,6 +21,10 @@ export interface SemanticOptions {
   claudeCodeSettings?: ClaudeCodeSettings
   /** Codex CLI provider settings (only used when provider is 'codex') */
   codexSettings?: CodexCliSettings
+  /** Minimum tokens per batch - if last batch is below this, merge with previous (default: 10000) */
+  minBatchTokens?: number
+  /** Maximum tokens per batch - group entities until this limit (default: 50000) */
+  maxBatchTokens?: number
 }
 
 /**
@@ -65,6 +69,8 @@ export class SemanticExtractor {
     this.options = {
       useLLM: true,
       maxTokens: 1024,
+      minBatchTokens: 10000,
+      maxBatchTokens: 50000,
       ...options,
     }
 
