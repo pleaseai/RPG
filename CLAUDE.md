@@ -60,7 +60,53 @@ bun run typecheck
 
 # CLI (development)
 bun run packages/cli/src/cli.ts encode ./my_project
+
+# Initialize RPG in a repository
+rpg init [path] [--hooks] [--ci] [--encode]
+
+# Sync canonical graph to local with incremental evolve
+rpg sync [--force]
+
+# Stamp config.github.commit with current HEAD SHA
+rpg stamp <rpg-file>
+
+# Print last encoded commit SHA
+rpg last-commit <rpg-file>
 ```
+
+## Two-Tier RPG Data Management
+
+RPG uses a two-tier architecture for data management:
+
+**Tier 1 (CI)**: On main push, `rpg encode`/`rpg evolve` runs in GitHub Actions and commits `.rpg/graph.json` to git.
+
+**Tier 2 (Local)**: `rpg sync` copies the canonical graph to `.rpg/local/`, applies incremental evolve for local branch changes, and builds vector indices. Local data is gitignored.
+
+```
+.rpg/
+  graph.json          # Canonical RPG (git committed, CI-managed)
+  config.json         # Encode/sync settings (git committed)
+  local/              # Local-only data (gitignored)
+    graph.json        # Local evolved RPG copy
+    vectors/          # LanceDB vector embeddings
+    state.json        # Local state (base commit, branch, etc.)
+```
+
+### Setup
+
+```bash
+# Initialize with CI workflow and git hooks
+rpg init --ci --hooks --encode
+
+# Or step by step:
+rpg init                     # Create .rpg/ structure
+rpg encode . -o .rpg/graph.json --stamp  # Initial encode
+rpg sync                     # Copy to local + evolve
+```
+
+### Commit tracking
+
+The `--stamp` flag on `encode`/`evolve` records the HEAD SHA in `config.github.commit`. The CI workflow uses `rpg last-commit` to determine the commit range for incremental evolve.
 
 ## Architecture
 

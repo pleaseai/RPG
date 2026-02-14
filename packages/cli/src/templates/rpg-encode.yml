@@ -1,0 +1,56 @@
+name: RPG Encode
+
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - .rpg/graph.json
+
+permissions:
+  contents: write
+
+jobs:
+  encode:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install RPG
+        run: bun install -g @pleaseai/rpg
+
+      - name: Encode or evolve RPG
+        env:
+          GOOGLE_API_KEY: ${{ secrets.GOOGLE_API_KEY }}
+        run: |
+          if [ ! -f ".rpg/graph.json" ]; then
+            echo "No existing graph — running full encode"
+            mkdir -p .rpg
+            rpg encode . -o .rpg/graph.json --stamp
+          else
+            LAST_COMMIT=$(rpg last-commit .rpg/graph.json 2>/dev/null || echo "")
+            if [ -z "$LAST_COMMIT" ]; then
+              echo "No commit stamp — running full encode"
+              rpg encode . -o .rpg/graph.json --stamp
+            else
+              echo "Evolving from $LAST_COMMIT..HEAD"
+              rpg evolve --rpg .rpg/graph.json -c "$LAST_COMMIT..HEAD" --stamp
+            fi
+          fi
+
+      - name: Commit updated graph
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add .rpg/graph.json
+          if git diff --cached --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore(rpg): update graph [skip ci]"
+            git push
+          fi

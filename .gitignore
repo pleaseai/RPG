@@ -33,6 +33,9 @@ coverage/
 # Generated RPG files
 *.rpg.json
 
+# RPG local data
+.rpg/local/
+
 # Bun
 bun.lockb
 /.claude/settings.local.json

@@ -2,9 +2,11 @@
 import type { SemanticOptions } from '@pleaseai/rpg-encoder/semantic'
 
 import { readFile, writeFile } from 'node:fs/promises'
+import path from 'node:path'
 import { RPGEncoder } from '@pleaseai/rpg-encoder'
 import { RepositoryPlanningGraph } from '@pleaseai/rpg-graph'
 import { ExploreRPG, FetchNode, SearchNode } from '@pleaseai/rpg-tools'
+import { getHeadCommitSha } from '@pleaseai/rpg-utils/git-helpers'
 import { parseModelString } from '@pleaseai/rpg-utils/llm'
 import { createLogger, LogLevels, setLogLevel } from '@pleaseai/rpg-utils/logger'
 import { ZeroRepo } from '@pleaseai/rpg-zerorepo'
@@ -12,6 +14,8 @@ import { program } from 'commander'
 import { config } from 'dotenv'
 
 import pkg from '../package.json'
+import { registerInitCommand } from './commands/init'
+import { registerSyncCommand } from './commands/sync'
 
 const log = createLogger('CLI')
 
@@ -21,6 +25,10 @@ program
   .name('rpg')
   .description('Repository Planning Graph - Code understanding and generation')
   .version(pkg.version)
+
+// Register subcommands
+registerInitCommand(program)
+registerSyncCommand(program)
 
 // Encode command
 program
@@ -38,6 +46,7 @@ program
   .option('--no-gitignore', 'Disable .gitignore filtering (include all files)')
   .option('-m, --model <provider/model>', 'LLM provider/model (e.g., claude-code/haiku, openai/gpt-5.2, google)')
   .option('--no-llm', 'Disable LLM (use heuristic extraction)')
+  .option('--stamp', 'Stamp config.github.commit with HEAD SHA after encoding')
   .option('--verbose', 'Show detailed progress')
   .action(
     async (
@@ -51,6 +60,7 @@ program
         gitignore?: boolean
         model?: string
         llm?: boolean
+        stamp?: boolean
         verbose?: boolean
       },
     ) => {
@@ -79,6 +89,21 @@ program
       })
 
       const result = await encoder.encode()
+
+      if (options.stamp) {
+        const absRepoPath = path.resolve(repoPath)
+        const headSha = getHeadCommitSha(absRepoPath)
+        const currentConfig = result.rpg.getConfig()
+        result.rpg.updateConfig({
+          github: {
+            owner: currentConfig.github?.owner ?? '',
+            repo: currentConfig.github?.repo ?? currentConfig.name,
+            commit: headSha,
+            pathPrefix: currentConfig.github?.pathPrefix,
+          },
+        })
+        log.info(`Stamped commit: ${headSha}`)
+      }
 
       await writeFile(options.output, await result.rpg.toJSON())
 
@@ -243,7 +268,8 @@ program
   .option('-c, --commits <range>', 'Commit range', 'HEAD~1..HEAD')
   .option('-m, --model <provider/model>', 'LLM provider/model (e.g., claude-code/haiku, openai/gpt-5.2, google)')
   .option('--no-llm', 'Disable LLM (use heuristic extraction)')
-  .action(async (options: { rpg: string, commits: string, model?: string, llm?: boolean }) => {
+  .option('--stamp', 'Stamp config.github.commit with last commit in range')
+  .action(async (options: { rpg: string, commits: string, model?: string, llm?: boolean, stamp?: boolean }) => {
     log.info(`Evolving RPG with commits: ${options.commits}`)
 
     const json = await readFile(options.rpg, 'utf-8')
@@ -254,6 +280,21 @@ program
 
     const encoder = new RPGEncoder(repoPath, { semantic })
     const result = await encoder.evolve(rpg, { commitRange: options.commits })
+
+    if (options.stamp) {
+      const absRepoPath = path.resolve(repoPath)
+      const headSha = getHeadCommitSha(absRepoPath)
+      const currentConfig = rpg.getConfig()
+      rpg.updateConfig({
+        github: {
+          owner: currentConfig.github?.owner ?? '',
+          repo: currentConfig.github?.repo ?? currentConfig.name,
+          commit: headSha,
+          pathPrefix: currentConfig.github?.pathPrefix,
+        },
+      })
+      log.info(`Stamped commit: ${headSha}`)
+    }
 
     await writeFile(options.rpg, await rpg.toJSON())
 
@@ -289,6 +330,46 @@ program
     console.log(`  Total edges: ${stats.edgeCount}`)
     console.log(`    Functional: ${stats.functionalEdgeCount}`)
     console.log(`    Dependency: ${stats.dependencyEdgeCount}`)
+  })
+
+// Stamp command
+program
+  .command('stamp')
+  .description('Stamp config.github.commit with current HEAD SHA')
+  .argument('<file>', 'RPG file path')
+  .action(async (filePath: string) => {
+    const json = await readFile(filePath, 'utf-8')
+    const rpg = await RepositoryPlanningGraph.fromJSON(json)
+    const repoPath = rpg.getConfig().rootPath ?? '.'
+    const absRepoPath = path.resolve(repoPath)
+    const headSha = getHeadCommitSha(absRepoPath)
+    const currentConfig = rpg.getConfig()
+    rpg.updateConfig({
+      github: {
+        owner: currentConfig.github?.owner ?? '',
+        repo: currentConfig.github?.repo ?? currentConfig.name,
+        commit: headSha,
+        pathPrefix: currentConfig.github?.pathPrefix,
+      },
+    })
+    await writeFile(filePath, await rpg.toJSON())
+    console.log(headSha)
+  })
+
+// Last-commit command
+program
+  .command('last-commit')
+  .description('Print the last encoded commit SHA from config.github.commit')
+  .argument('<file>', 'RPG file path')
+  .action(async (filePath: string) => {
+    const json = await readFile(filePath, 'utf-8')
+    const rpg = await RepositoryPlanningGraph.fromJSON(json)
+    const commit = rpg.getConfig().github?.commit
+    if (!commit) {
+      log.error('No commit stamp found in RPG config')
+      process.exit(1)
+    }
+    console.log(commit)
   })
 
 /**

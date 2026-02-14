@@ -13,6 +13,7 @@
     "./llm": "./src/llm.ts",
     "./vector": "./src/vector.ts",
     "./git-path": "./src/git-path.ts",
+    "./git-helpers": "./src/git-helpers.ts",
     "./logger": "./src/logger.ts"
   },
   "dependencies": {
