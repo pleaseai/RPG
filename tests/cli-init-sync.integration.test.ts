@@ -130,7 +130,7 @@ describe('rpg init command', () => {
 
   beforeEach(() => {
     tempDir = mkdtempSync(path.join(tmpdir(), 'rpg-init-'))
-    git(tempDir, ['init'])
+    git(tempDir, ['init', '-b', 'main'])
     git(tempDir, ['config', 'user.email', 'test@test.com'])
     git(tempDir, ['config', 'user.name', 'Test'])
   })
@@ -219,7 +219,7 @@ describe('installHooks', () => {
 
   beforeEach(() => {
     tempDir = mkdtempSync(path.join(tmpdir(), 'rpg-hooks-'))
-    git(tempDir, ['init'])
+    git(tempDir, ['init', '-b', 'main'])
     git(tempDir, ['config', 'user.email', 'test@test.com'])
     git(tempDir, ['config', 'user.name', 'Test'])
   })
@@ -277,7 +277,7 @@ describe('rpg sync command', () => {
 
   beforeEach(async () => {
     tempDir = mkdtempSync(path.join(tmpdir(), 'rpg-sync-'))
-    git(tempDir, ['init'])
+    git(tempDir, ['init', '-b', 'main'])
     git(tempDir, ['config', 'user.email', 'test@test.com'])
     git(tempDir, ['config', 'user.name', 'Test'])
 
