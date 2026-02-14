@@ -365,6 +365,7 @@ RPG encoding uses LLM for semantic feature extraction. Options:
 | `useLLM: true` + Claude Haiku 4.5 | High (73% SWE-bench) | $1/$5 per 1M | Production fallback |
 | `useLLM: true` + GPT-4o | High (70% SWE-bench) | $3/$10 per 1M | Paper baseline |
 | `useLLM: true` + Claude Code (sonnet) | High | Pro/Max sub | No API key needed |
+| `useLLM: true` + Codex CLI (gpt-5.3-codex) | High | Plus/Pro sub | No API key needed |
 | `useLLM: false` (heuristic) | ~15% lower | Free | Offline/testing |
 
 ## Embedding Options

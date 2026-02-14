@@ -1,4 +1,4 @@
-import type { ClaudeCodeSettings, LLMProvider } from '@pleaseai/rpg-utils/llm'
+import type { ClaudeCodeSettings, CodexCliSettings, LLMProvider } from '@pleaseai/rpg-utils/llm'
 import { SemanticFeatureSchema as NodeSemanticFeatureSchema } from '@pleaseai/rpg-graph/node'
 import { LLMClient } from '@pleaseai/rpg-utils/llm'
 import { z } from 'zod/v4'
@@ -19,6 +19,8 @@ export interface SemanticOptions {
   maxTokens?: number
   /** Claude Code provider settings (only used when provider is 'claude-code') */
   claudeCodeSettings?: ClaudeCodeSettings
+  /** Codex CLI provider settings (only used when provider is 'codex') */
+  codexSettings?: CodexCliSettings
 }
 
 /**
@@ -76,6 +78,7 @@ export class SemanticExtractor {
           apiKey: this.options.apiKey,
           maxTokens: this.options.maxTokens,
           claudeCodeSettings: this.options.claudeCodeSettings,
+          codexSettings: this.options.codexSettings,
         })
       }
     }

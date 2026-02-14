@@ -1,10 +1,12 @@
 import type { ClaudeCodeSettings } from 'ai-sdk-provider-claude-code'
+import type { CodexCliSettings } from 'ai-sdk-provider-codex-cli'
 import type { ZodType } from 'zod/v4'
 import { createAnthropic } from '@ai-sdk/anthropic'
 import { createGoogleGenerativeAI } from '@ai-sdk/google'
 import { createOpenAI } from '@ai-sdk/openai'
 import { generateText, Output } from 'ai'
 import { createClaudeCode } from 'ai-sdk-provider-claude-code'
+import { createCodexCli } from 'ai-sdk-provider-codex-cli'
 import { createLogger } from './logger'
 
 const log = createLogger('LLMClient')
@@ -12,7 +14,7 @@ const log = createLogger('LLMClient')
 /**
  * LLM provider type
  */
-export type LLMProvider = 'openai' | 'anthropic' | 'google' | 'claude-code'
+export type LLMProvider = 'openai' | 'anthropic' | 'google' | 'claude-code' | 'codex'
 
 /**
  * LLM client options
@@ -34,9 +36,12 @@ export interface LLMOptions {
   onError?: (error: Error, context: { model: string, promptLength: number }) => void
   /** Claude Code provider settings (only used when provider is 'claude-code') */
   claudeCodeSettings?: ClaudeCodeSettings
+  /** Codex CLI provider settings (only used when provider is 'codex') */
+  codexSettings?: CodexCliSettings
 }
 
 export type { ClaudeCodeSettings }
+export type { CodexCliSettings }
 
 /**
  * LLM response
@@ -62,6 +67,7 @@ const DEFAULT_MODELS: Record<LLMProvider, string> = {
   'anthropic': 'claude-sonnet-4.5',
   'google': 'gemini-3-flash-preview',
   'claude-code': 'sonnet',
+  'codex': 'gpt-5.3-codex',
 }
 
 /**
@@ -86,12 +92,18 @@ const MODEL_PRICING: Record<string, { input: number, output: number }> = {
   'sonnet': CLAUDE_SONNET_PRICING,
   'opus': { input: 15.00, output: 75.00 },
   'haiku': CLAUDE_HAIKU_PRICING,
+  // Codex CLI provider uses ChatGPT Plus/Pro subscription.
+  // Pricing reflects equivalent OpenAI API rates for cost estimation,
+  // not actual charges (Codex CLI uses subscription billing).
+  'gpt-5.3-codex': { input: 1.25, output: 10.00 },
+  'gpt-5.2-codex': { input: 1.25, output: 10.00 },
+  'gpt-5.1-codex-max': { input: 1.25, output: 10.00 },
 }
 
 /**
  * Create provider instance
  */
-function createProvider(provider: LLMProvider, apiKey?: string, claudeCodeSettings?: ClaudeCodeSettings) {
+function createProvider(provider: LLMProvider, apiKey?: string, claudeCodeSettings?: ClaudeCodeSettings, codexSettings?: CodexCliSettings) {
   switch (provider) {
     case 'openai':
       return createOpenAI({
@@ -107,6 +119,8 @@ function createProvider(provider: LLMProvider, apiKey?: string, claudeCodeSettin
       })
     case 'claude-code':
       return createClaudeCode(claudeCodeSettings ? { defaultSettings: claudeCodeSettings } : undefined)
+    case 'codex':
+      return createCodexCli(codexSettings ? { defaultSettings: codexSettings } : undefined)
     default:
       throw new Error(`Unsupported LLM provider: ${String(provider satisfies never)}`)
   }
@@ -163,7 +177,7 @@ function validateProvider(name: string): LLMProvider {
  * - Functional hierarchy construction
  * - Code generation
  *
- * Supports OpenAI, Anthropic, Google, and Claude Code providers with unified interface.
+ * Supports OpenAI, Anthropic, Google, Claude Code, and Codex CLI providers with unified interface.
  *
  * @example
  * ```typescript
@@ -178,6 +192,9 @@ function validateProvider(name: string): LLMProvider {
  *
  * // Use Claude Code (no API key needed, requires Claude Pro/Max subscription)
  * const client = new LLMClient({ provider: 'claude-code', model: 'sonnet' })
+ *
+ * // Use Codex CLI (no API key needed, requires ChatGPT Plus/Pro subscription)
+ * const client = new LLMClient({ provider: 'codex', model: 'gpt-5.3-codex' })
  * ```
  */
 export class LLMClient {
@@ -192,7 +209,7 @@ export class LLMClient {
       temperature: 0,
       ...options,
     }
-    this.providerInstance = createProvider(options.provider, options.apiKey, options.claudeCodeSettings)
+    this.providerInstance = createProvider(options.provider, options.apiKey, options.claudeCodeSettings, options.codexSettings)
   }
 
   /**

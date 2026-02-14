@@ -44,7 +44,7 @@ program
   )
   .option('-d, --max-depth <depth>', 'Maximum directory depth', '10')
   .option('--no-gitignore', 'Disable .gitignore filtering (include all files)')
-  .option('-m, --model <provider/model>', 'LLM provider/model (e.g., claude-code/haiku, openai/gpt-5.2, google)')
+  .option('-m, --model <provider/model>', 'LLM provider/model (e.g., codex/gpt-5.3-codex, claude-code/haiku, openai/gpt-5.2, google)')
   .option('--no-llm', 'Disable LLM (use heuristic extraction)')
   .option('--stamp', 'Stamp config.github.commit with HEAD SHA after encoding')
   .option('--verbose', 'Show detailed progress')
@@ -256,7 +256,7 @@ program
   .description('Update RPG with new commits')
   .requiredOption('--rpg <file>', 'RPG file path')
   .option('-c, --commits <range>', 'Commit range', 'HEAD~1..HEAD')
-  .option('-m, --model <provider/model>', 'LLM provider/model (e.g., claude-code/haiku, openai/gpt-5.2, google)')
+  .option('-m, --model <provider/model>', 'LLM provider/model (e.g., codex/gpt-5.3-codex, claude-code/haiku, openai/gpt-5.2, google)')
   .option('--no-llm', 'Disable LLM (use heuristic extraction)')
   .option('--stamp', 'Stamp config.github.commit with HEAD SHA')
   .action(async (options: { rpg: string, commits: string, model?: string, llm?: boolean, stamp?: boolean }) => {

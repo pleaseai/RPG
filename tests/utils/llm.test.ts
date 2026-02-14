@@ -18,6 +18,14 @@ vi.mock('ai-sdk-provider-claude-code', () => ({
   createClaudeCode: vi.fn(() => vi.fn(() => 'mock-claude-code-model')),
 }))
 
+const { mockCreateCodexCli } = vi.hoisted(() => ({
+  mockCreateCodexCli: vi.fn(() => vi.fn(() => 'mock-codex-model')),
+}))
+
+vi.mock('ai-sdk-provider-codex-cli', () => ({
+  createCodexCli: mockCreateCodexCli,
+}))
+
 vi.mock('ai', () => ({
   generateText: vi.fn(),
   Output: {
@@ -36,6 +44,10 @@ describe('parseModelString', () => {
 
   it('should parse claude-code/sonnet', () => {
     expect(parseModelString('claude-code/sonnet')).toEqual({ provider: 'claude-code', model: 'sonnet' })
+  })
+
+  it('should parse codex/gpt-5.3-codex', () => {
+    expect(parseModelString('codex/gpt-5.3-codex')).toEqual({ provider: 'codex', model: 'gpt-5.3-codex' })
   })
 
   it('should parse provider-only string (no slash)', () => {
@@ -82,6 +94,17 @@ describe('LLMClient', () => {
     it('should accept custom model for claude-code provider', () => {
       const client = new LLMClient({ provider: 'claude-code', model: 'opus' })
       expect(client.getModel()).toBe('opus')
+    })
+
+    it('should use default model for codex provider', () => {
+      const client = new LLMClient({ provider: 'codex' })
+      expect(client.getModel()).toBe('gpt-5.3-codex')
+      expect(client.getProvider()).toBe('codex')
+    })
+
+    it('should accept custom model for codex provider', () => {
+      const client = new LLMClient({ provider: 'codex', model: 'gpt-5.2-codex' })
+      expect(client.getModel()).toBe('gpt-5.2-codex')
     })
 
     it('should accept custom model', () => {
@@ -194,6 +217,52 @@ describe('LLMClient', () => {
       new LLMClient({ provider: 'claude-code', apiKey: 'should-be-ignored' })
 
       expect(vi.mocked(createClaudeCode)).toHaveBeenCalledWith(undefined)
+    })
+
+    it('should call generateText with codex provider', async () => {
+      const { generateText } = await import('ai')
+
+      vi.mocked(generateText).mockResolvedValueOnce({
+        text: 'codex response',
+        usage: { inputTokens: 8, outputTokens: 4 },
+      } as any)
+
+      const client = new LLMClient({ provider: 'codex' })
+      const result = await client.complete('test prompt')
+
+      expect(result.content).toBe('codex response')
+      expect(result.model).toBe('gpt-5.3-codex')
+    })
+
+    it('should pass codexSettings to createCodexCli', () => {
+      mockCreateCodexCli.mockClear()
+
+      const settings = {
+        cwd: '/tmp/test',
+      }
+
+      // eslint-disable-next-line no-new
+      new LLMClient({ provider: 'codex', codexSettings: settings })
+
+      expect(mockCreateCodexCli).toHaveBeenCalledWith({ defaultSettings: settings })
+    })
+
+    it('should call createCodexCli with undefined when no settings provided', () => {
+      mockCreateCodexCli.mockClear()
+
+      // eslint-disable-next-line no-new
+      new LLMClient({ provider: 'codex' })
+
+      expect(mockCreateCodexCli).toHaveBeenCalledWith(undefined)
+    })
+
+    it('should not pass apiKey to createCodexCli', () => {
+      mockCreateCodexCli.mockClear()
+
+      // eslint-disable-next-line no-new
+      new LLMClient({ provider: 'codex', apiKey: 'should-be-ignored' })
+
+      expect(mockCreateCodexCli).toHaveBeenCalledWith(undefined)
     })
 
     it('should throw and call onError on failure', async () => {
@@ -388,6 +457,20 @@ describe('LLMClient', () => {
       expect(cost.inputCost).toBe(1.00)
       expect(cost.outputCost).toBe(5.00)
       expect(cost.totalCost).toBe(6.00)
+    })
+
+    it('should estimate cost for codex gpt-5.3-codex model', () => {
+      const client = new LLMClient({ provider: 'codex', model: 'gpt-5.3-codex' })
+      const cost = client.estimateCost({
+        totalPromptTokens: 1_000_000,
+        totalCompletionTokens: 1_000_000,
+        totalTokens: 2_000_000,
+        requestCount: 1,
+      })
+
+      expect(cost.inputCost).toBe(1.25)
+      expect(cost.outputCost).toBe(10.00)
+      expect(cost.totalCost).toBe(11.25)
     })
 
     it('should return zero cost for unknown model', () => {

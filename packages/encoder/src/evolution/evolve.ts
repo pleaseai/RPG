@@ -155,6 +155,7 @@ export class RPGEvolver {
       apiKey: this.options.semantic?.apiKey,
       maxTokens: this.options.semantic?.maxTokens,
       claudeCodeSettings: this.options.semantic?.claudeCodeSettings,
+      codexSettings: this.options.semantic?.codexSettings,
     })
   }
 
