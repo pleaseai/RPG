@@ -346,7 +346,6 @@ The entire generation pipeline (~30,777 lines) exists in the vendor but is absen
 | Priority | Improvement | Vendor Source | Impact |
 |----------|-------------|---------------|--------|
 | **P0** | ZeroRepo generation pipeline (prop → impl → code gen) | `rpg_gen/prop_level/`, `rpg_gen/impl_level/`, `code_gen/` (~30K lines) | Enables code generation from specifications |
-| **P0** | Structured LLM output (Pydantic → Zod pattern) | `base/llm_client/client.py` | More reliable JSON parsing from LLMs |
 | **P1** | DependencyGraph (invocation + inheritance tracking) | `base/rpg/dep_graph.py` (1,023 lines) | More accurate dependency analysis |
 | **P1** | Token-aware batch semantic extraction | `rpg_encoder/rpg_parsing/rpg_encoding.py` | Better scaling for large repositories |
 | **P1** | Checkpoint/resume system for long pipelines | `config/checkpoint_config.py` | Resilience for multi-hour encoding jobs |
@@ -367,6 +366,7 @@ The entire generation pipeline (~30,777 lines) exists in the vendor but is absen
 | **Hybrid search** | Combined vector similarity + BM25 text search — vendor has FAISS only (vector) |
 | **Evolution system** | Paper-faithful delete→modify→insert with drift detection and semantic routing |
 | **MCP integration** | Native Claude Code integration via MCP server (6 tools) — no vendor equivalent |
+| **Structured LLM output** | Zod schema → `Output.object()` validated structured output via `completeJSON<T>()` — vendor uses Pydantic BaseModel |
 | **Type safety** | Zod schemas + TypeScript strict mode provide compile-time guarantees |
 | **Cost tracking** | Per-model pricing estimation with `estimateCost()` — absent in vendor |
 | **Two-tier data management** | CI-committed canonical graph + local-only evolved copy — vendor has flat JSON |
