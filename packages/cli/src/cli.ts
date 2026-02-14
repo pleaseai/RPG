@@ -381,15 +381,23 @@ function buildSemanticOptions(
     return undefined
   }
 
-  const batchOptions = {
-    ...(minBatchTokens !== undefined ? { minBatchTokens: Number.parseInt(minBatchTokens, 10) } : {}),
-    ...(maxBatchTokens !== undefined ? { maxBatchTokens: Number.parseInt(maxBatchTokens, 10) } : {}),
+  const parsedMin = minBatchTokens !== undefined ? Number.parseInt(minBatchTokens, 10) : undefined
+  const parsedMax = maxBatchTokens !== undefined ? Number.parseInt(maxBatchTokens, 10) : undefined
+
+  if (parsedMin !== undefined && (Number.isNaN(parsedMin) || parsedMin < 0)) {
+    log.error(`Invalid --min-batch-tokens value: ${minBatchTokens}`)
+    process.exit(1)
+  }
+  if (parsedMax !== undefined && (Number.isNaN(parsedMax) || parsedMax < 0)) {
+    log.error(`Invalid --max-batch-tokens value: ${maxBatchTokens}`)
+    process.exit(1)
   }
 
   return {
     ...(model ? parseModelString(model) : {}),
     useLLM: llm !== false,
-    ...batchOptions,
+    ...(parsedMin !== undefined ? { minBatchTokens: parsedMin } : {}),
+    ...(parsedMax !== undefined ? { maxBatchTokens: parsedMax } : {}),
   }
 }
 

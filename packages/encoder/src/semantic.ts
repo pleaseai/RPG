@@ -147,7 +147,7 @@ export class SemanticExtractor {
           }
           const warning = `[SemanticExtractor] LLM extraction failed for ${input.name} after ${maxIterations} attempts: ${msg}. Falling back to heuristic.`
           this.warnings.push(warning)
-          console.warn(warning)
+          log.warn(warning)
         }
       }
     }
@@ -193,11 +193,12 @@ export class SemanticExtractor {
     }
 
     const batches: EntityInput[][] = []
+    const batchTokenCounts: number[] = []
     let currentBatch: EntityInput[] = []
     let currentTokens = 0
 
-    const maxBatchTokens = this.options.maxBatchTokens!
-    const minBatchTokens = this.options.minBatchTokens!
+    const maxBatchTokens = this.options.maxBatchTokens ?? 50000
+    const minBatchTokens = this.options.minBatchTokens ?? 10000
 
     // Greedy grouping: fit entities into batches up to maxBatchTokens
     for (const entity of inputs) {
@@ -207,16 +208,19 @@ export class SemanticExtractor {
       if (entityTokens > maxBatchTokens) {
         if (currentBatch.length > 0) {
           batches.push(currentBatch)
+          batchTokenCounts.push(currentTokens)
           currentBatch = []
           currentTokens = 0
         }
         batches.push([entity])
+        batchTokenCounts.push(entityTokens)
         continue
       }
 
       // If adding this entity exceeds max, start new batch
       if (currentBatch.length > 0 && currentTokens + entityTokens > maxBatchTokens) {
         batches.push(currentBatch)
+        batchTokenCounts.push(currentTokens)
         currentBatch = [entity]
         currentTokens = entityTokens
       }
@@ -229,14 +233,15 @@ export class SemanticExtractor {
     // Append remaining batch
     if (currentBatch.length > 0) {
       batches.push(currentBatch)
+      batchTokenCounts.push(currentTokens)
     }
 
     // Merge small last batch with previous batch if below minBatchTokens
     if (batches.length > 1) {
-      const lastBatch = batches[batches.length - 1]!
-      const lastBatchTokens = lastBatch.reduce((total, entity) => total + estimateEntityTokens(entity), 0)
+      const lastBatchTokens = batchTokenCounts[batchTokenCounts.length - 1]!
 
       if (lastBatchTokens < minBatchTokens) {
+        const lastBatch = batches[batches.length - 1]!
         const previousBatch = batches[batches.length - 2]!
         previousBatch.push(...lastBatch)
         batches.pop()

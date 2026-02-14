@@ -49,8 +49,8 @@ describe('semantic batching', () => {
     })
 
     it('isolates single entity exceeding maxBatchTokens', () => {
-      // Create an entity with huge source code
-      const largeSource = 'x'.repeat(200000) // ~50000 tokens
+      // Create an entity with huge source code: 200000 chars / 4 + 200 overhead = 50200 tokens > 50000
+      const largeSource = 'x'.repeat(200000)
       const largeEntity: EntityInput = {
         type: 'function',
         name: 'largeFunc',
@@ -66,20 +66,24 @@ describe('semantic batching', () => {
       const entities = [smallEntity, largeEntity]
       const batches = (extractor as any).createTokenAwareBatches(entities)
 
-      // Should have at least 2 batches since large entity exceeds maxBatchTokens
-      expect(batches.length).toBeGreaterThanOrEqual(2)
-      // Verify large entity is isolated
-      const largeInOwn = batches.some(batch => batch.length === 1 && batch[0] === largeEntity)
-      expect(largeInOwn).toBe(true)
+      // Exactly 2 batches: small entity in first, large isolated in second
+      expect(batches).toHaveLength(2)
+      expect(batches[0]).toEqual([smallEntity])
+      expect(batches[1]).toEqual([largeEntity])
     })
 
-    it('merges last batch into previous batch when below minBatchTokens', () => {
-      // Create entities such that:
-      // - First batch fills up close to maxBatchTokens
-      // - Second batch (last) is below minBatchTokens
-      // - Should be merged into first batch
+    it('merges last batch into previous when below minBatchTokens', () => {
+      // Use custom thresholds to precisely control batch boundaries
+      // Each medium entity: 40000 chars / 4 + 200 = 10200 tokens
+      // maxBatchTokens: 10500 → fits exactly one medium entity per batch
+      // minBatchTokens: 5000 → small entity (200 tokens) triggers merge
+      const customExtractor = new SemanticExtractor({
+        useLLM: false,
+        minBatchTokens: 5000,
+        maxBatchTokens: 10500,
+      })
 
-      const mediumSource = 'x'.repeat(40000) // ~10000 tokens
+      const mediumSource = 'x'.repeat(40000)
       const entity1: EntityInput = {
         type: 'function',
         name: 'medium1',
@@ -92,7 +96,6 @@ describe('semantic batching', () => {
         filePath: 'src/m2.ts',
         sourceCode: mediumSource,
       }
-      // Small entity that will be last batch
       const entity3: EntityInput = {
         type: 'function',
         name: 'small',
@@ -100,39 +103,39 @@ describe('semantic batching', () => {
       }
 
       const entities = [entity1, entity2, entity3]
-      const batches = (extractor as any).createTokenAwareBatches(entities)
+      const batches = (customExtractor as any).createTokenAwareBatches(entities)
 
-      // If last batch was merged, should have fewer batches
-      // The exact behavior depends on token counts, but verify the method exists
-      expect(batches.length).toBeGreaterThanOrEqual(1)
-      // Verify all entities are in some batch
-      const allEntities = batches.flat()
-      expect(allEntities).toEqual(entities)
+      // Without merge: 3 batches [m1], [m2], [small]
+      // With merge (small 200 tokens < minBatchTokens 5000): 2 batches [m1], [m2, small]
+      expect(batches).toHaveLength(2)
+      expect(batches[0]).toEqual([entity1])
+      expect(batches[1]).toEqual([entity2, entity3])
     })
 
-    it('respects minBatchTokens and maxBatchTokens options', () => {
+    it('respects custom maxBatchTokens by splitting entities', () => {
+      // Each entity with source: 4000 chars / 4 + 200 = 1200 tokens
+      // maxBatchTokens: 2000 → fits only 1 entity per batch (1200 < 2000, but 2*1200=2400 > 2000)
       const customExtractor = new SemanticExtractor({
         useLLM: false,
-        minBatchTokens: 5000,
-        maxBatchTokens: 20000,
+        minBatchTokens: 100,
+        maxBatchTokens: 2000,
       })
 
-      const entities: EntityInput[] = [
-        { type: 'function', name: 'a', filePath: 'a.ts' },
-        { type: 'function', name: 'b', filePath: 'b.ts' },
-        { type: 'function', name: 'c', filePath: 'c.ts' },
-        { type: 'function', name: 'd', filePath: 'd.ts' },
-        { type: 'function', name: 'e', filePath: 'e.ts' },
-      ]
+      const source = 'x'.repeat(4000)
+      const entities: EntityInput[] = Array.from({ length: 3 }, (_, i) => ({
+        type: 'function' as const,
+        name: `func${i}`,
+        filePath: `src/file${i}.ts`,
+        sourceCode: source,
+      }))
 
       const batches = (customExtractor as any).createTokenAwareBatches(entities)
 
-      // Each entity is 200 tokens, so:
-      // - Can fit 5 entities per batch with 20000 max (5 * 200 = 1000 tokens)
-      // - All should fit in one batch
-      expect(batches.length).toBeGreaterThanOrEqual(1)
-      const allEntities = batches.flat()
-      expect(allEntities).toEqual(entities)
+      // Each entity is 1200 tokens, max is 2000 → 1 entity per batch
+      expect(batches).toHaveLength(3)
+      expect(batches[0]).toEqual([entities[0]])
+      expect(batches[1]).toEqual([entities[1]])
+      expect(batches[2]).toEqual([entities[2]])
     })
 
     it('preserves entity order across batches', () => {

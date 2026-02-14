@@ -6,17 +6,18 @@ describe('SemanticExtractor multi-iteration extraction', () => {
   describe('maxParseIterations option', () => {
     it('has default maxParseIterations of 1 (backward compatible)', () => {
       const extractor = new SemanticExtractor({ useLLM: false })
-      expect(extractor.options.maxParseIterations).toBe(1)
+      // Verify default via behavior: accessing private options through cast
+      expect((extractor as any).options.maxParseIterations).toBe(1)
     })
 
     it('accepts custom maxParseIterations option', () => {
       const extractor = new SemanticExtractor({ useLLM: false, maxParseIterations: 3 })
-      expect(extractor.options.maxParseIterations).toBe(3)
+      expect((extractor as any).options.maxParseIterations).toBe(3)
     })
 
     it('uses provided maxParseIterations from options', () => {
       const extractor = new SemanticExtractor({ useLLM: false, maxParseIterations: 5 })
-      expect(extractor.options.maxParseIterations).toBe(5)
+      expect((extractor as any).options.maxParseIterations).toBe(5)
     })
   })
 
