@@ -1,89 +1,114 @@
 {
-  "feature": "Implement DataFlowEdge creation in Encoder",
-  "issue_number": 17,
+  "feature": "Token-Aware Batch Semantic Extraction",
+  "issue_number": 81,
   "plan_path": null,
   "spec": null,
-  "stage": 2,
-  "pr_number": 36,
-  "created_at": "2026-02-09T00:00:00.000Z",
-  "updated_at": "2026-02-09T00:00:00.000Z",
+  "stage": 1,
+  "pr_number": null,
+  "created_at": "2026-02-15T00:00:00.000Z",
+  "updated_at": "2026-02-15T00:00:00.000Z",
   "tasks": [
     {
       "id": "T001",
-      "title": "Implement inter-module data flow detection (shared state, parameters, return values)",
-      "phase": 1,
+      "title": "Implement token counting utility",
+      "phase": 2,
       "status": "pending",
       "parallel": true,
       "dependencies": [],
       "files_affected": [
-        "src/encoder/data-flow.ts",
-        "src/graph/edge.ts"
+        "packages/encoder/src/token-counter.ts"
       ]
     },
     {
       "id": "T002",
-      "title": "Implement intra-module data flow detection (variable usage chains)",
-      "phase": 1,
+      "title": "Refactor SemanticExtractor batching strategy with token budget parameters",
+      "phase": 2,
       "status": "pending",
-      "parallel": true,
-      "dependencies": [],
+      "parallel": false,
+      "dependencies": [
+        "T001"
+      ],
       "files_affected": [
-        "src/encoder/data-flow.ts"
+        "packages/encoder/src/semantic.ts"
       ]
     },
     {
       "id": "T003",
-      "title": "Integrate DataFlowEdge creation into the encoding pipeline",
+      "title": "Add configurable batch parameters to SemanticOptions",
+      "phase": 2,
+      "status": "pending",
+      "parallel": true,
+      "dependencies": [],
+      "files_affected": [
+        "packages/encoder/src/semantic.ts"
+      ]
+    },
+    {
+      "id": "T004",
+      "title": "Implement multi-iteration extraction (optional P2 follow-up)",
+      "phase": 2,
+      "status": "pending",
+      "parallel": false,
+      "dependencies": [
+        "T002"
+      ],
+      "files_affected": [
+        "packages/encoder/src/semantic.ts"
+      ]
+    },
+    {
+      "id": "T005",
+      "title": "Update CLI encode command to expose batch parameters",
+      "phase": 2,
+      "status": "pending",
+      "parallel": false,
+      "dependencies": [
+        "T003",
+        "T002"
+      ],
+      "files_affected": [
+        "packages/cli/src/commands/encode.ts"
+      ]
+    },
+    {
+      "id": "T006",
+      "title": "Write tests for token counting, batch grouping, and edge cases",
       "phase": 2,
       "status": "pending",
       "parallel": false,
       "dependencies": [
         "T001",
-        "T002"
-      ],
-      "files_affected": [
-        "src/encoder/encoder.ts",
-        "src/graph/index.ts"
-      ]
-    },
-    {
-      "id": "T004",
-      "title": "Add unit tests for inter-module and intra-module data flow detection",
-      "phase": 1,
-      "status": "pending",
-      "parallel": true,
-      "dependencies": [],
-      "files_affected": [
-        "tests/data-flow.test.ts"
-      ]
-    },
-    {
-      "id": "T005",
-      "title": "Add integration test for DataFlowEdge in full encoding pipeline",
-      "phase": 3,
-      "status": "pending",
-      "parallel": false,
-      "dependencies": [
+        "T002",
         "T003"
       ],
       "files_affected": [
-        "tests/encoder.test.ts"
+        "tests/token-counter.test.ts",
+        "tests/semantic-batching.test.ts"
       ]
     }
   ],
   "verification": {
     "automated_tests": [
-      "Unit tests pass: bun run test tests/data-flow.test.ts",
-      "Integration tests pass: bun run test tests/encoder.test.ts",
-      "All tests pass: bun run test",
-      "Type checking: bun run typecheck",
-      "Linting: bun run lint"
+      "Token counting accuracy tests",
+      "Batch grouping correctness (small entities grouped, large entities isolated)",
+      "Edge cases: single entity exceeding budget, empty entity list",
+      "Integration test with real LLM call verifying batching behavior",
+      "Backward compatibility: fixed batch size fallback works",
+      "Full test suite passes (bun run test)",
+      "Lint passes (bun run lint)",
+      "Type check passes (bun run typecheck)"
     ],
-    "manual_tests": [],
+    "manual_tests": [
+      "Encode a repository and verify fewer LLM calls with token-aware batching",
+      "Verify large entities are isolated into single-entity batches",
+      "Verify small entities are grouped efficiently"
+    ],
     "acceptance_criteria": [
-      "AC-1: Data flow relationships are detected and encoded as edges",
-      "AC-2: Both inter-module and intra-module flows are captured",
-      "AC-3: Edges include proper metadata (variable names, flow direction)"
+      "Token-aware batching replaces fixed batch size of 5",
+      "Configurable minBatchTokens (default 10000) and maxBatchTokens (default 50000)",
+      "At least one entity per batch even if it exceeds budget",
+      "Backward compatible: fixed batch size as fallback",
+      "CLI exposes --min-batch-tokens and --max-batch-tokens flags"
     ]
   }
 }

@@ -14,6 +14,7 @@
     "./cache": "./src/cache.ts",
     "./data-flow": "./src/data-flow.ts",
     "./grounding": "./src/grounding.ts",
+    "./token-counter": "./src/token-counter.ts",
     "./evolution": "./src/evolution/index.ts",
     "./evolution/evolve": "./src/evolution/evolve.ts",
     "./evolution/diff-parser": "./src/evolution/diff-parser.ts",
