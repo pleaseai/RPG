@@ -39,6 +39,8 @@ export interface EvolutionResult {
   llmCalls: number
   /** Errors encountered during evolution (partial failures) */
   errors: Array<{ entity: string, phase: string, error: string }>
+  /** Node IDs changed during evolution (for incremental embedding updates) */
+  embeddingChanges?: { added: string[], removed: string[], modified: string[] }
 }
 
 /**
