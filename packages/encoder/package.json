@@ -7,6 +7,7 @@
   "types": "src/index.ts",
   "exports": {
     ".": "./src/index.ts",
+    "./call-extractor": "./src/call-extractor.ts",
     "./encoder": "./src/encoder.ts",
     "./embedding": "./src/embedding.ts",
     "./semantic": "./src/semantic.ts",
@@ -15,6 +16,7 @@
     "./data-flow": "./src/data-flow.ts",
     "./grounding": "./src/grounding.ts",
     "./token-counter": "./src/token-counter.ts",
+    "./inheritance-extractor": "./src/inheritance-extractor.ts",
     "./evolution": "./src/evolution/index.ts",
     "./evolution/evolve": "./src/evolution/evolve.ts",
     "./evolution/diff-parser": "./src/evolution/diff-parser.ts",
@@ -31,7 +33,8 @@
     "@ai-sdk/openai": "^3.0.25",
     "@huggingface/transformers": "^3.8.1",
     "ai": "^6.0.70",
-    "better-sqlite3": "^12.6.2"
+    "better-sqlite3": "^12.6.2",
+    "tree-sitter": "^0.21.1"
   },
   "peerDependencies": {
     "zod": "^3.25.0 || ^4.0.0"
