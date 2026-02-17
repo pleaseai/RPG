@@ -8,6 +8,8 @@
   "exports": {
     ".": "./src/index.ts",
     "./call-extractor": "./src/call-extractor.ts",
+    "./dependency-graph": "./src/dependency-graph.ts",
+    "./dependency-injection": "./src/dependency-injection.ts",
     "./encoder": "./src/encoder.ts",
     "./embedding": "./src/embedding.ts",
     "./semantic": "./src/semantic.ts",
@@ -17,6 +19,7 @@
     "./grounding": "./src/grounding.ts",
     "./token-counter": "./src/token-counter.ts",
     "./inheritance-extractor": "./src/inheritance-extractor.ts",
+    "./symbol-resolver": "./src/symbol-resolver.ts",
     "./evolution": "./src/evolution/index.ts",
     "./evolution/evolve": "./src/evolution/evolve.ts",
     "./evolution/diff-parser": "./src/evolution/diff-parser.ts",
