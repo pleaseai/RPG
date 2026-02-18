@@ -1,0 +1,11 @@
+{
+  "id": "nq-007",
+  "query": "Find the files that handle font optimization and loading",
+  "expect": [
+    "src/server/font-utils.ts",
+    "font/google/index.d.ts",
+    "font/local/index.d.ts"
+  ],
+  "difficulty": "medium",
+  "category": "server"
+}

@@ -1,0 +1,11 @@
+{
+  "id": "nq-001",
+  "query": "Find the files that handle image optimization and responsive image loading",
+  "expect": [
+    "src/client/image-component.tsx",
+    "src/server/image-optimizer.ts",
+    "src/build/webpack/loaders/next-image-loader/blur.ts"
+  ],
+  "difficulty": "medium",
+  "category": "client"
+}

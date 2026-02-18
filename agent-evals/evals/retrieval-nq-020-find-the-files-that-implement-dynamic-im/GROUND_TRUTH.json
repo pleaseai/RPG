@@ -1,0 +1,11 @@
+{
+  "id": "nq-020",
+  "query": "Find the files that implement dynamic imports and code splitting for components",
+  "expect": [
+    "src/api/dynamic.ts",
+    "src/api/app-dynamic.ts",
+    "src/client/app-bootstrap.ts"
+  ],
+  "difficulty": "medium",
+  "category": "client"
+}
