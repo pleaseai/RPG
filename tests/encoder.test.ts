@@ -4,7 +4,7 @@ import os from 'node:os'
 import path from 'node:path'
 import { discoverFiles, RPGEncoder } from '@pleaseai/rpg-encoder'
 import { resolveGitBinary } from '@pleaseai/rpg-utils/git-path'
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
 // Get current project root for testing
 const PROJECT_ROOT = path.resolve(__dirname, '..')
@@ -303,15 +303,19 @@ describe('RPGEncoder.discoverFiles', () => {
 })
 
 describe('RPGEncoder.extractEntities', () => {
-  it('extracts entities from TypeScript files', async () => {
+  let encoderResult: Awaited<ReturnType<RPGEncoder['encode']>>
+
+  beforeAll(async () => {
     const encoder = new RPGEncoder(PROJECT_ROOT, {
       include: ['packages/encoder/src/encoder.ts'],
       exclude: [],
     })
-    const result = await encoder.encode()
+    encoderResult = await encoder.encode()
+  })
 
+  it('extracts entities from TypeScript files', async () => {
     // Should find file entity + class + methods
-    expect(result.entitiesExtracted).toBeGreaterThan(1)
+    expect(encoderResult.entitiesExtracted).toBeGreaterThan(1)
   })
 
   it('creates unique IDs for entities', async () => {
@@ -328,26 +332,14 @@ describe('RPGEncoder.extractEntities', () => {
   })
 
   it('includes file-level entity', async () => {
-    const encoder = new RPGEncoder(PROJECT_ROOT, {
-      include: ['packages/encoder/src/encoder.ts'],
-      exclude: [],
-    })
-    const result = await encoder.encode()
-
     // Should have a file entity
-    const fileNodes = (await result.rpg.getNodes()).filter(n => n.metadata?.entityType === 'file')
+    const fileNodes = (await encoderResult.rpg.getNodes()).filter(n => n.metadata?.entityType === 'file')
     expect(fileNodes.length).toBeGreaterThanOrEqual(1)
   })
 
   it('extracts function and class entities', async () => {
-    const encoder = new RPGEncoder(PROJECT_ROOT, {
-      include: ['packages/encoder/src/encoder.ts'],
-      exclude: [],
-    })
-    const result = await encoder.encode()
-
     // Should have class and function entities
-    const nodes = await result.rpg.getNodes()
+    const nodes = await encoderResult.rpg.getNodes()
     const classNodes = nodes.filter(n => n.metadata?.entityType === 'class')
     const functionNodes = nodes.filter(
       n => n.metadata?.entityType === 'function' || n.metadata?.entityType === 'method',
@@ -359,45 +351,39 @@ describe('RPGEncoder.extractEntities', () => {
 })
 
 describe('RPGEncoder.buildFunctionalHierarchy', () => {
-  it('skips hierarchy when no LLM is available', async () => {
-    const encoder = new RPGEncoder(PROJECT_ROOT, {
-      include: ['packages/encoder/src/**/*.ts'],
-      exclude: [],
-    })
-    const result = await encoder.encode()
+  let allSrcResult: Awaited<ReturnType<RPGEncoder['encode']>>
+  let encoderFileResult: Awaited<ReturnType<RPGEncoder['encode']>>
 
+  beforeAll(async () => {
+    const [allSrc, encoderFile] = await Promise.all([
+      new RPGEncoder(PROJECT_ROOT, { include: ['packages/encoder/src/**/*.ts'], exclude: [] }).encode(),
+      new RPGEncoder(PROJECT_ROOT, { include: ['packages/encoder/src/encoder.ts'], exclude: [] }).encode(),
+    ])
+    allSrcResult = allSrc
+    encoderFileResult = encoderFile
+  })
+
+  it('skips hierarchy when no LLM is available', async () => {
     // Without LLM, semantic reorganization is skipped — no high-level nodes
-    const highLevelNodes = await result.rpg.getHighLevelNodes()
+    const highLevelNodes = await allSrcResult.rpg.getHighLevelNodes()
     expect(highLevelNodes.length).toBe(0)
   })
 
   it('creates functional edges from files to contained entities (Phase 1)', async () => {
-    const encoder = new RPGEncoder(PROJECT_ROOT, {
-      include: ['packages/encoder/src/**/*.ts'],
-      exclude: [],
-    })
-    const result = await encoder.encode()
-
     // Should have functional edges from Phase 1 (file→entity)
-    const functionalEdges = await result.rpg.getFunctionalEdges()
+    const functionalEdges = await allSrcResult.rpg.getFunctionalEdges()
     expect(functionalEdges.length).toBeGreaterThan(0)
   })
 
   it('creates functional edges from files to contained entities', async () => {
-    const encoder = new RPGEncoder(PROJECT_ROOT, {
-      include: ['packages/encoder/src/encoder.ts'],
-      exclude: [],
-    })
-    const result = await encoder.encode()
-
     // Find the file node
-    const fileNode = (await result.rpg.getNodes()).find(
+    const fileNode = (await encoderFileResult.rpg.getNodes()).find(
       n => n.metadata?.entityType === 'file' && n.metadata?.path === 'packages/encoder/src/encoder.ts',
     )
     expect(fileNode).toBeDefined()
 
     // Find edges from file to its contained entities (class, methods)
-    const edges = await result.rpg.getFunctionalEdges()
+    const edges = await encoderFileResult.rpg.getFunctionalEdges()
     const fileEdges = edges.filter(e => e.source === fileNode?.id)
     expect(fileEdges.length).toBeGreaterThan(0)
   })
@@ -433,69 +419,63 @@ describe('RPGEncoder.buildFunctionalHierarchy', () => {
 })
 
 describe('RPGEncoder Phase 1 file→function edges', () => {
-  it('creates file→function edges during Phase 1 entity extraction', async () => {
-    const encoder = new RPGEncoder(PROJECT_ROOT, {
-      include: ['packages/encoder/src/encoder.ts'],
-      exclude: [],
-    })
-    const result = await encoder.encode()
+  let encoderResult: Awaited<ReturnType<RPGEncoder['encode']>>
+  let semanticResult: Awaited<ReturnType<RPGEncoder['encode']>>
 
+  beforeAll(async () => {
+    const [enc, sem] = await Promise.all([
+      new RPGEncoder(PROJECT_ROOT, { include: ['packages/encoder/src/encoder.ts'], exclude: [] }).encode(),
+      new RPGEncoder(PROJECT_ROOT, { include: ['packages/encoder/src/semantic.ts'], exclude: [] }).encode(),
+    ])
+    encoderResult = enc
+    semanticResult = sem
+  })
+
+  it('creates file→function edges during Phase 1 entity extraction', async () => {
     // Find the file node
-    const fileNode = (await result.rpg.getNodes()).find(
+    const fileNode = (await encoderResult.rpg.getNodes()).find(
       n => n.metadata?.entityType === 'file' && n.metadata?.path === 'packages/encoder/src/encoder.ts',
     )
     expect(fileNode).toBeDefined()
 
     // Find non-file entities for this file
-    const childNodes = (await result.rpg.getNodes()).filter(
+    const childNodes = (await encoderResult.rpg.getNodes()).filter(
       n => n.metadata?.entityType !== 'file' && n.metadata?.path === 'packages/encoder/src/encoder.ts',
     )
     expect(childNodes.length).toBeGreaterThan(0)
 
     // Verify file→child edges exist
-    const functionalEdges = await result.rpg.getFunctionalEdges()
+    const functionalEdges = await encoderResult.rpg.getFunctionalEdges()
     const fileToChildEdges = functionalEdges.filter(e => e.source === fileNode?.id)
     expect(fileToChildEdges.length).toBe(childNodes.length)
   })
 
   it('file→child edge count matches child entity count', async () => {
-    const encoder = new RPGEncoder(PROJECT_ROOT, {
-      include: ['packages/encoder/src/semantic.ts'],
-      exclude: [],
-    })
-    const result = await encoder.encode()
-
-    const fileNode = (await result.rpg.getNodes()).find(
+    const fileNode = (await semanticResult.rpg.getNodes()).find(
       n => n.metadata?.entityType === 'file' && n.metadata?.path === 'packages/encoder/src/semantic.ts',
     )
     expect(fileNode).toBeDefined()
 
-    const childNodes = (await result.rpg.getNodes()).filter(
+    const childNodes = (await semanticResult.rpg.getNodes()).filter(
       n => n.metadata?.entityType !== 'file' && n.metadata?.path === 'packages/encoder/src/semantic.ts',
     )
 
-    const functionalEdges = await result.rpg.getFunctionalEdges()
+    const functionalEdges = await semanticResult.rpg.getFunctionalEdges()
     const fileEdges = functionalEdges.filter(e => e.source === fileNode?.id)
     expect(fileEdges.length).toBe(childNodes.length)
   })
 
   it('buildFunctionalHierarchy creates only directory→file edges, not file→entity', async () => {
-    const encoder = new RPGEncoder(PROJECT_ROOT, {
-      include: ['packages/encoder/src/encoder.ts'],
-      exclude: [],
-    })
-    const result = await encoder.encode()
-
     // Get directory nodes
-    const highLevelNodes = await result.rpg.getHighLevelNodes()
+    const highLevelNodes = await encoderResult.rpg.getHighLevelNodes()
     const dirNodeIds = new Set(highLevelNodes.map(n => n.id))
 
     // All directory-sourced edges should target files (not functions/methods)
-    const functionalEdges = await result.rpg.getFunctionalEdges()
+    const functionalEdges = await encoderResult.rpg.getFunctionalEdges()
     const dirEdges = functionalEdges.filter(e => dirNodeIds.has(e.source))
 
     for (const edge of dirEdges) {
-      const targetNode = await result.rpg.getNode(edge.target)
+      const targetNode = await encoderResult.rpg.getNode(edge.target)
       // Directory edges should point to file nodes or other directories
       if (targetNode?.metadata?.entityType) {
         expect(targetNode.metadata.entityType).toBe('file')
@@ -505,25 +485,22 @@ describe('RPGEncoder Phase 1 file→function edges', () => {
 })
 
 describe('RPGEncoder.injectDataFlows', () => {
-  it('creates data flow edges during encoding', async () => {
-    const encoder = new RPGEncoder(PROJECT_ROOT, {
+  let result: Awaited<ReturnType<RPGEncoder['encode']>>
+
+  beforeAll(async () => {
+    result = await new RPGEncoder(PROJECT_ROOT, {
       include: ['packages/encoder/src/**/*.ts'],
       exclude: [],
-    })
-    const result = await encoder.encode()
+    }).encode()
+  })
 
+  it('creates data flow edges during encoding', async () => {
     // Should have data flow edges from inter-module imports
     const dataFlowEdges = await result.rpg.getDataFlowEdges()
     expect(dataFlowEdges.length).toBeGreaterThan(0)
   })
 
   it('data flow edges have valid structure', async () => {
-    const encoder = new RPGEncoder(PROJECT_ROOT, {
-      include: ['packages/encoder/src/**/*.ts'],
-      exclude: [],
-    })
-    const result = await encoder.encode()
-
     const dataFlowEdges = await result.rpg.getDataFlowEdges()
     expect(dataFlowEdges.length).toBeGreaterThan(0)
     for (const edge of dataFlowEdges) {
@@ -539,36 +516,18 @@ describe('RPGEncoder.injectDataFlows', () => {
   })
 
   it('data flow edges include import-type flows', async () => {
-    const encoder = new RPGEncoder(PROJECT_ROOT, {
-      include: ['packages/encoder/src/**/*.ts'],
-      exclude: [],
-    })
-    const result = await encoder.encode()
-
     const dataFlowEdges = await result.rpg.getDataFlowEdges()
     const importFlows = dataFlowEdges.filter(e => e.dataType === 'import')
     expect(importFlows.length).toBeGreaterThan(0)
   })
 
   it('data flow edges are included in serialization', async () => {
-    const encoder = new RPGEncoder(PROJECT_ROOT, {
-      include: ['packages/encoder/src/**/*.ts'],
-      exclude: [],
-    })
-    const result = await encoder.encode()
-
     const serialized = await result.rpg.serialize()
     expect(serialized.dataFlowEdges).toBeDefined()
     expect(serialized.dataFlowEdges!.length).toBeGreaterThan(0)
   })
 
   it('data flow edges survive serialization round-trip', async () => {
-    const encoder = new RPGEncoder(PROJECT_ROOT, {
-      include: ['packages/encoder/src/**/*.ts'],
-      exclude: [],
-    })
-    const result = await encoder.encode()
-
     const json = await result.rpg.toJSON()
     const { RepositoryPlanningGraph } = await import('@pleaseai/rpg-graph')
     const restored = await RepositoryPlanningGraph.fromJSON(json)
@@ -580,50 +539,38 @@ describe('RPGEncoder.injectDataFlows', () => {
   })
 
   it('data flow edges appear in graph stats', async () => {
-    const encoder = new RPGEncoder(PROJECT_ROOT, {
-      include: ['packages/encoder/src/**/*.ts'],
-      exclude: [],
-    })
-    const result = await encoder.encode()
-
     const stats = await result.rpg.getStats()
     expect(stats.dataFlowEdgeCount).toBeGreaterThan(0)
   })
 })
 
 describe('RPGEncoder.injectDependencies', () => {
-  it('creates dependency edges for imports', async () => {
-    const encoder = new RPGEncoder(PROJECT_ROOT, {
-      include: ['packages/encoder/src/**/*.ts'],
-      exclude: [],
-    })
-    const result = await encoder.encode()
+  let allSrcResult: Awaited<ReturnType<RPGEncoder['encode']>>
+  let singleFileResult: Awaited<ReturnType<RPGEncoder['encode']>>
 
+  beforeAll(async () => {
+    const [allSrc, singleFile] = await Promise.all([
+      new RPGEncoder(PROJECT_ROOT, { include: ['packages/encoder/src/**/*.ts'], exclude: [] }).encode(),
+      new RPGEncoder(PROJECT_ROOT, { include: ['packages/encoder/src/encoder.ts'], exclude: [] }).encode(),
+    ])
+    allSrcResult = allSrc
+    singleFileResult = singleFile
+  })
+
+  it('creates dependency edges for imports', async () => {
     // Should have dependency edges from encoder.ts to other modules
-    const dependencyEdges = await result.rpg.getDependencyEdges()
+    const dependencyEdges = await allSrcResult.rpg.getDependencyEdges()
     expect(dependencyEdges.length).toBeGreaterThan(0)
   })
 
   it('dependency edges include import type', async () => {
-    const encoder = new RPGEncoder(PROJECT_ROOT, {
-      include: ['packages/encoder/src/**/*.ts'],
-      exclude: [],
-    })
-    const result = await encoder.encode()
-
-    const dependencyEdges = await result.rpg.getDependencyEdges()
+    const dependencyEdges = await allSrcResult.rpg.getDependencyEdges()
     const importEdges = dependencyEdges.filter(e => e.dependencyType === 'import')
     expect(importEdges.length).toBeGreaterThan(0)
   })
 
   it('dependency edges include call/inherit/implement types when applicable', async () => {
-    const encoder = new RPGEncoder(PROJECT_ROOT, {
-      include: ['packages/encoder/src/**/*.ts'],
-      exclude: [],
-    })
-    const result = await encoder.encode()
-
-    const dependencyEdges = await result.rpg.getDependencyEdges()
+    const dependencyEdges = await allSrcResult.rpg.getDependencyEdges()
     const edgeTypes = new Set(dependencyEdges.map(e => e.dependencyType))
     // At minimum we should have import edges
     expect(edgeTypes.has('import')).toBe(true)
@@ -634,16 +581,10 @@ describe('RPGEncoder.injectDependencies', () => {
   })
 
   it('dependency edges connect file nodes', async () => {
-    const encoder = new RPGEncoder(PROJECT_ROOT, {
-      include: ['packages/encoder/src/**/*.ts'],
-      exclude: [],
-    })
-    const result = await encoder.encode()
-
-    const dependencyEdges = await result.rpg.getDependencyEdges()
+    const dependencyEdges = await allSrcResult.rpg.getDependencyEdges()
     for (const edge of dependencyEdges) {
-      const sourceNode = await result.rpg.getNode(edge.source)
-      const targetNode = await result.rpg.getNode(edge.target)
+      const sourceNode = await allSrcResult.rpg.getNode(edge.source)
+      const targetNode = await allSrcResult.rpg.getNode(edge.target)
       expect(sourceNode).toBeDefined()
       expect(targetNode).toBeDefined()
       expect(sourceNode?.metadata?.entityType).toBe('file')
@@ -652,17 +593,11 @@ describe('RPGEncoder.injectDependencies', () => {
   })
 
   it('does not create edges for external imports', async () => {
-    const encoder = new RPGEncoder(PROJECT_ROOT, {
-      include: ['packages/encoder/src/encoder.ts'],
-      exclude: [],
-    })
-    const result = await encoder.encode()
-
     // All dependency edges should be between known files
-    const dependencyEdges = await result.rpg.getDependencyEdges()
+    const dependencyEdges = await singleFileResult.rpg.getDependencyEdges()
     for (const edge of dependencyEdges) {
-      expect(await result.rpg.getNode(edge.source)).toBeDefined()
-      expect(await result.rpg.getNode(edge.target)).toBeDefined()
+      expect(await singleFileResult.rpg.getNode(edge.source)).toBeDefined()
+      expect(await singleFileResult.rpg.getNode(edge.target)).toBeDefined()
     }
   })
 })
