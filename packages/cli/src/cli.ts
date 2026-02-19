@@ -48,6 +48,8 @@ program
   .option('--no-llm', 'Disable LLM (use heuristic extraction)')
   .option('--stamp', 'Stamp config.github.commit with HEAD SHA after encoding')
   .option('--verbose', 'Show detailed progress')
+  .option('--min-batch-tokens <tokens>', 'Minimum tokens per batch (default: 10000)')
+  .option('--max-batch-tokens <tokens>', 'Maximum tokens per batch (default: 50000)')
   .action(
     async (
       repoPath: string,
@@ -62,13 +64,15 @@ program
         llm?: boolean
         stamp?: boolean
         verbose?: boolean
+        minBatchTokens?: string
+        maxBatchTokens?: string
       },
     ) => {
       if (options.verbose) {
         setLogLevel(LogLevels.debug)
       }
 
-      const semantic = buildSemanticOptions(options.model, options.llm)
+      const semantic = buildSemanticOptions(options.model, options.llm, options.minBatchTokens, options.maxBatchTokens)
 
       log.info(`Encoding repository: ${repoPath}`)
       log.debug(
@@ -259,14 +263,16 @@ program
   .option('-m, --model <provider/model>', 'LLM provider/model (e.g., codex/gpt-5.3-codex, claude-code/haiku, openai/gpt-5.2, google)')
   .option('--no-llm', 'Disable LLM (use heuristic extraction)')
   .option('--stamp', 'Stamp config.github.commit with HEAD SHA')
-  .action(async (options: { rpg: string, commits: string, model?: string, llm?: boolean, stamp?: boolean }) => {
+  .option('--min-batch-tokens <tokens>', 'Minimum tokens per batch (default: 10000)')
+  .option('--max-batch-tokens <tokens>', 'Maximum tokens per batch (default: 50000)')
+  .action(async (options: { rpg: string, commits: string, model?: string, llm?: boolean, stamp?: boolean, minBatchTokens?: string, maxBatchTokens?: string }) => {
     log.info(`Evolving RPG with commits: ${options.commits}`)
 
     const json = await readFile(options.rpg, 'utf-8')
     const rpg = await RepositoryPlanningGraph.fromJSON(json)
     const repoPath = rpg.getConfig().rootPath ?? '.'
 
-    const semantic = buildSemanticOptions(options.model, options.llm)
+    const semantic = buildSemanticOptions(options.model, options.llm, options.minBatchTokens, options.maxBatchTokens)
 
     const encoder = new RPGEncoder(repoPath, { semantic })
     const result = await encoder.evolve(rpg, { commitRange: options.commits })
@@ -362,15 +368,40 @@ function stampRpgWithHead(rpg: RepositoryPlanningGraph, repoPath: string): strin
 }
 
 /**
- * Build SemanticOptions from CLI --model and --no-llm flags
+ * Build SemanticOptions from CLI flags
  */
-function buildSemanticOptions(model?: string, llm?: boolean): SemanticOptions | undefined {
-  if (!model && llm !== false) {
+function buildSemanticOptions(
+  model?: string,
+  llm?: boolean,
+  minBatchTokens?: string,
+  maxBatchTokens?: string,
+): SemanticOptions | undefined {
+  const hasBatchOptions = minBatchTokens !== undefined || maxBatchTokens !== undefined
+  if (!model && llm !== false && !hasBatchOptions) {
     return undefined
   }
+
+  const parsedMin = minBatchTokens !== undefined ? Number.parseInt(minBatchTokens, 10) : undefined
+  const parsedMax = maxBatchTokens !== undefined ? Number.parseInt(maxBatchTokens, 10) : undefined
+
+  if (parsedMin !== undefined && (Number.isNaN(parsedMin) || parsedMin < 0)) {
+    log.error(`Invalid --min-batch-tokens value: ${minBatchTokens}`)
+    process.exit(1)
+  }
+  if (parsedMax !== undefined && (Number.isNaN(parsedMax) || parsedMax < 0)) {
+    log.error(`Invalid --max-batch-tokens value: ${maxBatchTokens}`)
+    process.exit(1)
+  }
+  if (parsedMin !== undefined && parsedMax !== undefined && parsedMin > parsedMax) {
+    log.error(`--min-batch-tokens (${parsedMin}) cannot be greater than --max-batch-tokens (${parsedMax})`)
+    process.exit(1)
+  }
+
   return {
     ...(model ? parseModelString(model) : {}),
     useLLM: llm !== false,
+    ...(parsedMin !== undefined ? { minBatchTokens: parsedMin } : {}),
+    ...(parsedMax !== undefined ? { maxBatchTokens: parsedMax } : {}),
   }
 }
 

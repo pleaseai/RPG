@@ -1,7 +1,11 @@
 import type { ClaudeCodeSettings, CodexCliSettings, LLMProvider } from '@pleaseai/rpg-utils/llm'
 import { SemanticFeatureSchema as NodeSemanticFeatureSchema } from '@pleaseai/rpg-graph/node'
 import { LLMClient } from '@pleaseai/rpg-utils/llm'
+import { createLogger } from '@pleaseai/rpg-utils/logger'
 import { z } from 'zod/v4'
+import { estimateEntityTokens } from './token-counter'
+
+const log = createLogger('SemanticExtractor')
 
 /**
  * Options for semantic extraction
@@ -21,6 +25,12 @@ export interface SemanticOptions {
   claudeCodeSettings?: ClaudeCodeSettings
   /** Codex CLI provider settings (only used when provider is 'codex') */
   codexSettings?: CodexCliSettings
+  /** Minimum tokens per batch - if last batch is below this, merge with previous (default: 10000) */
+  minBatchTokens?: number
+  /** Maximum tokens per batch - group entities until this limit (default: 50000) */
+  maxBatchTokens?: number
+  /** Maximum parse iterations for retry on LLM extraction failure (default: 1, vendor uses 10) */
+  maxParseIterations?: number
 }
 
 /**
@@ -65,6 +75,9 @@ export class SemanticExtractor {
     this.options = {
       useLLM: true,
       maxTokens: 1024,
+      minBatchTokens: 10000,
+      maxBatchTokens: 50000,
+      maxParseIterations: 1,
       ...options,
     }
 
@@ -121,14 +134,21 @@ export class SemanticExtractor {
   async extract(input: EntityInput): Promise<SemanticFeature> {
     // Try LLM extraction if available
     if (this.llmClient && input.sourceCode) {
-      try {
-        return await this.extractWithLLM(input)
-      }
-      catch (error) {
-        const msg = error instanceof Error ? error.message : String(error)
-        const warning = `[SemanticExtractor] LLM extraction failed for ${input.name}: ${msg}. Falling back to heuristic.`
-        this.warnings.push(warning)
-        console.warn(warning)
+      const maxIterations = this.options.maxParseIterations ?? 1
+      for (let attempt = 1; attempt <= maxIterations; attempt++) {
+        try {
+          return await this.extractWithLLM(input)
+        }
+        catch (error) {
+          const msg = error instanceof Error ? error.message : String(error)
+          if (attempt < maxIterations) {
+            log.debug(`LLM extraction attempt ${attempt}/${maxIterations} failed for ${input.name}: ${msg}. Retrying...`)
+            continue
+          }
+          const warningMsg = `LLM extraction failed for ${input.name} after ${maxIterations} attempts: ${msg}. Falling back to heuristic.`
+          this.warnings.push(`[SemanticExtractor] ${warningMsg}`)
+          log.warn(warningMsg)
+        }
       }
     }
 
@@ -137,20 +157,101 @@ export class SemanticExtractor {
   }
 
   /**
-   * Extract batch of entities (with batching for efficiency)
+   * Extract batch of entities (with token-aware batching for efficiency)
    */
   async extractBatch(inputs: EntityInput[]): Promise<SemanticFeature[]> {
     const results: SemanticFeature[] = []
 
-    // Process in batches to avoid rate limits
-    const batchSize = 5
-    for (let i = 0; i < inputs.length; i += batchSize) {
-      const batch = inputs.slice(i, i + batchSize)
+    // Create token-aware batches
+    const batches = this.createTokenAwareBatches(inputs)
+
+    // Log batch information at debug level
+    log.debug(`Splitting ${inputs.length} entities into ${batches.length} token-aware batches`)
+
+    // Process each batch in parallel
+    for (const batch of batches) {
       const batchResults = await Promise.all(batch.map(input => this.extract(input)))
       results.push(...batchResults)
     }
 
     return results
+  }
+
+  /**
+   * Create token-aware batches from entities.
+   *
+   * Groups entities greedily until maxBatchTokens is reached.
+   * If a single entity exceeds maxBatchTokens, it gets its own batch.
+   * If the last batch has fewer tokens than minBatchTokens, it's merged with the previous batch.
+   *
+   * @param inputs - Array of entities to batch
+   * @returns Array of batches, where each batch is an array of entities
+   */
+  private createTokenAwareBatches(inputs: EntityInput[]): EntityInput[][] {
+    if (inputs.length === 0) {
+      return []
+    }
+
+    const batches: EntityInput[][] = []
+    const batchTokenCounts: number[] = []
+    let currentBatch: EntityInput[] = []
+    let currentTokens = 0
+
+    const maxBatchTokens = this.options.maxBatchTokens ?? 50000
+    const minBatchTokens = this.options.minBatchTokens ?? 10000
+
+    // Greedy grouping: fit entities into batches up to maxBatchTokens
+    for (const entity of inputs) {
+      const entityTokens = estimateEntityTokens(entity)
+
+      // If single entity exceeds max, isolate it
+      if (entityTokens > maxBatchTokens) {
+        if (currentBatch.length > 0) {
+          batches.push(currentBatch)
+          batchTokenCounts.push(currentTokens)
+          currentBatch = []
+          currentTokens = 0
+        }
+        batches.push([entity])
+        batchTokenCounts.push(entityTokens)
+        continue
+      }
+
+      // If adding this entity exceeds max, start new batch
+      if (currentBatch.length > 0 && currentTokens + entityTokens > maxBatchTokens) {
+        batches.push(currentBatch)
+        batchTokenCounts.push(currentTokens)
+        currentBatch = [entity]
+        currentTokens = entityTokens
+      }
+      else {
+        currentBatch.push(entity)
+        currentTokens += entityTokens
+      }
+    }
+
+    // Append remaining batch
+    if (currentBatch.length > 0) {
+      batches.push(currentBatch)
+      batchTokenCounts.push(currentTokens)
+    }
+
+    // Merge small last batch with previous batch if below minBatchTokens
+    if (batches.length > 1) {
+      const lastBatchTokens = batchTokenCounts[batchTokenCounts.length - 1]!
+      const prevBatchTokens = batchTokenCounts[batchTokenCounts.length - 2]!
+
+      if (lastBatchTokens < minBatchTokens && prevBatchTokens + lastBatchTokens <= maxBatchTokens) {
+        const lastBatch = batches[batches.length - 1]!
+        const previousBatch = batches[batches.length - 2]!
+        previousBatch.push(...lastBatch)
+        batchTokenCounts[batchTokenCounts.length - 2]! += lastBatchTokens
+        batches.pop()
+        batchTokenCounts.pop()
+      }
+    }
+
+    return batches
   }
 
   /**
