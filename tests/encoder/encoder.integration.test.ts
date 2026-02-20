@@ -5,6 +5,7 @@ import { RPGEncoder } from '@pleaseai/rpg-encoder'
 import { MockEmbedding } from '@pleaseai/rpg-encoder/embedding'
 import { SemanticSearch } from '@pleaseai/rpg-encoder/semantic-search'
 import { RepositoryPlanningGraph } from '@pleaseai/rpg-graph'
+import { LocalVectorStore } from '@pleaseai/rpg-store/local'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 // This test suite encodes the actual rpg repository
@@ -161,10 +162,9 @@ describe('e2E: Encode Real Repository', () => {
     beforeEach(async () => {
       searchDbPath = join(tmpdir(), `rpg-e2e-${Date.now()}-${Math.random().toString(36).slice(2)}`)
       const embedding = new MockEmbedding(128)
-      search = new SemanticSearch({
-        dbPath: searchDbPath,
-        embedding,
-      })
+      const vectorStore = new LocalVectorStore()
+      await vectorStore.open({ path: searchDbPath })
+      search = new SemanticSearch({ vectorStore, embedding })
     })
 
     afterEach(async () => {

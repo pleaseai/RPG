@@ -11,7 +11,6 @@
     "./ast/languages": "./src/ast/languages/index.ts",
     "./ast/types": "./src/ast/types.ts",
     "./llm": "./src/llm.ts",
-    "./vector": "./src/vector.ts",
     "./git-path": "./src/git-path.ts",
     "./git-helpers": "./src/git-helpers.ts",
     "./logger": "./src/logger.ts"
@@ -30,9 +29,6 @@
     "tree-sitter-python": "^0.21.0",
     "tree-sitter-rust": "0.21.0",
     "tree-sitter-typescript": "^0.21.2"
-  },
-  "optionalDependencies": {
-    "@lancedb/lancedb": "^0.13.0"
   },
   "peerDependencies": {
     "zod": "^3.25.0 || ^4.0.0"

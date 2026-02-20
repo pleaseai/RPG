@@ -5,6 +5,7 @@ import { RPGEncoder } from '@pleaseai/rpg-encoder'
 import { MockEmbedding } from '@pleaseai/rpg-encoder/embedding'
 import { SemanticSearch } from '@pleaseai/rpg-encoder/semantic-search'
 import { RepositoryPlanningGraph } from '@pleaseai/rpg-graph'
+import { LocalVectorStore } from '@pleaseai/rpg-store/local'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 describe('encoder Integration Tests', () => {
@@ -205,10 +206,9 @@ export function run(): void {
     beforeEach(async () => {
       searchDbPath = join(testDir, 'search-db')
       const embedding = new MockEmbedding(64)
-      search = new SemanticSearch({
-        dbPath: searchDbPath,
-        embedding,
-      })
+      const vectorStore = new LocalVectorStore()
+      await vectorStore.open({ path: searchDbPath })
+      search = new SemanticSearch({ vectorStore, embedding })
     })
 
     afterEach(async () => {

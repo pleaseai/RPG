@@ -3,20 +3,19 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { MockEmbedding } from '@pleaseai/rpg-encoder/embedding'
 import { SemanticSearch } from '@pleaseai/rpg-encoder/semantic-search'
+import { LocalVectorStore } from '@pleaseai/rpg-store/local'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 describe('semanticSearch', () => {
   let search: SemanticSearch
   let testDbPath: string
 
-  beforeEach(() => {
+  beforeEach(async () => {
     testDbPath = join(tmpdir(), `rpg-test-${Date.now()}-${Math.random().toString(36).slice(2)}`)
     const embedding = new MockEmbedding(64) // Small dimension for fast tests
-    search = new SemanticSearch({
-      dbPath: testDbPath,
-      tableName: 'test_nodes',
-      embedding,
-    })
+    const vectorStore = new LocalVectorStore()
+    await vectorStore.open({ path: testDbPath })
+    search = new SemanticSearch({ vectorStore, embedding })
   })
 
   afterEach(async () => {

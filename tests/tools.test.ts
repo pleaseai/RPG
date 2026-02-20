@@ -4,6 +4,7 @@ import { join } from 'node:path'
 import { MockEmbedding } from '@pleaseai/rpg-encoder/embedding'
 import { SemanticSearch } from '@pleaseai/rpg-encoder/semantic-search'
 import { RepositoryPlanningGraph } from '@pleaseai/rpg-graph'
+import { LocalVectorStore } from '@pleaseai/rpg-store/local'
 import { ExploreRPG, FetchNode, SearchNode } from '@pleaseai/rpg-tools'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
@@ -263,11 +264,9 @@ describe('searchNode with SemanticSearch', () => {
 
     // Set up semantic search with mock embeddings
     const embedding = new MockEmbedding(64)
-    semanticSearch = new SemanticSearch({
-      dbPath: testDbPath,
-      tableName: 'test_search_nodes',
-      embedding,
-    })
+    const vectorStore = new LocalVectorStore()
+    await vectorStore.open({ path: testDbPath })
+    semanticSearch = new SemanticSearch({ vectorStore, embedding })
 
     // Index the RPG nodes
     await semanticSearch.indexBatch([
