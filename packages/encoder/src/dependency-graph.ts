@@ -8,6 +8,9 @@ export interface CallSite {
   callerEntity?: string
   calleeSymbol: string
   line?: number
+  receiver?: string
+  receiverKind?: 'self' | 'super' | 'variable' | 'none'
+  qualifiedName?: string
 }
 
 /**
