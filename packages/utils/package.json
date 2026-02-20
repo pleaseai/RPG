@@ -11,7 +11,6 @@
     "./ast/languages": "./src/ast/languages/index.ts",
     "./ast/types": "./src/ast/types.ts",
     "./llm": "./src/llm.ts",
-    "./vector": "./src/vector.ts",
     "./git-path": "./src/git-path.ts",
     "./git-helpers": "./src/git-helpers.ts",
     "./logger": "./src/logger.ts"
@@ -20,7 +19,6 @@
     "@ai-sdk/anthropic": "^3.0.36",
     "@ai-sdk/google": "^3.0.21",
     "@ai-sdk/openai": "^3.0.25",
-    "@lancedb/lancedb": "^0.13.0",
     "ai": "^6.0.70",
     "ai-sdk-provider-claude-code": "^3.4.0",
     "ai-sdk-provider-codex-cli": "^1.0.5",

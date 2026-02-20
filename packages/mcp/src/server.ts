@@ -6,6 +6,7 @@ import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
 import { HuggingFaceEmbedding } from '@pleaseai/rpg-encoder/embedding'
 import { SemanticSearch } from '@pleaseai/rpg-encoder/semantic-search'
 import { RepositoryPlanningGraph } from '@pleaseai/rpg-graph'
+import { LocalVectorStore } from '@pleaseai/rpg-store/local'
 import { createStderrLogger } from '@pleaseai/rpg-utils/logger'
 import { invalidPathError, RPGError } from './errors'
 import { InteractiveState, registerInteractiveProtocol } from './interactive'
@@ -255,14 +256,12 @@ async function initSemanticSearch(
     dtype: 'q8',
   })
 
-  const semanticSearch = new SemanticSearch({
-    dbPath,
-    tableName: 'rpg_nodes',
-    embedding,
-  })
+  const vectorStore = new LocalVectorStore()
+  await vectorStore.open({ path: dbPath })
+  const semanticSearch = new SemanticSearch({ vectorStore, embedding })
 
-  // Skip indexing if vector DB already exists
-  const existingCount = existsSync(dbPath) ? await semanticSearch.count() : 0
+  // Skip indexing if vector DB already exists (check for the actual data file)
+  const existingCount = existsSync(join(dbPath, 'vectors.json')) ? await semanticSearch.count() : 0
   if (existingCount > 0) {
     log.success(`Semantic search ready (${existingCount} nodes already indexed)`)
   }

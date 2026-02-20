@@ -20,4 +20,7 @@ export interface VectorStore extends Lifecycle {
 
   /** Count indexed embeddings */
   count: () => Promise<number>
+
+  /** Clear all indexed embeddings */
+  clear?: () => Promise<void>
 }

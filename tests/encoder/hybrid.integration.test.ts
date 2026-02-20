@@ -6,6 +6,7 @@ import { RPGEncoder } from '@pleaseai/rpg-encoder'
 import { MockEmbedding } from '@pleaseai/rpg-encoder/embedding'
 import { SemanticSearch } from '@pleaseai/rpg-encoder/semantic-search'
 import { executeSearch } from '@pleaseai/rpg-mcp/tools'
+import { LocalVectorStore } from '@pleaseai/rpg-store/local'
 import { SearchNode } from '@pleaseai/rpg-tools'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 
@@ -36,11 +37,9 @@ describe('e2E: Hybrid Search Pipeline (superjson)', () => {
       `rpg-hybrid-e2e-${Date.now()}-${Math.random().toString(36).slice(2)}`,
     )
     const embedding = new MockEmbedding(128)
-    semanticSearch = new SemanticSearch({
-      dbPath: searchDbPath,
-      tableName: 'superjson_nodes',
-      embedding,
-    })
+    const vectorStore = new LocalVectorStore()
+    await vectorStore.open({ path: searchDbPath })
+    semanticSearch = new SemanticSearch({ vectorStore, embedding })
 
     // Index all RPG nodes with feature descriptions
     const documents = (await rpg.getNodes()).map(node => ({

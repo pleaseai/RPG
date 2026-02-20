@@ -1,14 +1,15 @@
+import type { VectorStore } from '@pleaseai/rpg-store/vector-store'
 import type { Embedding } from './embedding'
-import { VectorStore } from '@pleaseai/rpg-utils/vector'
+import { createLogger } from '@pleaseai/rpg-utils/logger'
+
+const log = createLogger('SemanticSearch')
 
 /**
  * Semantic search options
  */
 export interface SemanticSearchOptions {
-  /** Database path for vector storage */
-  dbPath: string
-  /** Table name for vector storage */
-  tableName?: string
+  /** VectorStore implementation to use */
+  vectorStore: VectorStore
   /** Embedding provider instance */
   embedding: Embedding
 }
@@ -31,7 +32,7 @@ export interface IndexableDocument {
 export interface SemanticSearchResult {
   /** Node ID */
   id: string
-  /** Similarity score (lower is better for L2 distance) */
+  /** Similarity score */
   score: number
   /** Original content that was indexed */
   content: string
@@ -42,92 +43,70 @@ export interface SemanticSearchResult {
 /**
  * Semantic Search for RPG nodes
  *
- * Combines embedding generation with vector storage to enable
- * natural language search over RPG nodes.
- *
- * Features:
- * - Index RPG nodes by their semantic features
- * - Search using natural language queries
- * - Batch indexing for efficiency
+ * Combines embedding generation with a VectorStore to enable
+ * natural language search over RPG nodes via cosine similarity.
+ * The VectorStore implementation is injected, making it easy to swap.
  */
 export class SemanticSearch {
-  private readonly options: SemanticSearchOptions
   private readonly vectorStore: VectorStore
   private readonly embedding: Embedding
 
   constructor(options: SemanticSearchOptions) {
-    this.options = {
-      tableName: 'rpg_nodes',
-      ...options,
-    }
+    this.vectorStore = options.vectorStore
     this.embedding = options.embedding
-    this.vectorStore = new VectorStore({
-      dbPath: this.options.dbPath,
-      tableName: this.options.tableName ?? 'rpg_nodes',
-      dimension: this.embedding.getDimension(),
-    })
   }
 
   /**
    * Index a single document
    */
   async index(document: IndexableDocument): Promise<void> {
-    const embeddingResult = await this.embedding.embed(document.content)
-
-    await this.vectorStore.add([
-      {
-        id: document.id,
-        text: document.content,
-        vector: embeddingResult.vector,
-        metadata: document.metadata,
-      },
-    ])
+    const result = await this.embedding.embed(document.content)
+    await this.vectorStore.upsert(document.id, result.vector, {
+      text: document.content,
+      ...document.metadata,
+    })
   }
 
   /**
    * Index multiple documents in batch
    */
   async indexBatch(documents: IndexableDocument[]): Promise<void> {
-    if (documents.length === 0) {
+    if (documents.length === 0)
       return
-    }
 
-    // Generate embeddings in batch
     const contents = documents.map(doc => doc.content)
     const embeddingResults = await this.embedding.embedBatch(contents)
 
-    // Prepare documents for vector store
-    const vectorDocs = documents.map((doc, index) => {
-      const embeddingResult = embeddingResults[index]
-      if (!embeddingResult) {
+    const docs = documents.map((doc, i) => {
+      const embeddingResult = embeddingResults[i]
+      if (!embeddingResult)
         throw new Error(`Missing embedding result for document ${doc.id}`)
-      }
       return {
         id: doc.id,
-        text: doc.content,
-        vector: embeddingResult.vector,
-        metadata: doc.metadata,
+        embedding: embeddingResult.vector,
+        metadata: { text: doc.content, ...doc.metadata },
       }
     })
 
-    await this.vectorStore.add(vectorDocs)
+    if (this.vectorStore.upsertBatch) {
+      await this.vectorStore.upsertBatch(docs)
+    }
+    else {
+      await Promise.all(docs.map(d => this.vectorStore.upsert(d.id, d.embedding, d.metadata)))
+    }
   }
 
   /**
    * Search for similar documents using natural language query
    */
   async search(query: string, topK = 10): Promise<SemanticSearchResult[]> {
-    // Generate embedding for query
     const queryEmbedding = await this.embedding.embed(query)
-
-    // Search vector store
-    const results = await this.vectorStore.search(queryEmbedding.vector, topK)
-
-    return results.map(result => ({
-      id: result.id,
-      score: result.score,
-      content: result.text,
-      metadata: result.metadata,
+    const results = await this.vectorStore.search(queryEmbedding.vector, { topK })
+    return results.map(r => ({
+      id: r.id,
+      score: r.score,
+      content: (r.metadata?.text as string | undefined) ?? '',
+      metadata: r.metadata,
     }))
   }
 
@@ -135,82 +114,58 @@ export class SemanticSearch {
    * Search using a pre-computed embedding vector
    */
   async searchByVector(queryVector: number[], topK = 10): Promise<SemanticSearchResult[]> {
-    const results = await this.vectorStore.search(queryVector, topK)
-
-    return results.map(result => ({
-      id: result.id,
-      score: result.score,
-      content: result.text,
-      metadata: result.metadata,
+    const results = await this.vectorStore.search(queryVector, { topK })
+    return results.map(r => ({
+      id: r.id,
+      score: r.score,
+      content: (r.metadata?.text as string | undefined) ?? '',
+      metadata: r.metadata,
     }))
   }
 
   /**
-   * Hybrid search combining vector similarity and BM25 full-text search.
-   * Generates an embedding for the query and runs both vector + FTS search with RRF reranking.
+   * Hybrid search — delegates to vector search.
+   * Note: the injected VectorStore does not support BM25+vector fusion;
+   * results are pure cosine similarity. vectorWeight is ignored.
    */
-  async searchHybrid(
-    query: string,
-    topK = 10,
-    vectorWeight = 0.7,
-  ): Promise<SemanticSearchResult[]> {
-    const queryEmbedding = await this.embedding.embed(query)
-
-    const results = await this.vectorStore.searchHybrid({
-      textQuery: query,
-      queryVector: queryEmbedding.vector,
-      mode: 'hybrid',
-      topK,
-      vectorWeight,
-    })
-
-    return results.map(result => ({
-      id: result.id,
-      score: result.score,
-      content: result.text,
-      metadata: result.metadata,
-    }))
+  async searchHybrid(query: string, topK = 10, _vectorWeight = 0.7): Promise<SemanticSearchResult[]> {
+    log.debug('searchHybrid: VectorStore does not support hybrid BM25 search; falling back to vector-only')
+    return this.search(query, topK)
   }
 
   /**
-   * Full-text search using BM25 scoring (no embedding required)
+   * Full-text search — delegates to vector search.
+   * Note: the injected VectorStore does not support BM25 full-text search;
+   * results are pure cosine similarity.
    */
   async searchFts(query: string, topK = 10): Promise<SemanticSearchResult[]> {
-    const results = await this.vectorStore.searchFts(query, topK)
-
-    return results.map(result => ({
-      id: result.id,
-      score: result.score,
-      content: result.text,
-      metadata: result.metadata,
-    }))
-  }
-
-  /**
-   * Delete documents by ID
-   */
-  async delete(ids: string[]): Promise<void> {
-    await this.vectorStore.delete(ids)
+    log.debug('searchFts: VectorStore does not support full-text search; falling back to vector-only')
+    return this.search(query, topK)
   }
 
   /**
    * Clear all indexed documents
    */
   async clear(): Promise<void> {
-    await this.vectorStore.clear()
+    if (this.vectorStore.clear) {
+      await this.vectorStore.clear()
+    }
+  }
+
+  /**
+   * Delete documents by ID
+   */
+  async delete(ids: string[]): Promise<void> {
+    for (const id of ids) {
+      await this.vectorStore.remove(id)
+    }
   }
 
   /**
    * Get number of indexed documents
    */
   async count(): Promise<number> {
-    try {
-      return await this.vectorStore.count()
-    }
-    catch {
-      // Table doesn't exist yet
-      return 0
-    }
+    return this.vectorStore.count()
   }
 
   /**

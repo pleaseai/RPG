@@ -15,12 +15,15 @@
     "./default-context-store": "./src/default-context-store.ts",
     "./sqlite": "./src/sqlite/index.ts",
     "./surreal": "./src/surreal/index.ts",
-    "./lancedb": "./src/lancedb/index.ts"
+    "./lancedb": "./src/lancedb/index.ts",
+    "./local": "./src/local/index.ts"
   },
   "dependencies": {
-    "better-sqlite3": "^12.6.2",
     "surrealdb": "^2.0.0-alpha.17",
-    "@surrealdb/node": "^2.6.0",
+    "@surrealdb/node": "^2.6.0"
+  },
+  "optionalDependencies": {
+    "better-sqlite3": "^12.6.2",
     "@lancedb/lancedb": "^0.13.0"
   }
 }

@@ -4,12 +4,9 @@ import type { TextSearchStore } from './text-search-store'
 
 import type { ContextStoreConfig } from './types'
 import type { VectorStore } from './vector-store'
-import { mkdtempSync, rmSync } from 'node:fs'
-import { tmpdir } from 'node:os'
-import { join } from 'node:path'
 
 /**
- * DefaultContextStore — Composes SQLiteGraphStore + SQLiteTextSearchStore + LanceDBVectorStore.
+ * DefaultContextStore — Composes SQLiteGraphStore + SQLiteTextSearchStore + LocalVectorStore.
  *
  * Lazily imports implementation modules to avoid loading engine dependencies until needed.
  */
@@ -17,7 +14,6 @@ export class DefaultContextStore implements ContextStore {
   private _graph!: GraphStore
   private _text!: TextSearchStore
   private _vector!: VectorStore
-  private _tempVectorPath?: string
 
   get graph(): GraphStore {
     return this._graph
@@ -32,29 +28,37 @@ export class DefaultContextStore implements ContextStore {
   }
 
   async open(config: ContextStoreConfig): Promise<void> {
-    // Lazy-import to avoid transitive deps at module level
-    const { SQLiteGraphStore } = await import('./sqlite/graph-store')
-    const { SQLiteTextSearchStore } = await import('./sqlite/text-search-store')
-    const { LanceDBVectorStore } = await import('./lancedb/vector-store')
+    let graphStore: GraphStore
+    let textStore: TextSearchStore
 
-    // Create graph store
-    const graphStore = new SQLiteGraphStore()
-    await graphStore.open(config.path)
+    try {
+      const { SQLiteGraphStore } = await import('./sqlite/graph-store')
+      const { SQLiteTextSearchStore } = await import('./sqlite/text-search-store')
+      const sqliteGraph = new SQLiteGraphStore()
+      await sqliteGraph.open(config.path)
+      graphStore = sqliteGraph
+      textStore = new SQLiteTextSearchStore(sqliteGraph.getDatabase())
+      await textStore.open(config.path)
+    }
+    catch (err) {
+      const code = (err as NodeJS.ErrnoException).code
+      if (code !== 'MODULE_NOT_FOUND' && code !== 'ERR_MODULE_NOT_FOUND') {
+        throw err
+      }
+      const { LocalGraphStore } = await import('./local/graph-store')
+      const { LocalTextSearchStore } = await import('./local/text-search-store')
+      const localGraph = new LocalGraphStore()
+      await localGraph.open({ path: config.path === 'memory' ? 'memory' : config.path })
+      graphStore = localGraph
+      const localText = new LocalTextSearchStore()
+      await localText.open({})
+      textStore = localText
+    }
 
-    // Create text search store sharing the same SQLite database
-    const textStore = new SQLiteTextSearchStore(graphStore.getDatabase())
-    await textStore.open(config.path)
-
-    // Create vector store
-    const vectorStore = new LanceDBVectorStore()
+    const { LocalVectorStore } = await import('./local/vector-store')
+    const vectorStore = new LocalVectorStore()
     const isMemory = config.path === 'memory' && !config.vectorPath
-    const vectorPath
-      = config.vectorPath
-        ?? (isMemory
-          ? mkdtempSync(join(tmpdir(), 'rpg-vectors-'))
-          : `${config.path}-vectors`)
-    if (isMemory)
-      this._tempVectorPath = vectorPath
+    const vectorPath = config.vectorPath ?? (isMemory ? 'memory' : `${config.path}-vectors`)
     await vectorStore.open({ path: vectorPath })
 
     this._graph = graphStore
@@ -63,16 +67,17 @@ export class DefaultContextStore implements ContextStore {
   }
 
   async close(): Promise<void> {
-    try {
-      await this._vector.close()
-      await this._text.close()
-      await this._graph.close()
-    }
-    finally {
-      if (this._tempVectorPath) {
-        rmSync(this._tempVectorPath, { recursive: true, force: true })
-        this._tempVectorPath = undefined
+    const errors: unknown[] = []
+    for (const store of [this._vector, this._text, this._graph]) {
+      try {
+        await store.close()
       }
+      catch (err) {
+        errors.push(err)
+      }
+    }
+    if (errors.length > 0) {
+      throw new Error(`DefaultContextStore.close() failed: ${errors.map(e => e instanceof Error ? e.message : String(e)).join('; ')}`)
     }
   }
 }
