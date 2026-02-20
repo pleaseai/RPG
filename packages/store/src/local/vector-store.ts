@@ -24,6 +24,15 @@ export class LocalVectorStore implements VectorStore {
   private filePath: string | null = null
 
   async open(config: unknown): Promise<void> {
+    if (
+      typeof config !== 'object'
+      || config === null
+      || typeof (config as Record<string, unknown>).path !== 'string'
+    ) {
+      throw new TypeError(
+        `LocalVectorStore.open() requires config.path: string, got: ${JSON.stringify(config)}`,
+      )
+    }
     const cfg = config as { path: string }
     let dir = cfg.path
 
@@ -41,16 +50,27 @@ export class LocalVectorStore implements VectorStore {
       const stored = JSON.parse(raw) as Record<string, LocalVectorDocument>
       this.index = new Map(Object.entries(stored))
     }
-    catch {
-      // File doesn't exist yet — start with empty index
-      this.index = new Map()
+    catch (err) {
+      if (err instanceof Error && (err as NodeJS.ErrnoException).code === 'ENOENT') {
+        // File doesn't exist yet — start with empty index
+        this.index = new Map()
+      }
+      else {
+        throw new Error(
+          `Failed to load vector index from ${this.filePath}: ${err instanceof Error ? err.message : String(err)}`,
+        )
+      }
     }
   }
 
   async close(): Promise<void> {
-    this.flush()
-    this.index = new Map()
-    this.filePath = null
+    try {
+      this.flush()
+    }
+    finally {
+      this.index = new Map()
+      this.filePath = null
+    }
   }
 
   async upsert(id: string, embedding: number[], metadata?: Record<string, unknown>): Promise<void> {
@@ -87,6 +107,11 @@ export class LocalVectorStore implements VectorStore {
 
   async count(): Promise<number> {
     return this.index.size
+  }
+
+  async clear(): Promise<void> {
+    this.index = new Map()
+    this.flush()
   }
 
   private flush(): void {

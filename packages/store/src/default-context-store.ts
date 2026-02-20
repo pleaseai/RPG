@@ -49,8 +49,17 @@ export class DefaultContextStore implements ContextStore {
   }
 
   async close(): Promise<void> {
-    await this._vector.close()
-    await this._text.close()
-    await this._graph.close()
+    const errors: unknown[] = []
+    for (const store of [this._vector, this._text, this._graph]) {
+      try {
+        await store.close()
+      }
+      catch (err) {
+        errors.push(err)
+      }
+    }
+    if (errors.length > 0) {
+      throw new Error(`DefaultContextStore.close() failed: ${errors.map(e => e instanceof Error ? e.message : String(e)).join('; ')}`)
+    }
   }
 }

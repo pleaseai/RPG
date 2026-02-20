@@ -1,5 +1,8 @@
 import type { VectorStore } from '@pleaseai/rpg-store/vector-store'
 import type { Embedding } from './embedding'
+import { createLogger } from '@pleaseai/rpg-utils/logger'
+
+const log = createLogger('SemanticSearch')
 
 /**
  * Semantic search options
@@ -85,9 +88,12 @@ export class SemanticSearch {
       }
     })
 
-    await this.vectorStore.upsertBatch?.(docs) ?? await Promise.all(
-      docs.map(d => this.vectorStore.upsert(d.id, d.embedding, d.metadata)),
-    )
+    if (this.vectorStore.upsertBatch) {
+      await this.vectorStore.upsertBatch(docs)
+    }
+    else {
+      await Promise.all(docs.map(d => this.vectorStore.upsert(d.id, d.embedding, d.metadata)))
+    }
   }
 
   /**
@@ -118,17 +124,32 @@ export class SemanticSearch {
   }
 
   /**
-   * Hybrid search — delegates to vector search
+   * Hybrid search — delegates to vector search.
+   * Note: the injected VectorStore does not support BM25+vector fusion;
+   * results are pure cosine similarity. vectorWeight is ignored.
    */
   async searchHybrid(query: string, topK = 10, _vectorWeight = 0.7): Promise<SemanticSearchResult[]> {
+    log.debug('searchHybrid: VectorStore does not support hybrid BM25 search; falling back to vector-only')
     return this.search(query, topK)
   }
 
   /**
-   * Full-text search — delegates to vector search
+   * Full-text search — delegates to vector search.
+   * Note: the injected VectorStore does not support BM25 full-text search;
+   * results are pure cosine similarity.
    */
   async searchFts(query: string, topK = 10): Promise<SemanticSearchResult[]> {
+    log.debug('searchFts: VectorStore does not support full-text search; falling back to vector-only')
     return this.search(query, topK)
+  }
+
+  /**
+   * Clear all indexed documents
+   */
+  async clear(): Promise<void> {
+    if (this.vectorStore.clear) {
+      await this.vectorStore.clear()
+    }
   }
 
   /**

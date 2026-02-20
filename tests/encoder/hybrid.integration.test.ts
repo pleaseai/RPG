@@ -6,8 +6,8 @@ import { RPGEncoder } from '@pleaseai/rpg-encoder'
 import { MockEmbedding } from '@pleaseai/rpg-encoder/embedding'
 import { SemanticSearch } from '@pleaseai/rpg-encoder/semantic-search'
 import { executeSearch } from '@pleaseai/rpg-mcp/tools'
-import { SearchNode } from '@pleaseai/rpg-tools'
 import { LocalVectorStore } from '@pleaseai/rpg-store/local'
+import { SearchNode } from '@pleaseai/rpg-tools'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 
 const SUPERJSON_ROOT = resolve(__dirname, '../fixtures/superjson')

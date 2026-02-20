@@ -260,8 +260,8 @@ async function initSemanticSearch(
   await vectorStore.open({ path: dbPath })
   const semanticSearch = new SemanticSearch({ vectorStore, embedding })
 
-  // Skip indexing if vector DB already exists
-  const existingCount = existsSync(dbPath) ? await semanticSearch.count() : 0
+  // Skip indexing if vector DB already exists (check for the actual data file)
+  const existingCount = existsSync(join(dbPath, 'vectors.json')) ? await semanticSearch.count() : 0
   if (existingCount > 0) {
     log.success(`Semantic search ready (${existingCount} nodes already indexed)`)
   }
