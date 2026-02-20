@@ -63,7 +63,7 @@
     "eslint": "^9.39.2",
     "eslint-plugin-import-x": "^4.16.1",
     "tree-sitter-go": "0.21.2",
-    "tree-sitter-java": "0.21.0",
+    "tree-sitter-java": "0.23.5",
     "tree-sitter-rust": "0.21.0",
     "turbo": "^2.8.3",
     "typescript": "^5.9.3",

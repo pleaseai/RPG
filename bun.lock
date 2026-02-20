@@ -31,7 +31,7 @@
         "eslint": "^9.39.2",
         "eslint-plugin-import-x": "^4.16.1",
         "tree-sitter-go": "0.21.2",
-        "tree-sitter-java": "0.21.0",
+        "tree-sitter-java": "0.23.5",
         "tree-sitter-rust": "0.21.0",
         "turbo": "^2.8.3",
         "typescript": "^5.9.3",
@@ -130,7 +130,7 @@
         "consola": "^3.4.2",
         "tree-sitter": "^0.21.1",
         "tree-sitter-go": "0.21.2",
-        "tree-sitter-java": "0.21.0",
+        "tree-sitter-java": "0.23.5",
         "tree-sitter-python": "^0.21.0",
         "tree-sitter-rust": "0.21.0",
         "tree-sitter-typescript": "^0.21.2",
@@ -1379,7 +1379,7 @@
 
     "tree-sitter-go": ["tree-sitter-go@0.21.2", "", { "dependencies": { "node-addon-api": "^8.1.0", "node-gyp-build": "^4.8.1" }, "peerDependencies": { "tree-sitter": "^0.21.0" } }, "sha512-aMFwjsB948nWhURiIxExK8QX29JYKs96P/IfXVvluVMRJZpL04SREHsdOZHYqJr1whkb7zr3/gWHqqvlkczmvw=="],
 
-    "tree-sitter-java": ["tree-sitter-java@0.21.0", "", { "dependencies": { "node-addon-api": "^8.0.0", "node-gyp-build": "^4.8.0" }, "peerDependencies": { "tree-sitter": "^0.21.0" } }, "sha512-CKJiTo1uc3SUsgEcaZgufGx8my6dzihy8JR/JsJH40Tj3uSe2/eFLk+0q+fpbosGAyY4YiXJtEoFB2O4bS2yOw=="],
+    "tree-sitter-java": ["tree-sitter-java@0.23.5", "", { "dependencies": { "node-addon-api": "^8.2.2", "node-gyp-build": "^4.8.2" }, "peerDependencies": { "tree-sitter": "^0.21.1" }, "optionalPeers": ["tree-sitter"] }, "sha512-Yju7oQ0Xx7GcUT01mUglPP+bYfvqjNCGdxqigTnew9nLGoII42PNVP3bHrYeMxswiCRM0yubWmN5qk+zsg0zMA=="],
 
     "tree-sitter-python": ["tree-sitter-python@0.21.0", "", { "dependencies": { "node-addon-api": "^7.1.0", "node-gyp-build": "^4.8.0" }, "peerDependencies": { "tree-sitter": "^0.21.0" } }, "sha512-IUKx7JcTVbByUx1iHGFS/QsIjx7pqwTMHL9bl/NGyhyyydbfNrpruo2C7W6V4KZrbkkCOlX8QVrCoGOFW5qecg=="],
 
