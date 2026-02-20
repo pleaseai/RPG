@@ -83,6 +83,38 @@ describe('LocalVectorStore', () => {
     expect(await store.count()).toBe(3)
   })
 
+  it('clear removes all entries', async () => {
+    await store.upsert('a', [1, 0, 0])
+    await store.upsert('b', [0, 1, 0])
+    await store.clear()
+    expect(await store.count()).toBe(0)
+    const results = await store.search([1, 0, 0])
+    expect(results).toEqual([])
+  })
+
+  it('clear persists — data is gone after reopen', async () => {
+    const { mkdtempSync, rmSync } = await import('node:fs')
+    const { tmpdir } = await import('node:os')
+    const { join } = await import('node:path')
+
+    const dir = mkdtempSync(join(tmpdir(), 'rpg-lvs-clear-'))
+    try {
+      const s1 = new LocalVectorStore()
+      await s1.open({ path: dir })
+      await s1.upsert('x', [1, 0, 0])
+      await s1.clear()
+      await s1.close()
+
+      const s2 = new LocalVectorStore()
+      await s2.open({ path: dir })
+      expect(await s2.count()).toBe(0)
+      await s2.close()
+    }
+    finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
   it('persists data across close and reopen', async () => {
     // Use a real temp dir (open with 'memory' allocates one internally, but
     // we need the path after close — so use a deterministic temp path instead)

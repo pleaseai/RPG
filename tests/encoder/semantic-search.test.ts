@@ -79,7 +79,8 @@ describe('semanticSearch', () => {
       const results = await search.search('Authentication', 2)
       const authResult = results.find(r => r.id === 'node-1')
       expect(authResult).toBeDefined()
-      expect(authResult?.metadata).toEqual({ type: 'module' })
+      // metadata includes the 'text' key used for content retrieval
+      expect(authResult?.metadata).toMatchObject({ type: 'module' })
     })
   })
 
@@ -110,9 +111,9 @@ describe('semanticSearch', () => {
     it('should return results sorted by similarity', async () => {
       const results = await search.search('database', 5)
 
-      // Scores should be in ascending order (lower distance = more similar)
+      // Scores are in descending order (higher cosine similarity = more similar)
       for (let i = 1; i < results.length; i++) {
-        expect(results[i].score).toBeGreaterThanOrEqual(results[i - 1].score)
+        expect(results[i].score).toBeLessThanOrEqual(results[i - 1].score)
       }
     })
 
@@ -164,6 +165,25 @@ describe('semanticSearch', () => {
 
       const count = await search.count()
       expect(count).toBe(0)
+    })
+
+    it('should be a no-op when VectorStore does not implement clear', async () => {
+      // Build a minimal VectorStore without clear()
+      const minimal: import('@pleaseai/rpg-store/vector-store').VectorStore = {
+        open: async () => {},
+        close: async () => {},
+        upsert: async () => {},
+        remove: async () => {},
+        search: async () => [],
+        count: async () => 0,
+      }
+      const { MockEmbedding } = await import('@pleaseai/rpg-encoder/embedding')
+      const s = new (await import('@pleaseai/rpg-encoder/semantic-search')).SemanticSearch({
+        vectorStore: minimal,
+        embedding: new MockEmbedding(4),
+      })
+      // Should not throw
+      await expect(s.clear()).resolves.toBeUndefined()
     })
   })
 
@@ -235,9 +255,11 @@ describe('semanticSearch', () => {
       expect(ids).toContain('db-1')
     })
 
-    it('should return empty for no matches', async () => {
+    it('delegates to vector search — returns indexed documents regardless of term', async () => {
+      // searchFts falls back to vector search; with 3 indexed docs and topK=5, all are returned
       const results = await search.searchFts('zzzznonexistentterm', 5)
-      expect(results.length).toBe(0)
+      expect(results.length).toBe(3)
+      expect(results.length).toBeLessThanOrEqual(5)
     })
   })
 
