@@ -14,6 +14,14 @@ export interface CallSite {
 }
 
 /**
+ * Represents a class/entity with its defined methods, used for type-aware call resolution
+ */
+export interface EntityNode {
+  className: string
+  methods: string[]
+}
+
+/**
  * Represents an inheritance or implementation relationship
  */
 export interface InheritanceRelation {
