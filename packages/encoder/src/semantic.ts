@@ -1230,7 +1230,7 @@ Follow the same naming rules: verb + object format, lowercase, no implementation
       verbCounts.set(verb, (verbCounts.get(verb) ?? 0) + 1)
     }
 
-    const primaryVerb = verbCounts.entries().toSorted((a, b) => b[1] - a[1])[0]?.[0] ?? 'provide'
+    const primaryVerb = [...verbCounts].toSorted((a, b) => b[1] - a[1])[0]?.[0] ?? 'provide'
 
     const humanName = this.humanizeName(fileName)
     const description = `${primaryVerb} ${humanName} functionality`

@@ -90,7 +90,7 @@ export class InteractiveState {
       .map(e => e.id)
       .sort((a, b) => a.localeCompare(b))
 
-    const lifted = this.liftedFeatures.entries().toSorted(([idA], [idB]) => idA.localeCompare(idB)).map(([entityId, features]) => ({
+    const lifted = [...this.liftedFeatures].toSorted(([idA], [idB]) => idA.localeCompare(idB)).map(([entityId, features]) => ({
       entityId,
       features: features.toSorted((a, b) => a.localeCompare(b)),
     }))
