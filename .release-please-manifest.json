@@ -1,12 +1,12 @@
 {
-  "packages/soop": "0.1.32",
+  "packages/soop": "0.1.33",
   "packages/soop-native": "0.1.22",
-  "packages/cli": "0.2.4",
-  "packages/encoder": "0.3.2",
+  "packages/cli": "0.2.5",
+  "packages/encoder": "0.3.3",
   "packages/graph": "0.1.12",
-  "packages/mcp": "0.4.2",
+  "packages/mcp": "0.4.3",
   "packages/store": "0.1.9",
-  "packages/tools": "0.1.14",
+  "packages/tools": "0.1.15",
   "packages/utils": "0.1.9",
   "packages/zerorepo": "0.1.12"
 }

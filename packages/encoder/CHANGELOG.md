@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.3](https://github.com/pleaseai/soop/compare/soop-encoder-v0.3.2...soop-encoder-v0.3.3) (2026-04-20)
+
+
+### Bug Fixes
+
+* **encoder:** spread Map before toSorted to avoid iterator error ([#282](https://github.com/pleaseai/soop/issues/282)) ([03b462e](https://github.com/pleaseai/soop/commit/03b462ed82270b28b5e7d39e3cb5b01faeaf6680))
+
 ## [0.3.2](https://github.com/pleaseai/soop/compare/soop-encoder-v0.3.1...soop-encoder-v0.3.2) (2026-04-02)
 
 
