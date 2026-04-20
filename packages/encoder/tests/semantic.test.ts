@@ -175,6 +175,43 @@ describe('semanticExtractor', () => {
     })
   })
 
+  describe('aggregateFileFeatures — heuristic fallback', () => {
+    // Regression: `map.entries().toSorted(...)` threw at runtime because
+    // `Map.prototype.entries()` returns a MapIterator which lacks `.toSorted()`.
+    // The heuristic path is only reached when `useLLM: false` or the LLM call
+    // returns null, so prior tests never exercised this branch.
+    it('picks the most frequent verb across children without throwing', async () => {
+      const childFeatures = [
+        { description: 'validate user input', keywords: ['validate'] },
+        { description: 'validate email format', keywords: ['validate'] },
+        { description: 'transform payload', keywords: ['transform'] },
+      ]
+
+      const feature = await extractor.aggregateFileFeatures(
+        childFeatures,
+        'validator',
+        'packages/utils/src/validator.ts',
+      )
+
+      expect(feature.description.split(/\s+/)[0]).toBe('validate')
+      expect(feature.subFeatures).toEqual([
+        'validate user input',
+        'validate email format',
+        'transform payload',
+      ])
+    })
+
+    it('falls back to "provide" when no verbs can be extracted', async () => {
+      const feature = await extractor.aggregateFileFeatures(
+        [],
+        'empty',
+        'packages/utils/src/empty.ts',
+      )
+
+      expect(feature.description).toContain('empty')
+    })
+  })
+
   describe('feature naming validation', () => {
     it('passes valid names through unchanged', () => {
       const result = extractor.validateFeatureName('validate user input')
