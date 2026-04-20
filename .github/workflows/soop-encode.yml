@@ -48,7 +48,7 @@ jobs:
           bun-version: latest
 
       - name: Install Repo Please
-        run: bun install -g @pleaseai/soop@next
+        run: bun install -g @pleaseai/soop@latest
 
       - name: Restore semantic cache
         uses: actions/cache/restore@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5
