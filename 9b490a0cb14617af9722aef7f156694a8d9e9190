@@ -1,0 +1,24 @@
+packages/encoder/tests/semantic.test.ts
+  c6a5378b72053567 178-214
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.0",
+  "base_commit_sha": "9b490a0cb14617af9722aef7f156694a8d9e9190",
+  "prompts": {
+    "c6a5378b72053567": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b57f902f-ecdb-4e05-b701-b24dda8f3a85",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Minsu Lee",
+      "messages": [],
+      "total_additions": 37,
+      "total_deletions": 0,
+      "accepted_lines": 37,
+      "overriden_lines": 0,
+      "messages_url": "https://usegitai.com/cas/af55c09f2a31660accbe3a3a3cf9c4631999617c6ceee70d254c76490f737f16"
+    }
+  }
+}
