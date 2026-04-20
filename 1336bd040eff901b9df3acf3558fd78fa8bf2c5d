@@ -1,0 +1,24 @@
+.github/workflows/soop-encode.yml
+  aa37230ca506fd5b 51
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.0",
+  "base_commit_sha": "1336bd040eff901b9df3acf3558fd78fa8bf2c5d",
+  "prompts": {
+    "aa37230ca506fd5b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "28116ace-27a3-4bcf-90b7-ae792971d228",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Minsu Lee",
+      "messages": [],
+      "total_additions": 1,
+      "total_deletions": 1,
+      "accepted_lines": 1,
+      "overriden_lines": 0,
+      "messages_url": "https://usegitai.com/cas/234a56989f3ddb4b78220d2897228a5b22c3ab8239d5a4606bf2576aa446af68"
+    }
+  }
+}
