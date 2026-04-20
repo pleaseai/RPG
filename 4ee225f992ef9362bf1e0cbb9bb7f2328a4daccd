@@ -1,0 +1,28 @@
+packages/encoder/src/reorganization/domain-discovery.ts
+  c6a5378b72053567 136
+packages/encoder/src/semantic.ts
+  c6a5378b72053567 1233
+packages/mcp/src/interactive/state.ts
+  c6a5378b72053567 93
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.3.0",
+  "base_commit_sha": "4ee225f992ef9362bf1e0cbb9bb7f2328a4daccd",
+  "prompts": {
+    "c6a5378b72053567": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b57f902f-ecdb-4e05-b701-b24dda8f3a85",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Minsu Lee",
+      "messages": [],
+      "total_additions": 8,
+      "total_deletions": 8,
+      "accepted_lines": 3,
+      "overriden_lines": 0,
+      "messages_url": "https://usegitai.com/cas/aa1fb4834c7e7669bef628a5f095eedab2791abf80769f1923a126337a4feebd"
+    }
+  }
+}
