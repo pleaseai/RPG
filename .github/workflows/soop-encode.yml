@@ -2,6 +2,11 @@ name: Soop Encode
 
 on:
   workflow_dispatch:
+    inputs:
+      force_encode:
+        description: 'Force full re-encode, ignoring existing .soop/graph.json (use when graph is stale or corrupted)'
+        type: boolean
+        default: false
   push:
     branches: [main]
     paths:
@@ -60,8 +65,14 @@ jobs:
       - name: Encode or evolve RPG
         env:
           GOOGLE_GENERATIVE_AI_API_KEY: ${{ secrets.GOOGLE_GENERATIVE_AI_API_KEY }}
+          FORCE_ENCODE: ${{ github.event.inputs.force_encode || 'false' }}
         run: |
-          if [ ! -f ".soop/graph.json" ]; then
+          if [ "$FORCE_ENCODE" = "true" ]; then
+            echo "force_encode=true — removing existing graph and running full encode"
+            rm -f .soop/graph.json .soop/graph.meta.json .soop/embeddings.json
+            mkdir -p .soop
+            soop encode . -o .soop/graph.json -m google/gemini-3.1-flash-lite-preview
+          elif [ ! -f ".soop/graph.json" ]; then
             echo "No existing graph — running full encode"
             mkdir -p .soop
             soop encode . -o .soop/graph.json -m google/gemini-3.1-flash-lite-preview
