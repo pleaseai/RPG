@@ -133,7 +133,7 @@ export class DomainDiscovery {
     }
 
     // Sort by frequency (descending), then alphabetically for determinism
-    const sorted = counts.entries().toSorted((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])).map(([area]) => area)
+    const sorted = [...counts].toSorted((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], 'en')).map(([area]) => area)
 
     // Enforce 1-8 constraint
     return sorted.slice(0, 8)

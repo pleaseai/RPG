@@ -88,29 +88,29 @@ export class InteractiveState {
   getGraphRevision(): string {
     const entities = this.entities
       .map(e => e.id)
-      .sort((a, b) => a.localeCompare(b))
+      .sort((a, b) => a.localeCompare(b, 'en'))
 
-    const lifted = this.liftedFeatures.entries().toSorted(([idA], [idB]) => idA.localeCompare(idB)).map(([entityId, features]) => ({
+    const lifted = [...this.liftedFeatures].toSorted(([idA], [idB]) => idA.localeCompare(idB, 'en')).map(([entityId, features]) => ({
       entityId,
-      features: features.toSorted((a, b) => a.localeCompare(b)),
+      features: features.toSorted((a, b) => a.localeCompare(b, 'en')),
     }))
 
     const routing = this.pendingRouting.toSorted((a, b) => {
-      const byEntity = a.entityId.localeCompare(b.entityId)
+      const byEntity = a.entityId.localeCompare(b.entityId, 'en')
       if (byEntity !== 0)
         return byEntity
-      return a.currentPath.localeCompare(b.currentPath)
+      return a.currentPath.localeCompare(b.currentPath, 'en')
     })
       .map(r => ({
         entityId: r.entityId,
-        features: r.features.toSorted((a, b) => a.localeCompare(b)),
+        features: r.features.toSorted((a, b) => a.localeCompare(b, 'en')),
         currentPath: r.currentPath,
         reason: r.reason,
       }))
 
     const hierarchy = this.hierarchyAssignments
       .map(a => `${a.filePath}:${a.hierarchyPath}`)
-      .sort((a, b) => a.localeCompare(b))
+      .sort((a, b) => a.localeCompare(b, 'en'))
 
     const data = JSON.stringify({
       entities,
