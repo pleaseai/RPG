@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.2.5](https://github.com/pleaseai/soop/compare/soop-cli-v0.2.4...soop-cli-v0.2.5) (2026-04-20)
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @pleaseai/soop-encoder bumped to 0.3.3
+    * @pleaseai/soop-mcp bumped to 0.4.3
+    * @pleaseai/soop-tools bumped to 0.1.15
+
 ## [0.2.4](https://github.com/pleaseai/soop/compare/soop-cli-v0.2.3...soop-cli-v0.2.4) (2026-04-02)
 
 

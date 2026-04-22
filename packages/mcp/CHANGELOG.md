@@ -1,5 +1,20 @@
 # Changelog
 
+## [0.4.3](https://github.com/pleaseai/soop/compare/soop-mcp-v0.4.2...soop-mcp-v0.4.3) (2026-04-20)
+
+
+### Bug Fixes
+
+* **encoder:** spread Map before toSorted to avoid iterator error ([#282](https://github.com/pleaseai/soop/issues/282)) ([03b462e](https://github.com/pleaseai/soop/commit/03b462ed82270b28b5e7d39e3cb5b01faeaf6680))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @pleaseai/soop-encoder bumped to 0.3.3
+    * @pleaseai/soop-tools bumped to 0.1.15
+
 ## [0.4.2](https://github.com/pleaseai/soop/compare/soop-mcp-v0.4.1...soop-mcp-v0.4.2) (2026-04-02)
 
 
