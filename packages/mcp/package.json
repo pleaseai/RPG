@@ -21,7 +21,7 @@
     "@pleaseai/soop-store": "workspace:*",
     "@pleaseai/soop-tools": "workspace:*",
     "@pleaseai/soop-utils": "workspace:*",
-    "@modelcontextprotocol/sdk": "^1.27.1"
+    "@modelcontextprotocol/sdk": "^1.29.0"
   },
   "peerDependencies": {
     "zod": "^3.25.0 || ^4.0.0"
