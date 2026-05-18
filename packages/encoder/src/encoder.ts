@@ -565,12 +565,12 @@ export class RPGEncoder {
       const isJsonl = savePath.endsWith('.jsonl')
       if (isJsonl) {
         rpg = metaJson
-          ? await RepositoryPlanningGraph.fromJSONLWithMeta(graphJson, metaJson)
+          ? await RepositoryPlanningGraph.fromJSONLWithMeta(graphJson, metaJson, undefined, savePath)
           : await RepositoryPlanningGraph.fromJSONL(graphJson)
       }
       else {
         rpg = metaJson
-          ? await RepositoryPlanningGraph.fromJSONWithMeta(graphJson, metaJson)
+          ? await RepositoryPlanningGraph.fromJSONWithMeta(graphJson, metaJson, undefined, savePath)
           : await RepositoryPlanningGraph.fromJSON(graphJson)
       }
     }
@@ -624,12 +624,12 @@ export class RPGEncoder {
     const useJsonl = savePath.endsWith('.jsonl')
 
     if (useJsonl) {
-      const { graphJsonl, metaJson } = await this._rpg.toJSONLWithMeta()
+      const { graphJsonl, metaJson } = await this._rpg.toJSONLWithMeta(savePath)
       await writeFile(savePath, graphJsonl)
       await writeFile(metaPathFor(savePath), metaJson)
     }
     else {
-      const { graphJson, metaJson } = await this._rpg.toJSONWithMeta()
+      const { graphJson, metaJson } = await this._rpg.toJSONWithMeta(savePath)
       await writeFile(savePath, graphJson)
       await writeFile(metaPathFor(savePath), metaJson)
     }

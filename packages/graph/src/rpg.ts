@@ -511,8 +511,8 @@ export class RepositoryPlanningGraph {
     }
   }
 
-  serializeMeta(): RPGMeta {
-    return serializeMeta(this.config)
+  serializeMeta(graphPath?: string): RPGMeta {
+    return serializeMeta(this.config, graphPath)
   }
 
   async toJSON(): Promise<string> {
@@ -520,11 +520,11 @@ export class RepositoryPlanningGraph {
     return JSON.stringify(data, null, 2)
   }
 
-  async toJSONWithMeta(): Promise<{ graphJson: string, metaJson: string }> {
+  async toJSONWithMeta(graphPath?: string): Promise<{ graphJson: string, metaJson: string }> {
     const data = await this.serialize()
     return {
       graphJson: JSON.stringify(data, null, 2),
-      metaJson: JSON.stringify(this.serializeMeta(), null, 2),
+      metaJson: JSON.stringify(this.serializeMeta(graphPath), null, 2),
     }
   }
 
@@ -534,12 +534,12 @@ export class RepositoryPlanningGraph {
     return serializeGraphJsonl(data)
   }
 
-  async toJSONLWithMeta(): Promise<{ graphJsonl: string, metaJson: string }> {
+  async toJSONLWithMeta(graphPath?: string): Promise<{ graphJsonl: string, metaJson: string }> {
     const { serializeGraphJsonl } = await import('./jsonl')
     const data = await this.serialize()
     return {
       graphJsonl: serializeGraphJsonl(data),
-      metaJson: JSON.stringify(this.serializeMeta(), null, 2),
+      metaJson: JSON.stringify(this.serializeMeta(graphPath), null, 2),
     }
   }
 
@@ -692,11 +692,12 @@ export class RepositoryPlanningGraph {
     graphJson: string,
     metaJson?: string,
     context?: ContextStore,
+    graphPath?: string,
   ): Promise<RepositoryPlanningGraph> {
     const rpg = await RepositoryPlanningGraph.fromJSON(graphJson, context)
     if (metaJson) {
       const { deserializeMeta } = await import('./meta')
-      const meta = deserializeMeta(JSON.parse(metaJson))
+      const meta = deserializeMeta(JSON.parse(metaJson), graphPath)
       rpg.updateConfig({
         rootPath: meta.rootPath,
         github: meta.github,
@@ -717,11 +718,12 @@ export class RepositoryPlanningGraph {
     graphJsonl: string,
     metaJson?: string,
     context?: ContextStore,
+    graphPath?: string,
   ): Promise<RepositoryPlanningGraph> {
     const rpg = await RepositoryPlanningGraph.fromJSONL(graphJsonl, context)
     if (metaJson) {
       const { deserializeMeta } = await import('./meta')
-      const meta = deserializeMeta(JSON.parse(metaJson))
+      const meta = deserializeMeta(JSON.parse(metaJson), graphPath)
       rpg.updateConfig({
         rootPath: meta.rootPath,
         github: meta.github,
