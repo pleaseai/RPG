@@ -74,12 +74,12 @@ describe('serialize → deserialize round-trip across machines', () => {
   })
 
   it('round-trips github metadata unchanged', () => {
-    const graphPath = path.resolve('/tmp/repo/.soop/graph.json')
+    const graphPath = path.resolve('/var/repo/.soop/graph.json')
     const metaJson = JSON.stringify(
       serializeMeta(
         {
           name: 'soop',
-          rootPath: path.resolve('/tmp/repo'),
+          rootPath: path.resolve('/var/repo'),
           github: { owner: 'a', repo: 'b', commit: 'abc' },
         },
         graphPath,
