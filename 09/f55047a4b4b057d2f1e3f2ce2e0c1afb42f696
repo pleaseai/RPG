@@ -1,0 +1,34 @@
+packages/visualize/tests/visualize.test.ts
+  s_0700e479096c69::t_cfbfa03d9fd01c 159-204,208,210-237,239-269
+  s_0700e479096c69::t_fd2f3c7754be50 205-207,209
+  s_0700e479096c69::t_94da4d84bab5a4 238
+packages/visualize/src/load.ts
+  s_0700e479096c69::t_eba14d1a413ef5 95-102
+  s_0700e479096c69::t_030be801b9c386 24,32-35,43-45,52-55
+packages/visualize/src/types.ts
+  s_0700e479096c69::t_5ee0f6fad29456 81-82
+packages/visualize/src/html.ts
+  s_0700e479096c69::t_a2d91f59e8db77 48
+  s_0700e479096c69::t_4cf41fbb0c634b 52,57-59
+  s_0700e479096c69::t_112caa84bf226c 120-126
+  s_0700e479096c69::t_da7947ef814399 49-51,53-56,60-62,66-67
+  s_0700e479096c69::t_67c5bc9136204c 43-47,63-65
+packages/graph/tests/graph.test.ts
+  s_0700e479096c69::t_7cdfa230cf82fe 327-346
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10",
+  "base_commit_sha": "09f55047a4b4b057d2f1e3f2ce2e0c1afb42f696",
+  "prompts": {},
+  "sessions": {
+    "s_0700e479096c69": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9e77a0c7-85ca-486d-8524-6adb80ffa227",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Minsu Lee <amond@amond.net>"
+    }
+  }
+}
