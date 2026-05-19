@@ -99,16 +99,18 @@ export class SearchNode {
    * Mirrors Python rapidfuzz fallback when exact/substring search yields nothing.
    */
   private async fuzzyFallbackQuery(terms: string[], scopes?: string[]): Promise<Node[]> {
-    const scope = scopes && scopes.length > 0 ? scopes[0] : undefined
+    const effectiveScopes: (string | undefined)[] = scopes && scopes.length > 0 ? scopes : [undefined]
     const seen = new Map<string, Node>()
     for (const term of terms) {
-      const ids = await suggestNodes(this.rpg, term, { limit: 5, scope })
-      for (const id of ids) {
-        if (seen.has(id))
-          continue
-        const node = await this.rpg.getNode(id)
-        if (node)
-          seen.set(id, node)
+      for (const scope of effectiveScopes) {
+        const ids = await suggestNodes(this.rpg, term, { limit: 5, scope })
+        for (const id of ids) {
+          if (seen.has(id))
+            continue
+          const node = await this.rpg.getNode(id)
+          if (node)
+            seen.set(id, node)
+        }
       }
     }
     return [...seen.values()]

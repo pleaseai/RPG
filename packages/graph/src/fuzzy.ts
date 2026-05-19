@@ -1,5 +1,6 @@
 import type { Node } from './node'
 import type { RepositoryPlanningGraph } from './rpg'
+import path from 'node:path'
 
 /**
  * Maximum suggestions returned by suggestNodes.
@@ -183,14 +184,15 @@ async function collectCandidateNodes(
 function deriveName(node: Node): string {
   if (node.metadata?.qualifiedName)
     return node.metadata.qualifiedName
-  const path = node.metadata?.path
-  if (path) {
-    const parts = path.split('/').filter(Boolean)
-    return parts.at(-1) ?? path
+  const nodePath = node.metadata?.path
+  if (nodePath) {
+    const parts = nodePath.split(path.sep).join('/').split('/').filter(Boolean)
+    return parts.at(-1) ?? nodePath
   }
   if ('directoryPath' in node && node.directoryPath) {
-    const parts = node.directoryPath.split('/').filter(Boolean)
-    return parts.at(-1) ?? node.directoryPath
+    const dirPath = node.directoryPath as string
+    const parts = dirPath.split(path.sep).join('/').split('/').filter(Boolean)
+    return parts.at(-1) ?? dirPath
   }
   return node.feature.description
 }

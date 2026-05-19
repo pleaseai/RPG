@@ -219,7 +219,8 @@ export class ExploreRPG {
     for (const edge of await this.rpg.getOutEdges(nodeId, edgeType)) {
       if (!this.matchesDependencyType(edge, dependencyType))
         continue
-      this.addEdge(edge, state)
+      if (!this.addEdge(edge, state))
+        return
       await this.exploreNode(edge.target, depth + 1, maxDepth, direction, edgeTypes, state, dependencyType)
     }
   }
@@ -240,23 +241,27 @@ export class ExploreRPG {
     for (const edge of await this.rpg.getInEdges(nodeId, edgeType)) {
       if (!this.matchesDependencyType(edge, dependencyType))
         continue
-      this.addEdge(edge, state)
+      if (!this.addEdge(edge, state))
+        return
       await this.exploreNode(edge.source, depth + 1, maxDepth, direction, edgeTypes, state, dependencyType)
     }
   }
 
   /**
    * Add an edge to the state, respecting the maxEdges cap.
+   * Returns true if the edge was added, false when the cap is reached
+   * so callers can stop further traversal.
    */
-  private addEdge(edge: Edge, state: ExploreState): void {
+  private addEdge(edge: Edge, state: ExploreState): boolean {
     if (state.edges.length >= state.maxEdges) {
       state.truncated = true
-      return
+      return false
     }
     state.edges.push({
       source: edge.source,
       target: edge.target,
       type: edge.type,
     })
+    return true
   }
 }

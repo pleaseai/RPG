@@ -1,4 +1,5 @@
 import type { EntityType, Node, RepositoryPlanningGraph } from '@pleaseai/soop-graph'
+import path from 'node:path'
 import { EdgeType, isHighLevelNode } from '@pleaseai/soop-graph'
 import { suggestNodes } from '@pleaseai/soop-graph/fuzzy'
 
@@ -170,14 +171,10 @@ export class RPGTree {
    */
   private async findTopLevelNodes(): Promise<Node[]> {
     const all = await this.rpg.getNodes()
-    const roots: Node[] = []
-    for (const node of all) {
-      const incoming = await this.rpg.getInEdges(node.id, EdgeType.Functional)
-      if (incoming.length === 0) {
-        roots.push(node)
-      }
-    }
-    return roots
+    const incomingCounts = await Promise.all(
+      all.map(async node => (await this.rpg.getInEdges(node.id, EdgeType.Functional)).length),
+    )
+    return all.filter((_, i) => incomingCounts[i] === 0)
   }
 
   /**
@@ -206,7 +203,8 @@ export function getDisplayName(node: Node): string {
   return desc.length > 60 ? `${desc.slice(0, 57)}...` : desc
 }
 
-function basename(path: string): string {
-  const parts = path.split('/').filter(Boolean)
+function basename(pathStr: string): string {
+  const normalized = pathStr.split(path.sep).join('/')
+  const parts = normalized.split('/').filter(Boolean)
   return parts.at(-1) ?? ''
 }
