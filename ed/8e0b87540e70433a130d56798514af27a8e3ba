@@ -1,0 +1,22 @@
+packages/utils/src/llm.ts
+  s_ad30cc294e8a6c::t_a9df33d895ba02 596,601-616
+  s_ad30cc294e8a6c::t_f09d156b8a9c98 2
+  s_ad30cc294e8a6c::t_f859a3d10705f2 342-344,347-348,350-356,373,405,411,419,435-459
+  s_ad30cc294e8a6c::t_65a87a9e8db0a7 14
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10",
+  "base_commit_sha": "ed8e0b87540e70433a130d56798514af27a8e3ba",
+  "prompts": {},
+  "sessions": {
+    "s_ad30cc294e8a6c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d009e21d-0db2-4bcc-8a52-9989646aa515",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Minsu Lee <amond@amond.net>"
+    }
+  }
+}
