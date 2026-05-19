@@ -1,0 +1,35 @@
+packages/mcp/src/tools.ts
+  s_5690bc7c0e7595::t_e1346d9f46daf1 101-150
+packages/mcp/tests/server-startup.test.ts
+  s_5690bc7c0e7595::t_58ed186dde6d1b 1-76
+packages/mcp/src/server.ts
+  s_5690bc7c0e7595::t_de21edf0b54484 13,15,29-30,44-63,79-100,102-116,119,121-135,138,140-158,161,163-180,183,185-196,199,201-211,216-220,227-255,258-260,262,264-270,274-282,287,290-291,295-299,302-304,306,309-310,354-377,388-394,403-406,409-415,418-420,430,438,446
+packages/mcp/package.json
+  s_5690bc7c0e7595::t_5d3f629e57fc2a 13
+packages/mcp/tests/telemetry.test.ts
+  s_5690bc7c0e7595::t_c18c6c57f33d07 1-97
+packages/mcp/tests/mcp.test.ts
+  s_5690bc7c0e7595::t_8ec2f68123b0cc 274-311
+packages/mcp/src/telemetry.ts
+  s_5690bc7c0e7595::t_348ca5606d19da 1-58
+packages/mcp/src/errors.ts
+  s_5690bc7c0e7595::t_6bbec5fb9e8f7b 16-25,33-34,39-57,61-65,67-75,78-80
+packages/mcp/src/index.ts
+  s_5690bc7c0e7595::t_d18af2ae31022c 3,15-19,34-35
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.9",
+  "base_commit_sha": "22150674340e5cc59067d9fea783597b1de167f7",
+  "prompts": {},
+  "sessions": {
+    "s_5690bc7c0e7595": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d860e8fb-9dae-4d81-992e-55a016fb92bc",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Minsu Lee <amond@amond.net>"
+    }
+  }
+}
