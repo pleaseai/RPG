@@ -266,4 +266,28 @@ describe('resolveDepGraphPath — path traversal containment', () => {
       await rm(tmp, { recursive: true, force: true })
     }
   })
+
+  it('refuses dep_graph_file values whose canonical path symlinks outside rpgDir', async () => {
+    const inside = await mkdtemp(path.join(tmpdir(), 'soop-viz-sym-in-'))
+    const outside = await mkdtemp(path.join(tmpdir(), 'soop-viz-sym-out-'))
+    try {
+      const { symlink, writeFile } = await import('node:fs/promises')
+      // Plant the secret outside the rpg dir.
+      const secret = path.join(outside, 'secret.json')
+      await writeFile(secret, '{"leaked": true}')
+      // And drop a symlink inside the rpg dir that *points* there.
+      await symlink(secret, path.join(inside, 'evil.json'))
+      const rpgPath = path.join(inside, 'rpg.json')
+      await writeFile(rpgPath, '{"repo_name":"x"}')
+
+      const escaped = await resolveDepGraphPath(rpgPath, {
+        dep_graph_file: 'evil.json',
+      })
+      expect(escaped).toBeNull()
+    }
+    finally {
+      await rm(inside, { recursive: true, force: true })
+      await rm(outside, { recursive: true, force: true })
+    }
+  })
 })

@@ -146,6 +146,42 @@ describe('toVendorDepGraph', () => {
     expect(invokes?.dst).toBe('src/util.ts:Calculator:add')
   })
 
+  it('uses cumulative directory IDs for nested contains chains', async () => {
+    // Regression for the bug where the chain `. → a → a/b → a/b/c` was
+    // emitted as `. → a → b → c`, referencing non-existent node IDs.
+    const rpg = await RepositoryPlanningGraph.create({ name: 'nested-repo' })
+    await rpg.addLowLevelNode({
+      id: 'deep/nested/path/x.ts',
+      feature: { description: 'deep file' },
+      metadata: { entityType: 'file', path: 'deep/nested/path/x.ts' },
+    })
+
+    const { nodes, edges } = await toVendorDepGraph(rpg, {
+      repoDir: '/tmp/sample',
+      repoName: 'nested-repo',
+    })
+
+    // Every cumulative directory ID must exist as a node.
+    expect(nodes.deep?.type).toBe('directory')
+    expect(nodes['deep/nested']?.type).toBe('directory')
+    expect(nodes['deep/nested/path']?.type).toBe('directory')
+
+    // And every contains edge must reference a real node (no orphan IDs
+    // like a bare 'nested' or 'path' that bypassed the cumulative join).
+    const contains = edges.filter(e => e.attrs.type === 'contains')
+    for (const e of contains) {
+      expect(nodes[e.src]).toBeDefined()
+      expect(nodes[e.dst]).toBeDefined()
+    }
+
+    const has = (src: string, dst: string): boolean =>
+      contains.some(e => e.src === src && e.dst === dst)
+    expect(has('.', 'deep')).toBe(true)
+    expect(has('deep', 'deep/nested')).toBe(true)
+    expect(has('deep/nested', 'deep/nested/path')).toBe(true)
+    expect(has('deep/nested/path', 'deep/nested/path/x.ts')).toBe(true)
+  })
+
   it('populates _dep_to_rpg_map for every entity node', async () => {
     const rpg = await buildRpg()
     const { _dep_to_rpg_map: map } = await toVendorDepGraph(rpg, {

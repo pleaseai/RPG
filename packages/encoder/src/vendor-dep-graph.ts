@@ -1,6 +1,12 @@
 import type { RepositoryPlanningGraph } from '@pleaseai/soop-graph'
 import type { LowLevelNode, Node } from '@pleaseai/soop-graph/node'
+import path from 'node:path'
 import { isLowLevelNode } from '@pleaseai/soop-graph/node'
+
+/** Normalize a path to use forward-slash separators on all platforms. */
+function toPosix(p: string): string {
+  return p.split(path.sep).join('/')
+}
 
 /**
  * Vendor-schema dependency-graph emitter.
@@ -63,7 +69,7 @@ export interface ToVendorDepGraphOptions {
  * - `src/foo.ts` → `"src.foo"`
  */
 export function pathToModule(nodeId: string): string {
-  let s = nodeId.trim()
+  let s = toPosix(nodeId.trim())
   if (s.includes(':')) {
     s = s.split(':', 1)[0] ?? s
   }
@@ -181,11 +187,15 @@ function addDirectoryAncestors(
   edges: VendorDepEdge[],
   seenContains: Set<string>,
 ): void {
-  const parts = filePath.split('/').filter(Boolean)
-  const dirSegments: string[] = []
+  const parts = toPosix(filePath).split('/').filter(Boolean)
+
+  // Build cumulative directory IDs (e.g. ['a', 'a/b', 'a/b/c']) — the
+  // CONTAINS chain must use these full IDs, not bare segment names, so
+  // every edge endpoint references a node that actually exists.
+  const dirIds: string[] = []
   for (let i = 0; i < parts.length - 1; i++) {
-    dirSegments.push(parts[i]!)
-    const dirId = dirSegments.join('/')
+    const dirId = dirIds.length > 0 ? `${dirIds.at(-1)}/${parts[i]!}` : parts[i]!
+    dirIds.push(dirId)
     if (!nodes[dirId]) {
       nodes[dirId] = {
         type: 'directory',
@@ -198,15 +208,15 @@ function addDirectoryAncestors(
 
   // Containment chain: root → top dir → … → parent dir → file
   let prev = root
-  for (const seg of dirSegments) {
-    const containKey = `${prev}→${seg}`
+  for (const dirId of dirIds) {
+    const containKey = `${prev}→${dirId}`
     if (!seenContains.has(containKey)) {
-      edges.push({ src: prev, dst: seg, attrs: { type: 'contains' } })
+      edges.push({ src: prev, dst: dirId, attrs: { type: 'contains' } })
       seenContains.add(containKey)
     }
-    prev = seg
+    prev = dirId
   }
-  const parent = dirSegments.length > 0 ? dirSegments.at(-1)! : root
+  const parent = dirIds.length > 0 ? dirIds.at(-1)! : root
   const finalKey = `${parent}→${fileDepId}`
   if (!seenContains.has(finalKey)) {
     edges.push({ src: parent, dst: fileDepId, attrs: { type: 'contains' } })

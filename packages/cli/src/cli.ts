@@ -144,7 +144,16 @@ program
       if (options.viz !== false) {
         try {
           const { generateHtml, loadRpg } = await import('@pleaseai/soop-visualize')
-          const data = await loadRpg(outputPath, depGraphPath)
+          // `loadRpg` expects the canonical JSON RPG payload. When the
+          // user picked JSONL, parse the in-memory RPG directly instead
+          // of re-reading the JSONL output, and merge the dep_graph from
+          // disk so the resulting view matches the saved artifacts.
+          const data = outputPath.endsWith('.jsonl')
+            ? JSON.parse(await result.rpg.toJSON())
+            : await loadRpg(outputPath, depGraphPath)
+          if (outputPath.endsWith('.jsonl') && depGraphPath) {
+            data.dep_graph = JSON.parse(await readFile(depGraphPath, 'utf-8'))
+          }
           const html = await generateHtml(data)
           vizPath = `${outputPath.replace(RPG_EXT_RE, '')}.html`
           await writeFile(vizPath, html)

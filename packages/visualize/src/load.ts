@@ -1,5 +1,5 @@
 import type { RpgData } from './types'
-import { readFile } from 'node:fs/promises'
+import { readFile, realpath, stat } from 'node:fs/promises'
 import path from 'node:path'
 
 /**
@@ -19,20 +19,24 @@ export async function resolveDepGraphPath(
   data: RpgData,
   depGraphPath?: string,
 ): Promise<string | null> {
-  const rpgDir = path.dirname(path.resolve(rpgPath))
+  // Use the lexical rpgDir for joining (so the returned path matches
+  // the user's convention), but realpath it for the containment check
+  // so symlinks inside `rpgDir` cannot smuggle a target outside it.
+  const rpgDirLex = path.dirname(path.resolve(rpgPath))
+  const rpgDirReal = await safeRealpath(rpgDirLex)
 
   // Explicit caller-supplied path: trusted, used as-is.
   if (depGraphPath) {
     const candidate = path.isAbsolute(depGraphPath)
       ? depGraphPath
-      : path.join(rpgDir, depGraphPath)
+      : path.join(rpgDirLex, depGraphPath)
     return (await fileExists(candidate)) ? candidate : null
   }
 
   // Implicit candidates come from the parsed rpg.json payload, which we
   // treat as untrusted: a malicious `dep_graph_file` like
-  // `../../../etc/passwd` must not be followed. Constrain every resolved
-  // candidate to remain inside the rpg directory.
+  // `../../../etc/passwd`, or one that points at a symlink whose target
+  // sits outside `rpgDir`, must not be followed.
   const candidates: string[] = []
   if (typeof data.dep_graph_file === 'string' && data.dep_graph_file) {
     candidates.push(data.dep_graph_file)
@@ -40,13 +44,27 @@ export async function resolveDepGraphPath(
   candidates.push('dep_graph.json')
 
   for (const cand of candidates) {
-    const resolved = path.resolve(rpgDir, cand)
-    if (!isInside(rpgDir, resolved))
+    const resolved = path.resolve(rpgDirLex, cand)
+    if (!(await fileExists(resolved)))
       continue
-    if (await fileExists(resolved))
-      return resolved
+    // Compare canonical paths so symlinks cannot smuggle the target
+    // outside rpgDir after the lexical check passes.
+    const canonical = await safeRealpath(resolved)
+    if (!isInside(rpgDirReal, canonical))
+      continue
+    return resolved
   }
   return null
+}
+
+/** Resolve a path through symlinks, falling back to its lexical form. */
+async function safeRealpath(p: string): Promise<string> {
+  try {
+    return await realpath(p)
+  }
+  catch {
+    return path.resolve(p)
+  }
 }
 
 /** Return true if `child` lives at or under `parent`. */
@@ -88,7 +106,6 @@ export async function loadRpg(
 
 async function fileExists(p: string): Promise<boolean> {
   try {
-    const { stat } = await import('node:fs/promises')
     const s = await stat(p)
     return s.isFile()
   }
