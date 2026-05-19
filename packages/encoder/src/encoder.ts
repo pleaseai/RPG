@@ -636,6 +636,40 @@ export class RPGEncoder {
     log.info(`Saved RPG to ${savePath}`)
   }
 
+  /**
+   * Write the vendor-schema dependency graph as a sidecar JSON file.
+   *
+   * Mirrors RPG-Kit `run_encode.py` Step 2 (lines 98-140): emits a
+   * standalone `dep_graph.json` next to the RPG output and records its
+   * relative path on the RPG so that the next `save()` includes a
+   * `dep_graph_file` reference.
+   *
+   * Returns the absolute path of the file written.
+   */
+  async writeDepGraph(
+    depGraphPath: string,
+    options?: { rpgPath?: string },
+  ): Promise<string> {
+    if (!this._rpg) {
+      throw new Error('No RPG to serialize. Call encode() first.')
+    }
+    const { toVendorDepGraph } = await import('./vendor-dep-graph')
+    const data = await toVendorDepGraph(this._rpg, {
+      repoDir: path.resolve(this.repoPath),
+      repoName: this._rpg.getConfig().name,
+    })
+    await writeFile(depGraphPath, `${JSON.stringify(data, null, 2)}\n`)
+
+    // Store a relative reference so the next save() emits dep_graph_file.
+    if (options?.rpgPath) {
+      const rel = path.relative(path.dirname(options.rpgPath), depGraphPath)
+      this._rpg.setDepGraphFile(rel)
+    }
+
+    log.info(`Wrote dep_graph.json to ${depGraphPath}`)
+    return depGraphPath
+  }
+
   constructor(repoPath: string, options?: Partial<Omit<EncoderOptions, 'repoPath'>>) {
     this.repoPath = repoPath
     this.astParser = new ASTParser()

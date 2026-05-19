@@ -17,6 +17,7 @@
         "@pleaseai/soop-store": "workspace:*",
         "@pleaseai/soop-tools": "workspace:*",
         "@pleaseai/soop-utils": "workspace:*",
+        "@pleaseai/soop-visualize": "workspace:*",
         "@pleaseai/soop-zerorepo": "workspace:*",
         "@types/better-sqlite3": "^7.6.13",
         "@types/bun": "^1.3.10",
@@ -53,6 +54,7 @@
         "@pleaseai/soop-store": "workspace:*",
         "@pleaseai/soop-tools": "workspace:*",
         "@pleaseai/soop-utils": "workspace:*",
+        "@pleaseai/soop-visualize": "workspace:*",
         "@pleaseai/soop-zerorepo": "workspace:*",
         "commander": "^14.0.3",
         "dotenv": "^17.3.1",
@@ -212,6 +214,13 @@
       },
       "peerDependencies": {
         "zod": "^3.25.0 || ^4.0.0",
+      },
+    },
+    "packages/visualize": {
+      "name": "@pleaseai/soop-visualize",
+      "version": "0.1.0",
+      "dependencies": {
+        "@pleaseai/soop-utils": "workspace:*",
       },
     },
     "packages/zerorepo": {
@@ -595,6 +604,8 @@
     "@pleaseai/soop-tools": ["@pleaseai/soop-tools@workspace:packages/tools"],
 
     "@pleaseai/soop-utils": ["@pleaseai/soop-utils@workspace:packages/utils"],
+
+    "@pleaseai/soop-visualize": ["@pleaseai/soop-visualize@workspace:packages/visualize"],
 
     "@pleaseai/soop-zerorepo": ["@pleaseai/soop-zerorepo@workspace:packages/zerorepo"],
 

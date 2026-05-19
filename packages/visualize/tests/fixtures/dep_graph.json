@@ -1,0 +1,47 @@
+{
+  "repo_dir": "/tmp/sample-repo",
+  "repo_name": "sample-repo",
+  "root": ".",
+  "nodes": {
+    ".": { "type": "directory", "module": "", "name": ".", "rpg_nodes": [] },
+    "src": { "type": "directory", "module": "src", "name": "src", "rpg_nodes": ["src"] },
+    "src/util.ts": {
+      "type": "file",
+      "module": "src.util",
+      "name": "util",
+      "rpg_nodes": ["src/util.ts"]
+    },
+    "src/util.ts:helper": {
+      "type": "function",
+      "module": "src.util",
+      "name": "helper",
+      "rpg_nodes": ["src/util.ts:helper:1"]
+    },
+    "src/index.ts": {
+      "type": "file",
+      "module": "src.index",
+      "name": "index",
+      "rpg_nodes": []
+    }
+  },
+  "edges": [
+    { "src": ".", "dst": "src", "attrs": { "type": "contains" } },
+    { "src": "src", "dst": "src/util.ts", "attrs": { "type": "contains" } },
+    { "src": "src", "dst": "src/index.ts", "attrs": { "type": "contains" } },
+    { "src": "src/util.ts", "dst": "src/util.ts:helper", "attrs": { "type": "contains" } },
+    {
+      "src": "src/index.ts",
+      "dst": "src/util.ts",
+      "attrs": { "type": "imports", "symbol": "helper" }
+    },
+    {
+      "src": "src/util.ts:helper",
+      "dst": "src/util.ts:helper",
+      "attrs": { "type": "invokes" }
+    }
+  ],
+  "_dep_to_rpg_map": {
+    "src/util.ts": ["src/util.ts"],
+    "src/util.ts:helper": ["src/util.ts:helper:1"]
+  }
+}

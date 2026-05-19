@@ -1,0 +1,18 @@
+{
+  "name": "@pleaseai/soop-visualize",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./load": "./src/load.ts",
+    "./tree": "./src/tree.ts",
+    "./dep-graph": "./src/dep-graph.ts",
+    "./html": "./src/html.ts"
+  },
+  "dependencies": {
+    "@pleaseai/soop-utils": "workspace:*"
+  }
+}

@@ -60,6 +60,9 @@ export const PythonRPGSchema = z.object({
   edges: z.array(PythonEdgeSchema),
   _dep_to_rpg_map: z.record(z.string(), z.array(z.string())),
   dep_graph: z.unknown().nullable(),
+  // Path (relative to the rpg.json directory) of a sidecar dep_graph.json
+  // file. Matches RPG-Kit `run_encode.py`'s `_dep_graph_file` convention.
+  dep_graph_file: z.string().nullable().optional(),
 })
 
 export type PythonRPG = z.infer<typeof PythonRPGSchema>

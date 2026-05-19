@@ -15,6 +15,7 @@
     "@pleaseai/soop-store": "workspace:*",
     "@pleaseai/soop-tools": "workspace:*",
     "@pleaseai/soop-utils": "workspace:*",
+    "@pleaseai/soop-visualize": "workspace:*",
     "@pleaseai/soop-zerorepo": "workspace:*",
     "commander": "^14.0.3",
     "dotenv": "^17.3.1"

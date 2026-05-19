@@ -23,3 +23,12 @@ export type { ResolvedCall, ResolvedInheritance, SymbolTable } from './symbol-re
 export { COMMON_METHOD_BLOCKLIST, INFERENCE_PATTERNS } from './type-inference-patterns'
 export type { LanguageInferencePatterns } from './type-inference-patterns'
 export { TypeInferrer } from './type-inferrer'
+export { pathToModule, toVendorDepGraph } from './vendor-dep-graph'
+export type {
+  ToVendorDepGraphOptions,
+  VendorDepEdge,
+  VendorDepGraph,
+  VendorDepNode,
+  VendorEdgeType,
+  VendorNodeType,
+} from './vendor-dep-graph'
