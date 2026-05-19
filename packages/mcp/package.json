@@ -10,6 +10,7 @@
     "./server": "./src/server.ts",
     "./tools": "./src/tools.ts",
     "./errors": "./src/errors.ts",
+    "./telemetry": "./src/telemetry.ts",
     "./interactive": "./src/interactive/index.ts",
     "./interactive/encoder": "./src/interactive/encoder.ts",
     "./interactive/state": "./src/interactive/state.ts"
