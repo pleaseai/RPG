@@ -905,7 +905,7 @@ export class InteractiveEncoder {
 
     const { metaPathFor } = await import('@pleaseai/soop-graph/meta')
     const graphPath = path.join(outputDir, 'graph.json')
-    const { graphJson, metaJson } = await this.state.rpg.toJSONWithMeta()
+    const { graphJson, metaJson } = await this.state.rpg.toJSONWithMeta(graphPath)
     await writeFile(graphPath, graphJson)
     await writeFile(metaPathFor(graphPath), metaJson)
   }
