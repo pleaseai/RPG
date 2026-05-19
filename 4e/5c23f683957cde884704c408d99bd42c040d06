@@ -1,0 +1,23 @@
+.claude/agent-memory/review-review-cubic-reviewer/mcp-test-preexisting-failures.md
+  s_5690bc7c0e7595::t_360dcf675faf49 1-15
+.claude/agent-memory/review-review-cubic-reviewer/MEMORY.md
+  s_5690bc7c0e7595::t_a7bed1469a5514 1-4
+.claude/agent-memory/review-review-cubic-reviewer/cubic-false-positives.md
+  s_5690bc7c0e7595::t_d2f9986c61d01b 1-12
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.9",
+  "base_commit_sha": "4e5c23f683957cde884704c408d99bd42c040d06",
+  "prompts": {},
+  "sessions": {
+    "s_5690bc7c0e7595": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d860e8fb-9dae-4d81-992e-55a016fb92bc",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Minsu Lee <amond@amond.net>"
+    }
+  }
+}
