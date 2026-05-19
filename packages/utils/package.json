@@ -9,6 +9,7 @@
     ".": "./src/index.ts",
     "./llm": "./src/llm.ts",
     "./session-manager": "./src/session-manager/index.ts",
+    "./session-manager/claude-code": "./src/session-manager/claude-code.ts",
     "./memory": "./src/memory.ts",
     "./git-path": "./src/git-path.ts",
     "./git-helpers": "./src/git-helpers.ts",

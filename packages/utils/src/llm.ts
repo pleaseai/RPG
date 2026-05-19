@@ -6,7 +6,7 @@ import type { GeminiProviderOptions } from 'ai-sdk-provider-gemini-cli'
 import type { ZodType } from 'zod/v4'
 import type { Memory } from './memory'
 import type { LanguageModelFactory, LLMProvider, SessionManager } from './session-manager'
-import { generateText, NoObjectGeneratedError, Output } from 'ai'
+import { APICallError, generateText, NoObjectGeneratedError, Output } from 'ai'
 import { createLogger } from './logger'
 import { createSessionManager } from './session-manager'
 
@@ -40,6 +40,12 @@ export interface LLMOptions {
   geminiCliSettings?: GeminiProviderOptions
   /** Google provider settings (only used when provider is 'google') */
   googleSettings?: GoogleLanguageModelOptions
+  /**
+   * Directory where per-call session traces are persisted (currently used by
+   * the claude-code provider to copy `~/.claude/projects/<encoded>/<uuid>.jsonl`).
+   * When unset, trace capture is off.
+   */
+  sessionTraceDir?: string
 }
 
 export type { GoogleLanguageModelOptions }
@@ -86,6 +92,11 @@ export interface CallOptions {
    * Only used when a schema is passed to completeJSON() / generateJSON().
    */
   schemaDescription?: string
+  /**
+   * Free-form tag describing what this call is for (e.g., `semantic-parse`).
+   * Surfaces in session-trace filenames and (future) call-log rows.
+   */
+  purpose?: string
 }
 
 /**
@@ -250,6 +261,11 @@ function isContextLengthError(error: unknown): boolean {
  * const client = new LLMClient({ provider: 'gemini-cli', model: 'gemini-2.5-flash' })
  * ```
  */
+/** True when the AI SDK signals the error is safe to retry. */
+function isRetryableError(err: unknown): boolean {
+  return APICallError.isInstance(err) && err.isRetryable === true
+}
+
 export class LLMClient {
   private readonly options: LLMOptions
   private readonly sessionManager: SessionManager
@@ -285,6 +301,11 @@ export class LLMClient {
 
   /**
    * Shared helper for generateText calls with error handling and usage tracking.
+   *
+   * For providers whose SessionManager exposes `beginCall()` (currently
+   * claude-code), this drives a manual retry loop: each attempt gets a
+   * fresh `CallSession.model`, AI-SDK internal retry is disabled, and
+   * `finalize()` runs after the call to capture the session trace.
    */
   private async callGenerateText(
     prompt: string,
@@ -293,27 +314,54 @@ export class LLMClient {
     callOptions?: CallOptions,
   ): Promise<Awaited<ReturnType<typeof generateText>>> {
     const modelId = this.options.model ?? DEFAULT_MODELS[this.options.provider]
-    const model = this.providerInstance(modelId)
     const timeout = callOptions?.timeout ?? this.options.timeout ?? 120_000
     const maxOutputTokens = callOptions?.maxTokens ?? this.options.maxTokens
+    const purpose = callOptions?.purpose ?? 'general'
 
-    let result: Awaited<ReturnType<typeof generateText>>
-    try {
-      result = await generateText({
-        model,
-        output,
-        system: systemPrompt,
-        prompt,
-        maxOutputTokens,
-        temperature: this.options.temperature,
-        abortSignal: AbortSignal.timeout(timeout),
-        providerOptions: this.buildProviderOptions(callOptions),
-        headers: callOptions?.headers,
-        maxRetries: callOptions?.maxApiRetries,
+    const callSession = this.sessionManager.beginCall?.(modelId, purpose)
+    const maxAttempts = callSession ? (callOptions?.maxApiRetries ?? 2) + 1 : 1
+    const aiSdkMaxRetries = callSession?.disableAiSdkRetry ? 0 : callOptions?.maxApiRetries
+
+    let lastError: Error | undefined
+    let result: Awaited<ReturnType<typeof generateText>> | undefined
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const model = callSession ? callSession.model : this.providerInstance(modelId)
+      try {
+        result = await generateText({
+          model,
+          output,
+          system: systemPrompt,
+          prompt,
+          maxOutputTokens,
+          temperature: this.options.temperature,
+          abortSignal: AbortSignal.timeout(timeout),
+          providerOptions: this.buildProviderOptions(callOptions),
+          headers: callOptions?.headers,
+          maxRetries: aiSdkMaxRetries,
+        })
+        lastError = undefined
+        break
+      }
+      catch (error) {
+        const err = error instanceof Error ? error : new Error(String(error))
+        lastError = err
+        if (!callSession || !isRetryableError(err) || attempt === maxAttempts - 1) {
+          break
+        }
+        log.debug(`${modelId} attempt ${attempt + 1} failed (${err.message}); regenerating session and retrying`)
+        callSession.regenerate()
+      }
+    }
+
+    if (callSession) {
+      await callSession.finalize({ success: result !== undefined }).catch((err: unknown) => {
+        log.warn(`Session finalize failed: ${(err as Error).message}`)
       })
     }
-    catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error))
+
+    if (!result) {
+      const err = lastError ?? new Error('generateText returned no result')
       log.error(`${modelId} error: ${err.message}`, err)
       this.options.onError?.(err, { model: modelId, promptLength: prompt.length })
       throw err
@@ -467,26 +515,53 @@ export class LLMClient {
     callOptions?: CallOptions,
   ): Promise<Awaited<ReturnType<typeof generateText>>> {
     const modelId = this.options.model ?? DEFAULT_MODELS[this.options.provider]
-    const model = this.providerInstance(modelId)
     const timeout = callOptions?.timeout ?? this.options.timeout ?? 120_000
     const maxOutputTokens = callOptions?.maxTokens ?? this.options.maxTokens
+    const purpose = callOptions?.purpose ?? 'general'
 
-    let result: Awaited<ReturnType<typeof generateText>>
-    try {
-      result = await generateText({
-        model,
-        output,
-        messages,
-        maxOutputTokens,
-        temperature: this.options.temperature,
-        abortSignal: AbortSignal.timeout(timeout),
-        providerOptions: this.buildProviderOptions(callOptions),
-        headers: callOptions?.headers,
-        maxRetries: callOptions?.maxApiRetries,
+    const callSession = this.sessionManager.beginCall?.(modelId, purpose)
+    const maxAttempts = callSession ? (callOptions?.maxApiRetries ?? 2) + 1 : 1
+    const aiSdkMaxRetries = callSession?.disableAiSdkRetry ? 0 : callOptions?.maxApiRetries
+
+    let lastError: Error | undefined
+    let result: Awaited<ReturnType<typeof generateText>> | undefined
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const model = callSession ? callSession.model : this.providerInstance(modelId)
+      try {
+        result = await generateText({
+          model,
+          output,
+          messages,
+          maxOutputTokens,
+          temperature: this.options.temperature,
+          abortSignal: AbortSignal.timeout(timeout),
+          providerOptions: this.buildProviderOptions(callOptions),
+          headers: callOptions?.headers,
+          maxRetries: aiSdkMaxRetries,
+        })
+        lastError = undefined
+        break
+      }
+      catch (error) {
+        const err = error instanceof Error ? error : new Error(String(error))
+        lastError = err
+        if (!callSession || !isRetryableError(err) || attempt === maxAttempts - 1) {
+          break
+        }
+        log.debug(`${modelId} attempt ${attempt + 1} failed (${err.message}); regenerating session and retrying`)
+        callSession.regenerate()
+      }
+    }
+
+    if (callSession) {
+      await callSession.finalize({ success: result !== undefined }).catch((err: unknown) => {
+        log.warn(`Session finalize failed: ${(err as Error).message}`)
       })
     }
-    catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error))
+
+    if (!result) {
+      const err = lastError ?? new Error('generateText returned no result')
       log.error(`${modelId} error: ${err.message}`, err)
       const totalLength = messages.reduce((sum, m) => {
         const content = typeof m.content === 'string' ? m.content : JSON.stringify(m.content)
