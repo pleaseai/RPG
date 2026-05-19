@@ -2,6 +2,7 @@ import type { GitHubSource, RepositoryPlanningGraph } from '@pleaseai/soop-graph
 import type { Node } from '@pleaseai/soop-graph/node'
 import { readFile } from 'node:fs/promises'
 import { join, resolve } from 'node:path'
+import { suggestNodes } from '@pleaseai/soop-graph/fuzzy'
 
 /**
  * Source resolution mode for FetchNode
@@ -28,6 +29,12 @@ export interface EntityDetail {
   sourceCode?: string
   /** Related feature paths */
   featurePaths: string[]
+  /**
+   * For file-type nodes: distinct feature descriptions implemented by
+   * descendant entities (classes, functions, methods inside the file).
+   * Mirrors the Python `get_node_detail`/`all_features` aggregation.
+   */
+  allFeatures?: string[]
 }
 
 /**
@@ -38,6 +45,8 @@ export interface FetchResult {
   entities: EntityDetail[]
   /** Entities not found */
   notFound: string[]
+  /** Suggested similar node IDs aggregated across all notFound entries (up to 5) */
+  suggestions?: string[]
 }
 
 /**
@@ -101,18 +110,50 @@ export class FetchNode {
       const node = await this.rpg.getNode(id)
       if (node) {
         const sourceCode = await this.readSource(node)
-        entities.push({
+        const detail: EntityDetail = {
           node,
           sourceCode,
           featurePaths: await this.getFeaturePaths(node.id),
-        })
+        }
+        if (node.metadata?.entityType === 'file') {
+          const allFeatures = await this.aggregateDescendantFeatures(node.id)
+          if (allFeatures.length > 0) {
+            detail.allFeatures = allFeatures
+          }
+        }
+        entities.push(detail)
       }
       else {
         notFound.push(id)
       }
     }
 
-    return { entities, notFound }
+    if (notFound.length === 0) {
+      return { entities, notFound }
+    }
+
+    const suggestions = await this.collectSuggestions(notFound)
+    return suggestions.length > 0
+      ? { entities, notFound, suggestions }
+      : { entities, notFound }
+  }
+
+  /**
+   * Aggregate suggestions across all not-found IDs, deduplicated and ranked.
+   */
+  private async collectSuggestions(notFound: string[]): Promise<string[]> {
+    const seen = new Set<string>()
+    const ordered: string[] = []
+    for (const id of notFound) {
+      const suggestions = await suggestNodes(this.rpg, id, { limit: 5 })
+      for (const suggestion of suggestions) {
+        if (!seen.has(suggestion)) {
+          seen.add(suggestion)
+          ordered.push(suggestion)
+        }
+      }
+    }
+    return ordered.slice(0, 5)
   }
 
   /**
@@ -197,6 +238,31 @@ export class FetchNode {
       return lines.slice(startLine - 1, endLine).join('\n')
     }
     return content
+  }
+
+  /**
+   * Aggregate distinct feature descriptions from all descendants of a file node.
+   * Mirrors Python `get_node_detail` for `type=file`.
+   */
+  private async aggregateDescendantFeatures(fileNodeId: string): Promise<string[]> {
+    const collected = new Set<string>()
+    const stack = [fileNodeId]
+    const visited = new Set<string>()
+    while (stack.length > 0) {
+      const current = stack.pop()!
+      if (visited.has(current))
+        continue
+      visited.add(current)
+      const children = await this.rpg.getChildren(current)
+      for (const child of children) {
+        const desc = child.feature.description?.trim()
+        if (desc)
+          collected.add(desc)
+        if (!visited.has(child.id))
+          stack.push(child.id)
+      }
+    }
+    return [...collected].sort()
   }
 
   /**

@@ -19,10 +19,12 @@ import {
   executeFetch,
   executeSearch,
   executeStats,
+  executeTree,
   ExploreInputSchema,
   FetchInputSchema,
   SearchInputSchema,
   StatsInputSchema,
+  TreeInputSchema,
 } from '@pleaseai/soop-mcp/tools'
 import { beforeEach, describe, expect, it } from 'vitest'
 
@@ -405,15 +407,16 @@ describe('MCP Tool Execution', () => {
       ).rejects.toThrow(RPGError)
     })
 
-    it('should throw when start node not found', async () => {
-      await expect(
-        executeExplore(rpg, {
-          startNode: 'nonexistent',
-          edgeType: 'all',
-          maxDepth: 3,
-          direction: 'downstream',
-        }),
-      ).rejects.toThrow(RPGError)
+    it('returns notFound (no throw) when start node does not exist', async () => {
+      const result = await executeExplore(rpg, {
+        startNode: 'nonexistent',
+        edgeType: 'all',
+        maxDepth: 3,
+        direction: 'downstream',
+      })
+      expect(result.nodes).toEqual([])
+      expect(result.edges).toEqual([])
+      expect((result as { notFound?: string }).notFound).toBe('nonexistent')
     })
 
     it('should explore from root node', async () => {
@@ -496,5 +499,43 @@ describe('MCP Tool Execution', () => {
       expect(result.highLevelNodeCount).toBeGreaterThan(0)
       expect(result.lowLevelNodeCount).toBeGreaterThan(0)
     })
+  })
+
+  describe('executeTree', () => {
+    it('throws when RPG is null', async () => {
+      await expect(executeTree(null, { maxDepth: 2 })).rejects.toThrow(RPGError)
+    })
+
+    it('returns a nested tree with totalNodes count', async () => {
+      const result = await executeTree(rpg, { maxDepth: 2 })
+
+      expect(result.root).not.toBeNull()
+      expect(result.totalNodes).toBeGreaterThan(0)
+    })
+
+    it('returns suggestions when rootId is unknown', async () => {
+      const result = await executeTree(rpg, { rootId: 'totally-bogus-node-xyz', maxDepth: 2 })
+
+      expect(result.root).toBeNull()
+      expect(result.notFound).toBe('totally-bogus-node-xyz')
+    })
+  })
+})
+
+describe('treeInputSchema', () => {
+  it('applies default maxDepth of 2', () => {
+    const parsed = TreeInputSchema.parse({})
+    expect(parsed.maxDepth).toBe(2)
+    expect(parsed.rootId).toBeUndefined()
+  })
+
+  it('accepts an explicit rootId', () => {
+    const parsed = TreeInputSchema.parse({ rootId: 'root', maxDepth: 5 })
+    expect(parsed.rootId).toBe('root')
+    expect(parsed.maxDepth).toBe(5)
+  })
+
+  it('rejects negative maxDepth', () => {
+    expect(() => TreeInputSchema.parse({ maxDepth: -1 })).toThrow()
   })
 })

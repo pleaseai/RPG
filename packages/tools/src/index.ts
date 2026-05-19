@@ -6,3 +6,6 @@ export type { FetchNodeConfig, FetchOptions, FetchResult, SourceMode } from './f
 
 export { SearchNode } from './search'
 export type { SearchOptions, SearchResult, SearchStrategy } from './search'
+
+export { RPGTree, SYNTHETIC_ROOT_ID } from './tree'
+export type { TreeNode, TreeOptions, TreeResult } from './tree'

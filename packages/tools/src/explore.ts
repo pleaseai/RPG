@@ -1,10 +1,17 @@
 import type { DependencyEdge, Edge, Node, RepositoryPlanningGraph } from '@pleaseai/soop-graph'
 import { EdgeType, isDependencyEdge } from '@pleaseai/soop-graph'
+import { suggestNodes } from '@pleaseai/soop-graph/fuzzy'
 
 /**
  * Edge type for exploration
  */
 export type ExploreEdgeType = 'containment' | 'dependency' | 'data_flow' | 'all'
+
+/**
+ * Default maximum edges returned before truncation kicks in.
+ * Mirrors Python `_MAX_EXPLORE_EDGES`.
+ */
+export const DEFAULT_MAX_EXPLORE_EDGES = 20
 
 /**
  * Options for ExploreRPG
@@ -20,6 +27,8 @@ export interface ExploreOptions {
   direction?: 'downstream' | 'upstream' | 'both'
   /** Filter dependency edges by their dependency type */
   dependencyType?: 'import' | 'call' | 'inherit' | 'implement' | 'use'
+  /** Maximum edges to collect before truncating (default: 20) */
+  maxEdges?: number
 }
 
 /**
@@ -32,6 +41,12 @@ export interface ExploreResult {
   edges: Array<{ source: string, target: string, type: string }>
   /** Depth reached */
   maxDepthReached: number
+  /** Requested startNode that could not be found */
+  notFound?: string
+  /** Suggested similar node IDs when startNode was not found */
+  suggestions?: string[]
+  /** Set to true when edge collection was capped by maxEdges (default 20) */
+  truncated?: boolean
 }
 
 /**
@@ -42,6 +57,8 @@ interface ExploreState {
   nodes: Node[]
   edges: Array<{ source: string, target: string, type: string }>
   maxDepthReached: number
+  maxEdges: number
+  truncated: boolean
 }
 
 /**
@@ -61,23 +78,51 @@ export class ExploreRPG {
    * Traverse the graph from a starting node
    */
   async traverse(options: ExploreOptions): Promise<ExploreResult> {
-    const { startNode, edgeType, maxDepth = 3, direction = 'downstream', dependencyType } = options
+    const {
+      startNode,
+      edgeType,
+      maxDepth = 3,
+      direction = 'downstream',
+      dependencyType,
+      maxEdges = DEFAULT_MAX_EXPLORE_EDGES,
+    } = options
+
+    const exists = await this.rpg.hasNode(startNode)
+    if (!exists) {
+      const suggestions = await suggestNodes(this.rpg, startNode, { limit: 5 })
+      const result: ExploreResult = {
+        nodes: [],
+        edges: [],
+        maxDepthReached: 0,
+        notFound: startNode,
+      }
+      if (suggestions.length > 0) {
+        result.suggestions = suggestions
+      }
+      return result
+    }
 
     const state: ExploreState = {
       visited: new Set<string>(),
       nodes: [],
       edges: [],
       maxDepthReached: 0,
+      maxEdges,
+      truncated: false,
     }
 
     const edgeTypes = this.resolveEdgeTypes(edgeType)
     await this.exploreNode(startNode, 0, maxDepth, direction, edgeTypes, state, dependencyType)
 
-    return {
+    const result: ExploreResult = {
       nodes: state.nodes,
       edges: state.edges,
       maxDepthReached: state.maxDepthReached,
     }
+    if (state.truncated) {
+      result.truncated = true
+    }
+    return result
   }
 
   /**
@@ -201,9 +246,13 @@ export class ExploreRPG {
   }
 
   /**
-   * Add an edge to the state
+   * Add an edge to the state, respecting the maxEdges cap.
    */
   private addEdge(edge: Edge, state: ExploreState): void {
+    if (state.edges.length >= state.maxEdges) {
+      state.truncated = true
+      return
+    }
     state.edges.push({
       source: edge.source,
       target: edge.target,
