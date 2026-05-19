@@ -8,6 +8,7 @@
   "exports": {
     ".": "./src/index.ts",
     "./llm": "./src/llm.ts",
+    "./session-manager": "./src/session-manager/index.ts",
     "./memory": "./src/memory.ts",
     "./git-path": "./src/git-path.ts",
     "./git-helpers": "./src/git-helpers.ts",

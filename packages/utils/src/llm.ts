@@ -5,22 +5,14 @@ import type { CodexCliSettings } from 'ai-sdk-provider-codex-cli'
 import type { GeminiProviderOptions } from 'ai-sdk-provider-gemini-cli'
 import type { ZodType } from 'zod/v4'
 import type { Memory } from './memory'
-import { spawn } from 'node:child_process'
-import { createAnthropic } from '@ai-sdk/anthropic'
-import { createGoogleGenerativeAI } from '@ai-sdk/google'
-import { createOpenAI } from '@ai-sdk/openai'
+import type { LanguageModelFactory, LLMProvider, SessionManager } from './session-manager'
 import { generateText, NoObjectGeneratedError, Output } from 'ai'
-import { createClaudeCode } from 'ai-sdk-provider-claude-code'
-import { createCodexCli } from 'ai-sdk-provider-codex-cli'
-import { createGeminiProvider } from 'ai-sdk-provider-gemini-cli'
 import { createLogger } from './logger'
+import { createSessionManager } from './session-manager'
 
 const log = createLogger('LLMClient')
 
-/**
- * LLM provider type
- */
-export type LLMProvider = 'openai' | 'anthropic' | 'google' | 'claude-code' | 'codex' | 'gemini-cli'
+export type { LLMProvider }
 
 /**
  * LLM client options
@@ -169,54 +161,6 @@ const MODEL_PRICING: Record<string, { input: number, output: number }> = {
 }
 
 /**
- * Create provider instance
- */
-function createProvider(provider: LLMProvider, apiKey?: string, claudeCodeSettings?: ClaudeCodeSettings, codexSettings?: CodexCliSettings, geminiCliSettings?: GeminiProviderOptions) {
-  switch (provider) {
-    case 'openai':
-      return createOpenAI({
-        apiKey: apiKey ?? process.env.OPENAI_API_KEY,
-      })
-    case 'anthropic':
-      return createAnthropic({
-        apiKey: apiKey ?? process.env.ANTHROPIC_API_KEY,
-      })
-    case 'google':
-      return createGoogleGenerativeAI({
-        apiKey: apiKey ?? process.env.GOOGLE_GENERATIVE_AI_API_KEY,
-      })
-    case 'claude-code': {
-      const settings: ClaudeCodeSettings = {
-        // Defaults for automated/non-interactive use
-        pathToClaudeCodeExecutable: process.env.CLAUDE_BIN ?? 'claude',
-        persistSession: false,
-        permissionMode: 'bypassPermissions',
-        ...claudeCodeSettings,
-        stderr: (data) => { log.debug('[claude stderr]', data.toString().trim()) },
-        spawnClaudeCodeProcess: (options) => {
-          // Remove CLAUDECODE and CLAUDE_CODE_SSE_PORT to allow running
-          // inside an existing Claude Code session without being blocked.
-          const { CLAUDECODE: _, CLAUDE_CODE_SSE_PORT: __, ...env } = options.env
-          return spawn(options.command, options.args, {
-            cwd: options.cwd,
-            env,
-            signal: options.signal,
-            stdio: ['pipe', 'pipe', 'pipe'],
-          })
-        },
-      }
-      return createClaudeCode({ defaultSettings: settings })
-    }
-    case 'codex':
-      return createCodexCli(codexSettings ? { defaultSettings: codexSettings } : undefined)
-    case 'gemini-cli':
-      return createGeminiProvider(geminiCliSettings ?? {})
-    default:
-      throw new Error(`Unsupported LLM provider: ${String(provider satisfies never)}`)
-  }
-}
-
-/**
  * Cumulative token usage statistics
  */
 export interface TokenUsageStats {
@@ -308,7 +252,8 @@ function isContextLengthError(error: unknown): boolean {
  */
 export class LLMClient {
   private readonly options: LLMOptions
-  private readonly providerInstance: ReturnType<typeof createProvider>
+  private readonly sessionManager: SessionManager
+  private readonly providerInstance: LanguageModelFactory
   private usageStats: TokenUsageStats = { ...INITIAL_USAGE_STATS }
 
   constructor(options: LLMOptions) {
@@ -323,7 +268,8 @@ export class LLMClient {
         `'googleSettings' was provided for a non-Google provider ('${options.provider}'). These settings will be ignored.`,
       )
     }
-    this.providerInstance = createProvider(options.provider, options.apiKey, options.claudeCodeSettings, options.codexSettings, options.geminiCliSettings)
+    this.sessionManager = createSessionManager(options)
+    this.providerInstance = this.sessionManager.createProvider()
   }
 
   private buildProviderOptions(callOptions?: CallOptions): Parameters<typeof generateText>[0]['providerOptions'] {
