@@ -324,6 +324,26 @@ describe('repositoryPlanningGraph', () => {
     expect((await restored.getStats()).edgeCount).toBe(1)
     expect(restored.getConfig().name).toBe('test-repo')
   })
+
+  it('preserves dep_graph_file through serialize → deserialize round trip', async () => {
+    const rpg = await RepositoryPlanningGraph.create({ name: 'dep-trip' })
+    rpg.setDepGraphFile('dep_graph.json')
+    expect(rpg.getDepGraphFile()).toBe('dep_graph.json')
+
+    const json = await rpg.toJSON()
+    const parsed = JSON.parse(json) as { dep_graph_file?: string }
+    expect(parsed.dep_graph_file).toBe('dep_graph.json')
+
+    const restored = await RepositoryPlanningGraph.fromJSON(json)
+    expect(restored.getDepGraphFile()).toBe('dep_graph.json')
+  })
+
+  it('omits dep_graph_file from serialized output when unset', async () => {
+    const rpg = await RepositoryPlanningGraph.create({ name: 'no-dep' })
+    const json = await rpg.toJSON()
+    const parsed = JSON.parse(json) as Record<string, unknown>
+    expect(parsed).not.toHaveProperty('dep_graph_file')
+  })
 })
 
 describe('DataFlowEdge', () => {

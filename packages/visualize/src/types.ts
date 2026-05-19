@@ -78,8 +78,8 @@ export interface RpgData {
   root?: RawFeatNode
   nodes?: RawFeatNode[]
   edges?: RawFeatEdge[]
-  dep_graph?: RawDepGraph
-  dep_graph_file?: string
+  dep_graph?: RawDepGraph | null
+  dep_graph_file?: string | null
   _dep_to_rpg_map?: Record<string, string[]>
   [key: string]: unknown
 }

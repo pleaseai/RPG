@@ -21,6 +21,7 @@ export async function resolveDepGraphPath(
 ): Promise<string | null> {
   const rpgDir = path.dirname(path.resolve(rpgPath))
 
+  // Explicit caller-supplied path: trusted, used as-is.
   if (depGraphPath) {
     const candidate = path.isAbsolute(depGraphPath)
       ? depGraphPath
@@ -28,6 +29,10 @@ export async function resolveDepGraphPath(
     return (await fileExists(candidate)) ? candidate : null
   }
 
+  // Implicit candidates come from the parsed rpg.json payload, which we
+  // treat as untrusted: a malicious `dep_graph_file` like
+  // `../../../etc/passwd` must not be followed. Constrain every resolved
+  // candidate to remain inside the rpg directory.
   const candidates: string[] = []
   if (typeof data.dep_graph_file === 'string' && data.dep_graph_file) {
     candidates.push(data.dep_graph_file)
@@ -35,11 +40,19 @@ export async function resolveDepGraphPath(
   candidates.push('dep_graph.json')
 
   for (const cand of candidates) {
-    const resolved = path.isAbsolute(cand) ? cand : path.join(rpgDir, cand)
+    const resolved = path.resolve(rpgDir, cand)
+    if (!isInside(rpgDir, resolved))
+      continue
     if (await fileExists(resolved))
       return resolved
   }
   return null
+}
+
+/** Return true if `child` lives at or under `parent`. */
+function isInside(parent: string, child: string): boolean {
+  const rel = path.relative(parent, child)
+  return rel === '' || (!rel.startsWith('..') && !path.isAbsolute(rel))
 }
 
 /**
@@ -79,7 +92,13 @@ async function fileExists(p: string): Promise<boolean> {
     const s = await stat(p)
     return s.isFile()
   }
-  catch {
-    return false
+  catch (err) {
+    // Genuinely-absent files are not exceptional; anything else (EACCES,
+    // EIO, ELOOP, ENAMETOOLONG, etc.) is a user-actionable environment
+    // problem that should surface, not be silently treated as missing.
+    const code = (err as NodeJS.ErrnoException).code
+    if (code === 'ENOENT' || code === 'ENOTDIR')
+      return false
+    throw err
   }
 }

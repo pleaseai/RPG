@@ -156,3 +156,114 @@ describe('generateHtml', () => {
     expect(html).not.toMatch(/__[A-Z_]+__/)
   })
 })
+
+describe('generateHtml — XSS / script-context safety', () => {
+  it('escapes </script> sequences inside inlined JSON blobs', async () => {
+    const malicious = {
+      repo_name: 'evil',
+      repo_info: '',
+      data_flow: [],
+      excluded_files: [],
+      repo_node_id: 'r',
+      nodes: [
+        {
+          id: 'r',
+          name: 'r',
+          node_type: 'repo',
+          level: 0,
+          meta: { type_name: 'repo', path: '.', description: 'Root', content: '' },
+        },
+        {
+          id: 'malicious',
+          // Realistic shape: a feature description picked up from a code
+          // comment that legitimately mentions an HTML snippet.
+          name: '</script><img src=x onerror=alert(1)>',
+          node_type: 'feature',
+          level: 2,
+          meta: {
+            type_name: 'file',
+            path: 'src/evil.ts',
+            description: '</script>',
+            content: '',
+          },
+        },
+      ],
+      edges: [{ src: 'r', dst: 'malicious', relation: 'composes', meta: null }],
+      _dep_to_rpg_map: {},
+      dep_graph: null,
+    }
+    const html = await generateHtml(malicious)
+    // The verbatim sequence "</script>" must NOT appear inside the inlined
+    // JSON. JSON.stringify alone would leave it intact and break the
+    // script block; jsonForScript() encodes "<" as "<".
+    const treeIdx = html.indexOf('const treeData =')
+    const trailingScriptClose = html.indexOf('</script>', treeIdx)
+    // The only </script> in the document must be after all the data
+    // initialization (i.e. the real closing tag of the inline script).
+    const dataBlockEnd = html.indexOf('const hasMap =', treeIdx)
+    expect(trailingScriptClose).toBeGreaterThan(dataBlockEnd)
+    // And the dangerous payload must be encoded, not literal. Escaping `<`
+    // alone is sufficient — the HTML parser only recognizes `</script>` as
+    // an end-tag when it sees the literal `<` character.
+    expect(html).not.toContain('</script><img src=x')
+    expect(html).toContain('\\u003c/script>')
+  })
+
+  it('escapes U+2028 / U+2029 line terminators inside inlined JSON', async () => {
+    const data = {
+      repo_name: 'lineterm',
+      nodes: [
+        {
+          id: 'r',
+          name: 'r',
+          node_type: 'repo',
+          level: 0,
+          meta: { type_name: 'repo', path: '.', description: '', content: '' },
+        },
+        {
+          id: 'x',
+          name: `line1${String.fromCodePoint(0x2028)}line2${String.fromCodePoint(0x2029)}line3`,
+          node_type: 'feature',
+          level: 1,
+          meta: { type_name: 'file', path: 'x', description: '', content: '' },
+        },
+      ],
+      edges: [],
+      _dep_to_rpg_map: {},
+      dep_graph: null,
+    }
+    const html = await generateHtml(data)
+    // The raw line-terminator codepoints must not survive into the
+    // inlined JSON (they would split the JS parse) — they should be
+    // encoded as the literal six-char sequences  / .
+    expect(html).not.toContain(String.fromCodePoint(0x2028))
+    expect(html).not.toContain(String.fromCodePoint(0x2029))
+    expect(html).toContain('\\u2028')
+    expect(html).toContain('\\u2029')
+  })
+})
+
+describe('resolveDepGraphPath — path traversal containment', () => {
+  it('refuses dep_graph_file values that escape the rpg directory', async () => {
+    const tmp = await mkdtemp(path.join(tmpdir(), 'soop-viz-trav-'))
+    try {
+      const rpgPath = path.join(tmp, 'rpg.json')
+      const { writeFile } = await import('node:fs/promises')
+      await writeFile(rpgPath, '{"repo_name":"x"}')
+      // Try to escape upward — must NOT be resolved.
+      const escaped = await resolveDepGraphPath(rpgPath, {
+        dep_graph_file: '../../../etc/passwd',
+      })
+      expect(escaped).toBeNull()
+      // A traversal that happens to land back inside the dir should also
+      // not match unless the file actually exists there.
+      const samePath = await resolveDepGraphPath(rpgPath, {
+        dep_graph_file: './nonexistent.json',
+      })
+      expect(samePath).toBeNull()
+    }
+    finally {
+      await rm(tmp, { recursive: true, force: true })
+    }
+  })
+})

@@ -40,6 +40,31 @@ function escapeHtml(text: string): string {
     .replaceAll('>', '&gt;')
 }
 
+// `String.fromCharCode` keeps the source file ASCII-only; embedding the
+// literal U+2028/U+2029 characters here would otherwise be parsed as line
+// terminators and fragment this module.
+const U2028 = String.fromCharCode(0x2028)
+const U2029 = String.fromCharCode(0x2029)
+
+/**
+ * Serialize a value as JSON safe for inlining into a `<script>` block.
+ *
+ * `JSON.stringify` does not escape `</script>` or the JS line
+ * terminators U+2028 / U+2029. Without escaping, any string field whose
+ * value contains those sequences breaks out of the script block (or, for
+ * the line terminators, breaks the JS parse). Reachable here because
+ * encoded RPGs carry arbitrary code-derived strings: file paths, class
+ * names, feature descriptions, etc. Replacing `<` with the `<`
+ * escape keeps the JSON deserializable as the same value while
+ * neutralizing the HTML parser's script-end detection.
+ */
+function jsonForScript(value: unknown): string {
+  return JSON.stringify(value)
+    .replaceAll('<', '\\u003c')
+    .replaceAll(U2028, '\\u2028')
+    .replaceAll(U2029, '\\u2029')
+}
+
 /** Format a `{key: count}` map into the legend string used by the vendor template. */
 function formatEdgeSummary(stats: Record<string, number>): string {
   return Object.keys(stats)
@@ -92,13 +117,13 @@ export async function generateHtml(data: RpgData): Promise<string> {
     .replaceAll('__DEP_EDGE_SUMMARY__', escapeHtml(depEdgeSummary))
     .replaceAll('__DEP_TO_RPG_LEN__', String(depToRpgLen))
     .replaceAll('__MAP_COUNT__', String(mapCount))
-    .replaceAll('__TREE_JSON__', JSON.stringify(tree))
-    .replaceAll('__EDGES_JSON__', JSON.stringify(semanticEdges))
-    .replaceAll('__DEP_NODES_JSON__', JSON.stringify(dep.nodes))
-    .replaceAll('__DEP_EDGES_JSON__', JSON.stringify(dep.edges))
-    .replaceAll('__DEP_PARENT_JSON__', JSON.stringify(dep.parent_map))
-    .replaceAll('__DEP_TREE_JSON__', JSON.stringify(depTree))
-    .replaceAll('__DEP_TO_RPG_JSON__', JSON.stringify(depToRpg))
+    .replaceAll('__TREE_JSON__', jsonForScript(tree))
+    .replaceAll('__EDGES_JSON__', jsonForScript(semanticEdges))
+    .replaceAll('__DEP_NODES_JSON__', jsonForScript(dep.nodes))
+    .replaceAll('__DEP_EDGES_JSON__', jsonForScript(dep.edges))
+    .replaceAll('__DEP_PARENT_JSON__', jsonForScript(dep.parent_map))
+    .replaceAll('__DEP_TREE_JSON__', jsonForScript(depTree))
+    .replaceAll('__DEP_TO_RPG_JSON__', jsonForScript(depToRpg))
     .replaceAll('__HAS_DEP__', hasDep ? 'true' : 'false')
     .replaceAll('__HAS_MAP__', hasMap ? 'true' : 'false')
 }
