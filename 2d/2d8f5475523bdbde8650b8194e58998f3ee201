@@ -1,0 +1,23 @@
+packages/mcp/tests/server-startup.test.ts
+  s_5690bc7c0e7595::t_567217cfdf140f 23,27-29,43-56
+  s_5690bc7c0e7595::t_f410bce0221ff8 57-58
+packages/mcp/src/server.ts
+  s_5690bc7c0e7595::t_567217cfdf140f 3,46-49,52-55,67-77,99-101,246-256,260-268,271-285,288-301,303,307-325,327-337,459-463,496,503,516-517,544-552
+  s_5690bc7c0e7595::t_a87a22960761e8 257-259
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.9",
+  "base_commit_sha": "2d2d8f5475523bdbde8650b8194e58998f3ee201",
+  "prompts": {},
+  "sessions": {
+    "s_5690bc7c0e7595": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d860e8fb-9dae-4d81-992e-55a016fb92bc",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Minsu Lee <amond@amond.net>"
+    }
+  }
+}
