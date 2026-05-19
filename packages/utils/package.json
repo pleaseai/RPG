@@ -10,6 +10,7 @@
     "./llm": "./src/llm.ts",
     "./session-manager": "./src/session-manager/index.ts",
     "./session-manager/claude-code": "./src/session-manager/claude-code.ts",
+    "./llm-call-log": "./src/llm-call-log.ts",
     "./memory": "./src/memory.ts",
     "./git-path": "./src/git-path.ts",
     "./git-helpers": "./src/git-helpers.ts",
@@ -23,6 +24,7 @@
     "ai-sdk-provider-claude-code": "^3.4.0",
     "ai-sdk-provider-codex-cli": "^1.1.0",
     "ai-sdk-provider-gemini-cli": "^2.0.1",
+    "better-sqlite3": "^12.6.2",
     "consola": "^3.4.2"
   },
   "peerDependencies": {

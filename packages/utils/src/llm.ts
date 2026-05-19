@@ -7,6 +7,7 @@ import type { ZodType } from 'zod/v4'
 import type { Memory } from './memory'
 import type { LanguageModelFactory, LLMProvider, SessionManager } from './session-manager'
 import { APICallError, generateText, NoObjectGeneratedError, Output } from 'ai'
+import { LLMCallLog } from './llm-call-log'
 import { createLogger } from './logger'
 import { createSessionManager } from './session-manager'
 
@@ -46,6 +47,11 @@ export interface LLMOptions {
    * When unset, trace capture is off.
    */
   sessionTraceDir?: string
+  /**
+   * Path to the per-call audit-log SQLite database. When unset, no log is
+   * written. Typically `.soop/cache/llm-call-log.db`.
+   */
+  callLogPath?: string
 }
 
 export type { GoogleLanguageModelOptions }
@@ -270,6 +276,7 @@ export class LLMClient {
   private readonly options: LLMOptions
   private readonly sessionManager: SessionManager
   private readonly providerInstance: LanguageModelFactory
+  private readonly callLog: LLMCallLog | null
   private usageStats: TokenUsageStats = { ...INITIAL_USAGE_STATS }
 
   constructor(options: LLMOptions) {
@@ -286,6 +293,36 @@ export class LLMClient {
     }
     this.sessionManager = createSessionManager(options)
     this.providerInstance = this.sessionManager.createProvider()
+    this.callLog = options.callLogPath
+      ? new LLMCallLog({ dbPath: options.callLogPath })
+      : null
+  }
+
+  /**
+   * Persist an audit record for the most recent call.
+   * Errors during logging are swallowed (best-effort observability).
+   */
+  private async recordCall(
+    input: { provider: LLMProvider, model: string, purpose: string, prompt: string, response?: string, durationMs: number, retries: number, error?: string },
+  ): Promise<void> {
+    if (!this.callLog) {
+      return
+    }
+    try {
+      await this.callLog.record({
+        provider: input.provider,
+        model: input.model,
+        purpose: input.purpose,
+        prompt: input.prompt,
+        response: input.response,
+        durationMs: input.durationMs,
+        retries: input.retries,
+        error: input.error,
+      })
+    }
+    catch (err) {
+      log.warn(`Failed to record LLM call: ${(err as Error).message}`)
+    }
   }
 
   private buildProviderOptions(callOptions?: CallOptions): Parameters<typeof generateText>[0]['providerOptions'] {
@@ -324,6 +361,8 @@ export class LLMClient {
 
     let lastError: Error | undefined
     let result: Awaited<ReturnType<typeof generateText>> | undefined
+    let retries = 0
+    const startedAt = Date.now()
 
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       const model = callSession ? callSession.model : this.providerInstance(modelId)
@@ -350,6 +389,7 @@ export class LLMClient {
           break
         }
         log.debug(`${modelId} attempt ${attempt + 1} failed (${err.message}); regenerating session and retrying`)
+        retries++
         callSession.regenerate()
       }
     }
@@ -360,12 +400,33 @@ export class LLMClient {
       })
     }
 
+    const durationMs = Date.now() - startedAt
+
     if (!result) {
       const err = lastError ?? new Error('generateText returned no result')
+      await this.recordCall({
+        provider: this.options.provider,
+        model: modelId,
+        purpose,
+        prompt,
+        durationMs,
+        retries,
+        error: err.message,
+      })
       log.error(`${modelId} error: ${err.message}`, err)
       this.options.onError?.(err, { model: modelId, promptLength: prompt.length })
       throw err
     }
+
+    await this.recordCall({
+      provider: this.options.provider,
+      model: modelId,
+      purpose,
+      prompt,
+      response: result.text,
+      durationMs,
+      retries,
+    })
 
     const inputTokens = result.usage?.inputTokens ?? 0
     const outputTokens = result.usage?.outputTokens ?? 0
@@ -525,6 +586,8 @@ export class LLMClient {
 
     let lastError: Error | undefined
     let result: Awaited<ReturnType<typeof generateText>> | undefined
+    let retries = 0
+    const startedAt = Date.now()
 
     for (let attempt = 0; attempt < maxAttempts; attempt++) {
       const model = callSession ? callSession.model : this.providerInstance(modelId)
@@ -550,6 +613,7 @@ export class LLMClient {
           break
         }
         log.debug(`${modelId} attempt ${attempt + 1} failed (${err.message}); regenerating session and retrying`)
+        retries++
         callSession.regenerate()
       }
     }
@@ -560,8 +624,20 @@ export class LLMClient {
       })
     }
 
+    const durationMs = Date.now() - startedAt
+    const flattenedPrompt = messages.map(m => (typeof m.content === 'string' ? m.content : JSON.stringify(m.content))).join('\n')
+
     if (!result) {
       const err = lastError ?? new Error('generateText returned no result')
+      await this.recordCall({
+        provider: this.options.provider,
+        model: modelId,
+        purpose,
+        prompt: flattenedPrompt,
+        durationMs,
+        retries,
+        error: err.message,
+      })
       log.error(`${modelId} error: ${err.message}`, err)
       const totalLength = messages.reduce((sum, m) => {
         const content = typeof m.content === 'string' ? m.content : JSON.stringify(m.content)
@@ -570,6 +646,16 @@ export class LLMClient {
       this.options.onError?.(err, { model: modelId, promptLength: totalLength })
       throw err
     }
+
+    await this.recordCall({
+      provider: this.options.provider,
+      model: modelId,
+      purpose,
+      prompt: flattenedPrompt,
+      response: result.text,
+      durationMs,
+      retries,
+    })
 
     const inputTokens = result.usage?.inputTokens ?? 0
     const outputTokens = result.usage?.outputTokens ?? 0
