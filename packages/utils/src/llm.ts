@@ -1,5 +1,5 @@
 import type { GoogleLanguageModelOptions } from '@ai-sdk/google'
-import type { ModelMessage } from 'ai'
+import type { LanguageModel, ModelMessage } from 'ai'
 import type { ClaudeCodeSettings } from 'ai-sdk-provider-claude-code'
 import type { CodexCliSettings } from 'ai-sdk-provider-codex-cli'
 import type { GeminiProviderOptions } from 'ai-sdk-provider-gemini-cli'
@@ -10,6 +10,8 @@ import { APICallError, generateText, NoObjectGeneratedError, Output } from 'ai'
 import { LLMCallLog } from './llm-call-log'
 import { createLogger } from './logger'
 import { createSessionManager } from './session-manager'
+
+type GenerateTextParams = Parameters<typeof generateText>[0]
 
 const log = createLogger('LLMClient')
 
@@ -337,22 +339,22 @@ export class LLMClient {
   }
 
   /**
-   * Shared helper for generateText calls with error handling and usage tracking.
+   * Drive a single `generateText` invocation with the retry loop,
+   * session-trace capture, audit logging, and usage tracking required
+   * by every public path on this class.
    *
    * For providers whose SessionManager exposes `beginCall()` (currently
-   * claude-code), this drives a manual retry loop: each attempt gets a
-   * fresh `CallSession.model`, AI-SDK internal retry is disabled, and
-   * `finalize()` runs after the call to capture the session trace.
+   * claude-code), this regenerates the session UUID on each retryable
+   * failure; for other providers, AI-SDK internal retry handles it.
    */
-  private async callGenerateText(
-    prompt: string,
-    systemPrompt?: string,
-    output?: Parameters<typeof generateText>[0]['output'],
-    callOptions?: CallOptions,
-  ): Promise<Awaited<ReturnType<typeof generateText>>> {
+  private async runWithSession(args: {
+    callOptions: CallOptions | undefined
+    buildParams: (model: LanguageModel) => GenerateTextParams
+    promptForLog: string
+    promptLengthForOnError: number
+  }): Promise<Awaited<ReturnType<typeof generateText>>> {
+    const { callOptions, buildParams, promptForLog, promptLengthForOnError } = args
     const modelId = this.options.model ?? DEFAULT_MODELS[this.options.provider]
-    const timeout = callOptions?.timeout ?? this.options.timeout ?? 120_000
-    const maxOutputTokens = callOptions?.maxTokens ?? this.options.maxTokens
     const purpose = callOptions?.purpose ?? 'general'
 
     const callSession = this.sessionManager.beginCall?.(modelId, purpose)
@@ -368,15 +370,7 @@ export class LLMClient {
       const model = callSession ? callSession.model : this.providerInstance(modelId)
       try {
         result = await generateText({
-          model,
-          output,
-          system: systemPrompt,
-          prompt,
-          maxOutputTokens,
-          temperature: this.options.temperature,
-          abortSignal: AbortSignal.timeout(timeout),
-          providerOptions: this.buildProviderOptions(callOptions),
-          headers: callOptions?.headers,
+          ...buildParams(model),
           maxRetries: aiSdkMaxRetries,
         })
         lastError = undefined
@@ -408,13 +402,13 @@ export class LLMClient {
         provider: this.options.provider,
         model: modelId,
         purpose,
-        prompt,
+        prompt: promptForLog,
         durationMs,
         retries,
         error: err.message,
       })
       log.error(`${modelId} error: ${err.message}`, err)
-      this.options.onError?.(err, { model: modelId, promptLength: prompt.length })
+      this.options.onError?.(err, { model: modelId, promptLength: promptLengthForOnError })
       throw err
     }
 
@@ -422,7 +416,7 @@ export class LLMClient {
       provider: this.options.provider,
       model: modelId,
       purpose,
-      prompt,
+      prompt: promptForLog,
       response: result.text,
       durationMs,
       retries,
@@ -436,6 +430,33 @@ export class LLMClient {
     this.usageStats.requestCount++
 
     return result
+  }
+
+  private async callGenerateText(
+    prompt: string,
+    systemPrompt?: string,
+    output?: GenerateTextParams['output'],
+    callOptions?: CallOptions,
+  ): Promise<Awaited<ReturnType<typeof generateText>>> {
+    const timeout = callOptions?.timeout ?? this.options.timeout ?? 120_000
+    const maxOutputTokens = callOptions?.maxTokens ?? this.options.maxTokens
+
+    return this.runWithSession({
+      callOptions,
+      buildParams: model => ({
+        model,
+        output,
+        system: systemPrompt,
+        prompt,
+        maxOutputTokens,
+        temperature: this.options.temperature,
+        abortSignal: AbortSignal.timeout(timeout),
+        providerOptions: this.buildProviderOptions(callOptions),
+        headers: callOptions?.headers,
+      }),
+      promptForLog: prompt,
+      promptLengthForOnError: prompt.length,
+    })
   }
 
   /**
@@ -572,99 +593,28 @@ export class LLMClient {
    */
   private async callGenerateTextWithMessages(
     messages: ModelMessage[],
-    output?: Parameters<typeof generateText>[0]['output'],
+    output?: GenerateTextParams['output'],
     callOptions?: CallOptions,
   ): Promise<Awaited<ReturnType<typeof generateText>>> {
-    const modelId = this.options.model ?? DEFAULT_MODELS[this.options.provider]
     const timeout = callOptions?.timeout ?? this.options.timeout ?? 120_000
     const maxOutputTokens = callOptions?.maxTokens ?? this.options.maxTokens
-    const purpose = callOptions?.purpose ?? 'general'
+    const flatContent = messages.map(m => (typeof m.content === 'string' ? m.content : JSON.stringify(m.content)))
 
-    const callSession = this.sessionManager.beginCall?.(modelId, purpose)
-    const maxAttempts = callSession ? (callOptions?.maxApiRetries ?? 2) + 1 : 1
-    const aiSdkMaxRetries = callSession?.disableAiSdkRetry ? 0 : callOptions?.maxApiRetries
-
-    let lastError: Error | undefined
-    let result: Awaited<ReturnType<typeof generateText>> | undefined
-    let retries = 0
-    const startedAt = Date.now()
-
-    for (let attempt = 0; attempt < maxAttempts; attempt++) {
-      const model = callSession ? callSession.model : this.providerInstance(modelId)
-      try {
-        result = await generateText({
-          model,
-          output,
-          messages,
-          maxOutputTokens,
-          temperature: this.options.temperature,
-          abortSignal: AbortSignal.timeout(timeout),
-          providerOptions: this.buildProviderOptions(callOptions),
-          headers: callOptions?.headers,
-          maxRetries: aiSdkMaxRetries,
-        })
-        lastError = undefined
-        break
-      }
-      catch (error) {
-        const err = error instanceof Error ? error : new Error(String(error))
-        lastError = err
-        if (!callSession || !isRetryableError(err) || attempt === maxAttempts - 1) {
-          break
-        }
-        log.debug(`${modelId} attempt ${attempt + 1} failed (${err.message}); regenerating session and retrying`)
-        retries++
-        callSession.regenerate()
-      }
-    }
-
-    if (callSession) {
-      await callSession.finalize({ success: result !== undefined }).catch((err: unknown) => {
-        log.warn(`Session finalize failed: ${(err as Error).message}`)
-      })
-    }
-
-    const durationMs = Date.now() - startedAt
-    const flattenedPrompt = messages.map(m => (typeof m.content === 'string' ? m.content : JSON.stringify(m.content))).join('\n')
-
-    if (!result) {
-      const err = lastError ?? new Error('generateText returned no result')
-      await this.recordCall({
-        provider: this.options.provider,
-        model: modelId,
-        purpose,
-        prompt: flattenedPrompt,
-        durationMs,
-        retries,
-        error: err.message,
-      })
-      log.error(`${modelId} error: ${err.message}`, err)
-      const totalLength = messages.reduce((sum, m) => {
-        const content = typeof m.content === 'string' ? m.content : JSON.stringify(m.content)
-        return sum + content.length
-      }, 0)
-      this.options.onError?.(err, { model: modelId, promptLength: totalLength })
-      throw err
-    }
-
-    await this.recordCall({
-      provider: this.options.provider,
-      model: modelId,
-      purpose,
-      prompt: flattenedPrompt,
-      response: result.text,
-      durationMs,
-      retries,
+    return this.runWithSession({
+      callOptions,
+      buildParams: model => ({
+        model,
+        output,
+        messages,
+        maxOutputTokens,
+        temperature: this.options.temperature,
+        abortSignal: AbortSignal.timeout(timeout),
+        providerOptions: this.buildProviderOptions(callOptions),
+        headers: callOptions?.headers,
+      }),
+      promptForLog: flatContent.join('\n'),
+      promptLengthForOnError: flatContent.reduce((sum, c) => sum + c.length, 0),
     })
-
-    const inputTokens = result.usage?.inputTokens ?? 0
-    const outputTokens = result.usage?.outputTokens ?? 0
-    this.usageStats.totalPromptTokens += inputTokens
-    this.usageStats.totalCompletionTokens += outputTokens
-    this.usageStats.totalTokens += inputTokens + outputTokens
-    this.usageStats.requestCount++
-
-    return result
   }
 
   /**
