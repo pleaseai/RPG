@@ -58,5 +58,9 @@ function encodeRootPath(rootPath: string | undefined, graphPath: string | undefi
   const absoluteRoot = path.resolve(rootPath)
   if (!graphPath)
     return absoluteRoot
-  return path.relative(path.dirname(path.resolve(graphPath)), absoluteRoot)
+  const rel = path.relative(path.dirname(path.resolve(graphPath)), absoluteRoot)
+  // Normalize Windows separators to '/' so meta files written on Windows remain
+  // portable to POSIX systems. Empty (same-dir) collapses to '.' so deserialize
+  // doesn't treat it as absent.
+  return rel.split(path.sep).join('/') || '.'
 }

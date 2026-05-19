@@ -30,7 +30,24 @@ describe('serializeMeta', () => {
     const graphPath = path.resolve('/var/other/place/graph.json')
     const meta = serializeMeta({ name: 'test', rootPath }, graphPath)
     // Resolves through .. — still portable when both sides share /var
-    expect(meta.rootPath).toBe(path.relative(path.dirname(graphPath), rootPath))
+    expect(meta.rootPath).toBe(path.relative(path.dirname(graphPath), rootPath).split(path.sep).join('/'))
+  })
+
+  it('encodes rootPath as "." when it equals the graph file directory', () => {
+    // Edge case: graph file sits directly in the repo root (no .soop/ subdir).
+    // path.relative() returns '' here, which deserialize would misread as absent.
+    const root = path.resolve('/var/repo')
+    const graphPath = path.join(root, 'graph.json')
+    const meta = serializeMeta({ name: 'test', rootPath: root }, graphPath)
+    expect(meta.rootPath).toBe('.')
+  })
+
+  it('round-trips the same-directory case correctly', () => {
+    const root = path.resolve('/var/repo')
+    const graphPath = path.join(root, 'graph.json')
+    const metaJson = JSON.stringify(serializeMeta({ name: 'test', rootPath: root }, graphPath))
+    const restored = deserializeMeta(JSON.parse(metaJson), graphPath)
+    expect(restored.rootPath).toBe(root)
   })
 })
 
