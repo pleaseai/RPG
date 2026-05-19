@@ -5,7 +5,7 @@ import { MockEmbedding } from '@pleaseai/soop-encoder/embedding'
 import { SemanticSearch } from '@pleaseai/soop-encoder/semantic-search'
 import { RepositoryPlanningGraph } from '@pleaseai/soop-graph'
 import { LocalVectorStore } from '@pleaseai/soop-store/local'
-import { ExploreRPG, FetchNode, SearchNode } from '@pleaseai/soop-tools'
+import { ExploreRPG, FetchNode, RPGTree, SearchNode, SYNTHETIC_ROOT_ID } from '@pleaseai/soop-tools'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 
 describe('searchNode', () => {
@@ -614,5 +614,323 @@ describe('exploreRPG', () => {
     })
 
     expect(result.nodes).toHaveLength(0)
+  })
+})
+
+describe('rPGTree', () => {
+  let rpg: RepositoryPlanningGraph
+  let tree: RPGTree
+
+  beforeEach(async () => {
+    rpg = await RepositoryPlanningGraph.create({ name: 'test-repo' })
+
+    // Build a small hierarchy:
+    //   root -> moduleA -> funcA1
+    //                  \-> funcA2
+    //         \-> moduleB -> funcB1
+    await rpg.addHighLevelNode({
+      id: 'root',
+      feature: { description: 'application root' },
+      directoryPath: '/src',
+    })
+    await rpg.addHighLevelNode({
+      id: 'moduleA',
+      feature: { description: 'auth module' },
+      directoryPath: '/src/auth',
+    })
+    await rpg.addHighLevelNode({
+      id: 'moduleB',
+      feature: { description: 'data module' },
+      directoryPath: '/src/data',
+    })
+    await rpg.addLowLevelNode({
+      id: 'funcA1',
+      feature: { description: 'login handler' },
+      metadata: { entityType: 'function', path: '/src/auth/login.ts' },
+    })
+    await rpg.addLowLevelNode({
+      id: 'funcA2',
+      feature: { description: 'logout handler' },
+      metadata: { entityType: 'function', path: '/src/auth/logout.ts' },
+    })
+    await rpg.addLowLevelNode({
+      id: 'funcB1',
+      feature: { description: 'data loader' },
+      metadata: { entityType: 'function', path: '/src/data/load.ts' },
+    })
+
+    await rpg.addFunctionalEdge({ source: 'root', target: 'moduleA' })
+    await rpg.addFunctionalEdge({ source: 'root', target: 'moduleB' })
+    await rpg.addFunctionalEdge({ source: 'moduleA', target: 'funcA1' })
+    await rpg.addFunctionalEdge({ source: 'moduleA', target: 'funcA2' })
+    await rpg.addFunctionalEdge({ source: 'moduleB', target: 'funcB1' })
+
+    tree = new RPGTree(rpg)
+  })
+
+  it('returns a nested tree from a specified root', async () => {
+    const result = await tree.list({ rootId: 'root', maxDepth: 2 })
+
+    expect(result.root).not.toBeNull()
+    expect(result.root!.id).toBe('root')
+    expect(result.root!.children).toHaveLength(2)
+    const moduleA = result.root!.children!.find(c => c.id === 'moduleA')
+    expect(moduleA?.children).toHaveLength(2)
+    expect(moduleA?.children?.some(c => c.id === 'funcA1')).toBe(true)
+  })
+
+  it('truncates beyond maxDepth using childrenCount', async () => {
+    const result = await tree.list({ rootId: 'root', maxDepth: 1 })
+
+    expect(result.root!.children).toHaveLength(2)
+    const moduleA = result.root!.children!.find(c => c.id === 'moduleA')
+    expect(moduleA?.children).toBeUndefined()
+    expect(moduleA?.childrenCount).toBe(2)
+  })
+
+  it('uses the unique top-level node as default root', async () => {
+    const result = await tree.list({ maxDepth: 1 })
+
+    // Only 'root' has no incoming functional edge, so it should be the root.
+    expect(result.root!.id).toBe('root')
+  })
+
+  it('falls back to a synthetic root when multiple top-level nodes exist', async () => {
+    // Add another orphan top-level node
+    await rpg.addHighLevelNode({
+      id: 'orphan',
+      feature: { description: 'orphan module' },
+      directoryPath: '/src/orphan',
+    })
+
+    const result = await tree.list({ maxDepth: 1 })
+
+    expect(result.root!.id).toBe(SYNTHETIC_ROOT_ID)
+    const childIds = result.root!.children?.map(c => c.id) ?? []
+    expect(childIds).toContain('root')
+    expect(childIds).toContain('orphan')
+  })
+
+  it('reports subtreeNodes count when rootId is specified', async () => {
+    const result = await tree.list({ rootId: 'moduleA', maxDepth: 5 })
+
+    // moduleA + funcA1 + funcA2 = 3 nodes
+    expect(result.subtreeNodes).toBe(3)
+    expect(result.totalNodes).toBe(6)
+  })
+
+  it('returns suggestions when rootId is unknown', async () => {
+    const result = await tree.list({ rootId: 'modulA', maxDepth: 1 })
+
+    expect(result.root).toBeNull()
+    expect(result.notFound).toBe('modulA')
+    expect(result.suggestions).toBeDefined()
+    // Should suggest 'moduleA' as a close fuzzy match
+    expect(result.suggestions!.length).toBeGreaterThan(0)
+    expect(result.suggestions).toContain('moduleA')
+  })
+
+  it('derives display name from directoryPath basename for high-level nodes', async () => {
+    const result = await tree.list({ rootId: 'moduleA', maxDepth: 0 })
+
+    expect(result.root!.name).toBe('auth')
+  })
+
+  it('derives display name from path basename for low-level nodes', async () => {
+    const result = await tree.list({ rootId: 'funcA1', maxDepth: 0 })
+
+    expect(result.root!.name).toBe('login.ts')
+  })
+
+  it('includes path field for nodes with metadata path or directoryPath', async () => {
+    const result = await tree.list({ rootId: 'moduleA', maxDepth: 1 })
+
+    expect(result.root!.path).toBe('/src/auth')
+    const funcA1 = result.root!.children!.find(c => c.id === 'funcA1')
+    expect(funcA1?.path).toBe('/src/auth/login.ts')
+    expect(funcA1?.entityType).toBe('function')
+  })
+})
+
+describe('fetchNode suggestions and allFeatures', () => {
+  let rpg: RepositoryPlanningGraph
+  let fetch: FetchNode
+
+  beforeEach(async () => {
+    rpg = await RepositoryPlanningGraph.create({ name: 'test-repo' })
+
+    await rpg.addLowLevelNode({
+      id: 'login.ts',
+      feature: { description: 'authentication entry file' },
+      metadata: { entityType: 'file', path: '/src/auth/login.ts' },
+    })
+    await rpg.addLowLevelNode({
+      id: 'login.ts:class:LoginController',
+      feature: { description: 'orchestrate login flow' },
+      metadata: { entityType: 'class', path: '/src/auth/login.ts', startLine: 10, endLine: 50 },
+    })
+    await rpg.addLowLevelNode({
+      id: 'login.ts:function:authenticateUser',
+      feature: { description: 'verify user credentials' },
+      metadata: { entityType: 'function', path: '/src/auth/login.ts', startLine: 60, endLine: 80 },
+    })
+    await rpg.addFunctionalEdge({ source: 'login.ts', target: 'login.ts:class:LoginController' })
+    await rpg.addFunctionalEdge({ source: 'login.ts', target: 'login.ts:function:authenticateUser' })
+
+    fetch = new FetchNode(rpg)
+  })
+
+  it('returns suggestions when ID is mistyped', async () => {
+    const result = await fetch.get({ codeEntities: ['logn.ts'] })
+
+    expect(result.entities).toHaveLength(0)
+    expect(result.notFound).toEqual(['logn.ts'])
+    expect(result.suggestions).toBeDefined()
+    expect(result.suggestions).toContain('login.ts')
+  })
+
+  it('aggregates all_features for a file-type node', async () => {
+    const result = await fetch.get({ codeEntities: ['login.ts'] })
+
+    expect(result.entities).toHaveLength(1)
+    expect(result.entities[0]?.allFeatures).toBeDefined()
+    expect(result.entities[0]?.allFeatures).toContain('orchestrate login flow')
+    expect(result.entities[0]?.allFeatures).toContain('verify user credentials')
+  })
+
+  it('does not set allFeatures for non-file nodes', async () => {
+    const result = await fetch.get({ codeEntities: ['login.ts:class:LoginController'] })
+
+    expect(result.entities).toHaveLength(1)
+    expect(result.entities[0]?.allFeatures).toBeUndefined()
+  })
+
+  it('omits suggestions key when none found', async () => {
+    const result = await fetch.get({ codeEntities: ['totally-unrelated-xyz-999'] })
+
+    expect(result.notFound).toEqual(['totally-unrelated-xyz-999'])
+    expect(result.suggestions).toBeUndefined()
+  })
+})
+
+describe('exploreRPG suggestions and truncation', () => {
+  let rpg: RepositoryPlanningGraph
+  let explore: ExploreRPG
+
+  beforeEach(async () => {
+    rpg = await RepositoryPlanningGraph.create({ name: 'test-repo' })
+
+    await rpg.addHighLevelNode({ id: 'main-module', feature: { description: 'main module' } })
+
+    explore = new ExploreRPG(rpg)
+  })
+
+  it('returns notFound + suggestions for unknown start nodes', async () => {
+    const result = await explore.traverse({
+      startNode: 'man-module', // typo
+      edgeType: 'containment',
+    })
+
+    expect(result.nodes).toHaveLength(0)
+    expect(result.notFound).toBe('man-module')
+    expect(result.suggestions).toBeDefined()
+    expect(result.suggestions).toContain('main-module')
+  })
+
+  it('sets truncated:true when edge cap is exceeded', async () => {
+    // Build a hub with many children, exceeding maxEdges
+    await rpg.addHighLevelNode({ id: 'hub', feature: { description: 'hub' } })
+    for (let i = 0; i < 25; i++) {
+      const childId = `child-${i}`
+      await rpg.addLowLevelNode({
+        id: childId,
+        feature: { description: `child ${i}` },
+        metadata: { entityType: 'function', path: `/src/${childId}.ts` },
+      })
+      await rpg.addFunctionalEdge({ source: 'hub', target: childId })
+    }
+
+    const result = await explore.traverse({
+      startNode: 'hub',
+      edgeType: 'containment',
+      maxDepth: 1,
+    })
+
+    expect(result.edges.length).toBe(20)
+    expect(result.truncated).toBe(true)
+  })
+
+  it('respects an explicit maxEdges override', async () => {
+    await rpg.addHighLevelNode({ id: 'hub', feature: { description: 'hub' } })
+    for (let i = 0; i < 10; i++) {
+      const childId = `child-${i}`
+      await rpg.addLowLevelNode({
+        id: childId,
+        feature: { description: `child ${i}` },
+        metadata: { entityType: 'function', path: `/src/${childId}.ts` },
+      })
+      await rpg.addFunctionalEdge({ source: 'hub', target: childId })
+    }
+
+    const result = await explore.traverse({
+      startNode: 'hub',
+      edgeType: 'containment',
+      maxDepth: 1,
+      maxEdges: 3,
+    })
+
+    expect(result.edges.length).toBe(3)
+    expect(result.truncated).toBe(true)
+  })
+})
+
+describe('searchNode fuzzy fallback', () => {
+  let rpg: RepositoryPlanningGraph
+  let search: SearchNode
+
+  beforeEach(async () => {
+    rpg = await RepositoryPlanningGraph.create({ name: 'test-repo' })
+
+    await rpg.addHighLevelNode({
+      id: 'authentication-module',
+      feature: { description: 'handle user authentication' },
+      directoryPath: '/src/auth',
+    })
+
+    search = new SearchNode(rpg)
+  })
+
+  it('does not fall back when fuzzyFallback is off', async () => {
+    const results = await search.query({
+      mode: 'features',
+      featureTerms: ['authentcation'], // typo
+    })
+
+    // String match misses; fallback disabled by default
+    expect(results.totalMatches).toBe(0)
+    expect(results.fuzzy).toBeUndefined()
+  })
+
+  it('falls back to fuzzy match when no primary results and flag is on', async () => {
+    const results = await search.query({
+      mode: 'features',
+      featureTerms: ['authentcation'], // typo
+      fuzzyFallback: true,
+    })
+
+    expect(results.totalMatches).toBeGreaterThan(0)
+    expect(results.nodes.some(n => n.id === 'authentication-module')).toBe(true)
+    expect(results.fuzzy).toBe(true)
+  })
+
+  it('does not engage fuzzy when primary already found results', async () => {
+    const results = await search.query({
+      mode: 'features',
+      featureTerms: ['authentication'],
+      fuzzyFallback: true,
+    })
+
+    expect(results.totalMatches).toBeGreaterThan(0)
+    expect(results.fuzzy).toBeUndefined()
   })
 })

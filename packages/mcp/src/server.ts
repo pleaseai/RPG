@@ -22,6 +22,7 @@ import {
   executeFetch,
   executeSearch,
   executeStats,
+  executeTree,
   ExploreInputSchema,
   FetchInputBaseSchema,
   FetchInputSchema,
@@ -30,6 +31,7 @@ import {
   SOOP_TOOL_ANNOTATIONS,
   SOOP_TOOLS,
   StatsInputSchema,
+  TreeInputSchema,
 } from './tools'
 
 const log = createStderrLogger('MCP')
@@ -227,6 +229,21 @@ export function createMcpServer(
         const rpg = await requireRpg(state)
         const result = await executeStats(rpg)
         return { result, summary: { name: result.name } }
+      }),
+  )
+
+  server.registerTool(
+    SOOP_TOOLS.soop_tree.name,
+    {
+      description: SOOP_TOOLS.soop_tree.description,
+      inputSchema: TreeInputSchema.shape,
+      annotations: SOOP_TOOL_ANNOTATIONS.soop_tree,
+    },
+    async args =>
+      wrapHandler('soop_tree', args, async () => {
+        const rpg = await requireRpg(state)
+        const result = await executeTree(rpg, TreeInputSchema.parse(args))
+        return { result, summary: {} }
       }),
   )
 

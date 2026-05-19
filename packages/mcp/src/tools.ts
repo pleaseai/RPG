@@ -11,8 +11,9 @@ import { RPGEvolver } from '@pleaseai/soop-encoder/evolution/evolve'
 import { ExploreRPG } from '@pleaseai/soop-tools/explore'
 import { FetchNode } from '@pleaseai/soop-tools/fetch'
 import { SearchNode } from '@pleaseai/soop-tools/search'
+import { RPGTree } from '@pleaseai/soop-tools/tree'
 import { z } from 'zod/v4'
-import { encodeFailedError, evolveFailedError, invalidInputError, invalidPathError, nodeNotFoundError, RPGError, rpgNotLoadedError } from './errors'
+import { encodeFailedError, evolveFailedError, invalidInputError, invalidPathError, RPGError, rpgNotLoadedError } from './errors'
 
 /**
  * Input schema for soop_search tool
@@ -27,6 +28,12 @@ export const SearchInputSchema = z.object({
     .optional()
     .describe(
       'Search strategy for feature search. Defaults to hybrid when semantic search is available.',
+    ),
+  fuzzyFallback: z
+    .boolean()
+    .optional()
+    .describe(
+      'When true, falls back to fuzzy node-suggestion matching if the primary search returns no results. Off by default.',
     ),
 })
 
@@ -61,6 +68,12 @@ export const ExploreInputSchema = z.object({
   maxDepth: z.number().default(3),
   direction: z.enum(['downstream', 'upstream', 'both']).default('downstream'),
   dependencyType: z.enum(['import', 'call', 'inherit', 'implement', 'use']).optional().describe('Filter dependency edges by their dependency type'),
+  maxEdges: z
+    .number()
+    .int()
+    .positive()
+    .optional()
+    .describe('Maximum edges returned before truncation (default: 20). When exceeded, the result sets truncated:true.'),
 })
 
 export type ExploreInput = z.infer<typeof ExploreInputSchema>
@@ -96,6 +109,24 @@ export type EvolveInput = z.infer<typeof EvolveInputSchema>
 export const StatsInputSchema = z.object({})
 
 export type StatsInput = z.infer<typeof StatsInputSchema>
+
+/**
+ * Input schema for soop_tree tool
+ */
+export const TreeInputSchema = z.object({
+  rootId: z
+    .string()
+    .optional()
+    .describe('Starting node ID. Defaults to top-level nodes (synthetic root if multiple).'),
+  maxDepth: z
+    .number()
+    .int()
+    .min(0)
+    .default(2)
+    .describe('Maximum depth to expand. Children beyond this depth report childrenCount only.'),
+})
+
+export type TreeInput = z.infer<typeof TreeInputSchema>
 
 /**
  * Server-level instructions surfaced via MCP `initialize` so the agent
@@ -144,6 +175,7 @@ export const SOOP_TOOL_ANNOTATIONS = {
   soop_fetch: { readOnlyHint: true, openWorldHint: false, idempotentHint: true },
   soop_explore: { readOnlyHint: true, openWorldHint: false, idempotentHint: true },
   soop_stats: { readOnlyHint: true, openWorldHint: false, idempotentHint: true },
+  soop_tree: { readOnlyHint: true, openWorldHint: false, idempotentHint: true },
   soop_encode: { readOnlyHint: false, destructiveHint: false, openWorldHint: true, idempotentHint: false },
   soop_evolve: { readOnlyHint: false, destructiveHint: false, openWorldHint: true, idempotentHint: false },
 } as const
@@ -188,6 +220,12 @@ export const SOOP_TOOLS = {
       'Get statistics about the loaded Repository Planning Graph including node counts, edge counts, and structural breakdown.',
     inputSchema: StatsInputSchema,
   },
+  soop_tree: {
+    name: 'soop_tree',
+    description:
+      'List the feature hierarchy as a nested tree. Best entry point for orienting in an unfamiliar codebase. Returns {id, name, type, path, children?} with childrenCount when truncated by maxDepth. When rootId is omitted, returns the top-level structure (synthetic root if the graph has multiple roots).',
+    inputSchema: TreeInputSchema,
+  },
 } as const
 
 /**
@@ -209,6 +247,7 @@ export async function executeSearch(
     filePattern: input.filePattern,
     searchScopes: input.searchScopes,
     searchStrategy: input.searchStrategy as SearchStrategy | undefined,
+    fuzzyFallback: input.fuzzyFallback,
   })
 
   return {
@@ -220,6 +259,7 @@ export async function executeSearch(
     })),
     totalMatches: result.totalMatches,
     mode: result.mode,
+    ...(result.fuzzy ? { fuzzy: true } : {}),
   }
 }
 
@@ -247,8 +287,10 @@ export async function executeFetch(rpg: RepositoryPlanningGraph | null, input: F
       },
       sourceCode: entity.sourceCode,
       featurePaths: entity.featurePaths,
+      ...(entity.allFeatures ? { allFeatures: entity.allFeatures } : {}),
     })),
     notFound: result.notFound,
+    ...(result.suggestions ? { suggestions: result.suggestions } : {}),
   }
 }
 
@@ -260,11 +302,6 @@ export async function executeExplore(rpg: RepositoryPlanningGraph | null, input:
     throw rpgNotLoadedError()
   }
 
-  const startNodeExists = await rpg.hasNode(input.startNode)
-  if (!startNodeExists) {
-    throw nodeNotFoundError(input.startNode)
-  }
-
   const explorer = new ExploreRPG(rpg)
   const result = await explorer.traverse({
     startNode: input.startNode,
@@ -272,6 +309,7 @@ export async function executeExplore(rpg: RepositoryPlanningGraph | null, input:
     maxDepth: input.maxDepth,
     direction: input.direction,
     dependencyType: input.dependencyType,
+    maxEdges: input.maxEdges,
   })
 
   return {
@@ -283,6 +321,9 @@ export async function executeExplore(rpg: RepositoryPlanningGraph | null, input:
     })),
     edges: result.edges,
     maxDepthReached: result.maxDepthReached,
+    ...(result.notFound ? { notFound: result.notFound } : {}),
+    ...(result.suggestions ? { suggestions: result.suggestions } : {}),
+    ...(result.truncated ? { truncated: true } : {}),
   }
 }
 
@@ -385,4 +426,19 @@ export async function executeStats(rpg: RepositoryPlanningGraph | null) {
     name: config.name,
     ...stats,
   }
+}
+
+/**
+ * Execute soop_tree tool
+ */
+export async function executeTree(rpg: RepositoryPlanningGraph | null, input: TreeInput) {
+  if (!rpg) {
+    throw rpgNotLoadedError()
+  }
+
+  const tree = new RPGTree(rpg)
+  return tree.list({
+    rootId: input.rootId,
+    maxDepth: input.maxDepth,
+  })
 }

@@ -9,7 +9,8 @@
     ".": "./src/index.ts",
     "./search": "./src/search.ts",
     "./fetch": "./src/fetch.ts",
-    "./explore": "./src/explore.ts"
+    "./explore": "./src/explore.ts",
+    "./tree": "./src/tree.ts"
   },
   "dependencies": {
     "@pleaseai/soop-graph": "workspace:*",

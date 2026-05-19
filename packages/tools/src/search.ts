@@ -1,5 +1,6 @@
 import type { SemanticSearch } from '@pleaseai/soop-encoder/semantic-search'
 import type { Node, RepositoryPlanningGraph } from '@pleaseai/soop-graph'
+import { suggestNodes } from '@pleaseai/soop-graph/fuzzy'
 
 /**
  * Search mode
@@ -29,6 +30,12 @@ export interface SearchOptions {
   lineRange?: [number, number]
   /** Search strategy for feature search (default: hybrid if semanticSearch available, otherwise string) */
   searchStrategy?: SearchStrategy
+  /**
+   * When true, fall back to fuzzy node-suggestion matching if the primary
+   * strategy returns no results. Off by default so existing tests stay
+   * deterministic.
+   */
+  fuzzyFallback?: boolean
 }
 
 /**
@@ -41,6 +48,8 @@ export interface SearchResult {
   totalMatches: number
   /** Search mode used */
   mode: SearchMode
+  /** True if results came from the fuzzy fallback rather than the primary search */
+  fuzzy?: boolean
 }
 
 /**
@@ -66,13 +75,45 @@ export class SearchNode {
    */
   async query(options: SearchOptions): Promise<SearchResult> {
     const results = await this.resolveResults(options)
-    const uniqueNodes = [...new Map(results.map(n => [n.id, n])).values()]
+    let uniqueNodes = [...new Map(results.map(n => [n.id, n])).values()]
+    let fuzzy = false
+
+    if (uniqueNodes.length === 0 && options.fuzzyFallback && options.featureTerms?.length) {
+      const fallback = await this.fuzzyFallbackQuery(options.featureTerms, options.searchScopes)
+      if (fallback.length > 0) {
+        uniqueNodes = fallback
+        fuzzy = true
+      }
+    }
 
     return {
       nodes: uniqueNodes,
       totalMatches: uniqueNodes.length,
       mode: options.mode,
+      ...(fuzzy ? { fuzzy: true } : {}),
     }
+  }
+
+  /**
+   * Fuzzy-match feature terms against every node and return the resulting nodes.
+   * Mirrors Python rapidfuzz fallback when exact/substring search yields nothing.
+   */
+  private async fuzzyFallbackQuery(terms: string[], scopes?: string[]): Promise<Node[]> {
+    const effectiveScopes: (string | undefined)[] = scopes && scopes.length > 0 ? scopes : [undefined]
+    const seen = new Map<string, Node>()
+    for (const term of terms) {
+      for (const scope of effectiveScopes) {
+        const ids = await suggestNodes(this.rpg, term, { limit: 5, scope })
+        for (const id of ids) {
+          if (seen.has(id))
+            continue
+          const node = await this.rpg.getNode(id)
+          if (node)
+            seen.set(id, node)
+        }
+      }
+    }
+    return [...seen.values()]
   }
 
   private async resolveResults(options: SearchOptions): Promise<Node[]> {
