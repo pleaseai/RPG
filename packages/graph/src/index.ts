@@ -26,6 +26,17 @@ export {
 
 export type { BaseEdge, DataFlowEdge, DependencyEdge, Edge, FunctionalEdge } from './edge'
 
+// Fuzzy matching + node suggestions
+export {
+  levenshteinDistance,
+  rankNodes,
+  scoreCandidate,
+  similarityRatio,
+  suggestNodes,
+} from './fuzzy'
+
+export type { SuggestOptions } from './fuzzy'
+
 // JSONL format (git-friendly graph serialization)
 export { parseGraphJsonl, serializeGraphJsonl } from './jsonl'
 

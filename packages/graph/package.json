@@ -13,7 +13,8 @@
     "./adapters": "./src/adapters.ts",
     "./embeddings": "./src/embeddings.ts",
     "./meta": "./src/meta.ts",
-    "./python-format": "./src/python-format.ts"
+    "./python-format": "./src/python-format.ts",
+    "./fuzzy": "./src/fuzzy.ts"
   },
   "dependencies": {
     "@pleaseai/soop-store": "workspace:*",
