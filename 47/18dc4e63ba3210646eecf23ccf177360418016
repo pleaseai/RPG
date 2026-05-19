@@ -1,0 +1,27 @@
+packages/graph/package.json
+  s_38626f8d972532::t_701c2a7c607d8c 16-17
+packages/graph/src/index.ts
+  s_38626f8d972532::t_1275135f5cb90a 29-39
+packages/graph/tests/fuzzy.test.ts
+  s_38626f8d972532::t_0bfef3d6b14dc3 1-140
+packages/graph/src/fuzzy.ts
+  s_38626f8d972532::t_b0368e8ed35e85 1-20,23-188,190-192,194-196
+  s_38626f8d972532::t_bb4a92fa24468a 21-22
+  s_38626f8d972532::t_10c75cf063b553 189,193
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.9",
+  "base_commit_sha": "4718dc4e63ba3210646eecf23ccf177360418016",
+  "prompts": {},
+  "sessions": {
+    "s_38626f8d972532": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a217737c-ca58-4ad9-b07e-79d399a29ea3",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Minsu Lee <amond@amond.net>"
+    }
+  }
+}
