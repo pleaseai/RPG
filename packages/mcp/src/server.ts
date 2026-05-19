@@ -1,6 +1,6 @@
 import type { Embedding } from '@pleaseai/soop-encoder/embedding'
 import { existsSync } from 'node:fs'
-import { readFile } from 'node:fs/promises'
+import { readFile, stat } from 'node:fs/promises'
 import { basename, dirname, join } from 'node:path'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
@@ -43,11 +43,16 @@ export interface McpServerOptions {
   interactive?: boolean
   /**
    * Path to the RPG file on disk. When provided, tool calls will lazily
-   * reload the graph from this path if `rpg` is `null` — mirrors the
-   * Python reference's `engine_box` pattern in `mcp_server.py`. This lets
-   * `soop encode` recover the server without a restart.
+   * reload the graph from this path if `rpg` is `null` or if the file's
+   * mtime has changed — mirrors the Python reference's `engine_box`
+   * pattern in `mcp_server.py`, with mtime-based staleness detection
+   * so `soop encode` recovers the server without a restart.
    */
   rpgFile?: string
+  /** mtime (ms) of the initially loaded graph, used to detect on-disk updates. */
+  loadedMtimeMs?: number | null
+  /** When true, semantic search is not (re-)initialized on lazy reload. */
+  noSearch?: boolean
 }
 
 /**
@@ -59,6 +64,17 @@ interface ServerState {
   rpg: RepositoryPlanningGraph | null
   rpgFile: string | undefined
   search: SemanticSearch | null
+  /** mtime (ms) of the currently loaded graph; `null` when no graph is loaded. */
+  loadedMtimeMs: number | null
+  /** When true, semantic search is not (re-)initialized on lazy reload. */
+  noSearch: boolean
+  /**
+   * In-flight load promise, used to dedupe concurrent first-call loads.
+   * If multiple tool calls hit `requireRpg` before the first load
+   * completes, they all await the same promise instead of each triggering
+   * a redundant `readFile` + JSON parse.
+   */
+  loadingPromise: Promise<RepositoryPlanningGraph> | null
   /** Reference to interactive state (if active) so lazy-reload propagates. */
   interactive: InteractiveState | null
 }
@@ -80,6 +96,9 @@ export function createMcpServer(
     rpg: options.rpg,
     rpgFile: options.rpgFile,
     search: options.semanticSearch ?? semanticSearch ?? null,
+    loadedMtimeMs: options.loadedMtimeMs ?? null,
+    noSearch: options.noSearch ?? false,
+    loadingPromise: null,
     interactive: null,
   }
 
@@ -224,27 +243,99 @@ export function createMcpServer(
 }
 
 /**
- * Lazily resolve the loaded RPG, attempting to load from `state.rpgFile`
- * on demand. Throws an enriched `RPGError` with an actionable `nextStep`
- * when no graph can be made available.
+ * Stat a file and return its mtime in milliseconds, or `null` if the file
+ * is missing or unreadable. Used by `requireRpg` to detect on-disk updates.
+ */
+async function getMtimeMs(filePath: string): Promise<number | null> {
+  try {
+    const s = await stat(filePath)
+    return s.mtimeMs
+  }
+  catch {
+    return null
+  }
+}
+
+/**
+ * Lazily resolve the loaded RPG. Reloads when:
+ *   1. No graph is cached yet (`state.rpg == null`), or
+ *   2. The file on disk has a newer mtime than the cached copy.
+ *
+ * Concurrent first-callers share a single in-flight load promise via
+ * `state.loadingPromise` to avoid redundant file reads + JSON parsing.
+ *
+ * Throws an enriched `RPGError` with an actionable `nextStep` when no
+ * graph can be made available.
  */
 async function requireRpg(state: ServerState): Promise<RepositoryPlanningGraph> {
-  if (state.rpg) {
+  // If we have a cached graph, check whether the file changed on disk.
+  // Skip the stat when no path was configured (the in-memory graph is
+  // the only source of truth in that mode).
+  if (state.rpg && state.rpgFile) {
+    const currentMtime = await getMtimeMs(state.rpgFile)
+    if (currentMtime !== null && state.loadedMtimeMs !== null && currentMtime <= state.loadedMtimeMs) {
+      return state.rpg
+    }
+    if (currentMtime !== null && state.loadedMtimeMs !== null && currentMtime > state.loadedMtimeMs) {
+      log.info(`RPG file mtime changed (${state.loadedMtimeMs} → ${currentMtime}); reloading.`)
+      state.rpg = null
+      state.loadedMtimeMs = null
+    }
+  }
+  else if (state.rpg) {
     return state.rpg
   }
-  if (state.rpgFile) {
-    const loaded = await tryLoadRPG(state.rpgFile)
-    if (loaded.rpg) {
+
+  if (!state.rpgFile) {
+    throw rpgNotLoadedError({ reason: 'no_path_configured' })
+  }
+
+  // Coalesce concurrent loads on the same in-flight promise.
+  if (!state.loadingPromise) {
+    const rpgFile = state.rpgFile
+    state.loadingPromise = (async () => {
+      const loaded = await tryLoadRPG(rpgFile)
+      if (!loaded.rpg) {
+        throw rpgNotLoadedError({ rpgFile, reason: loaded.errorCode })
+      }
+      const mtime = await getMtimeMs(rpgFile)
       state.rpg = loaded.rpg
+      state.loadedMtimeMs = mtime
       if (state.interactive) {
         state.interactive.rpg = loaded.rpg
       }
-      log.success(`RPG lazy-loaded from ${state.rpgFile}: ${loaded.rpg.getConfig().name}`)
+      log.success(`RPG lazy-loaded from ${rpgFile}: ${loaded.rpg.getConfig().name}`)
+
+      // Re-initialize semantic search on lazy reload so `soop_search`
+      // recovers vector capability after `soop encode`. Best-effort:
+      // failures degrade to string search, never break the load.
+      // Clear the old instance first: if reinit throws, we want a clean
+      // "no search" state rather than a stale index pointing at the old graph.
+      if (!state.noSearch) {
+        state.search = null
+        try {
+          state.search = await initSemanticSearch(loaded.rpg, rpgFile)
+        }
+        catch (error) {
+          log.warn(
+            `Semantic search re-init failed after lazy load, continuing without it: ${error instanceof Error ? error.message : String(error)}`,
+          )
+        }
+      }
+
       return loaded.rpg
-    }
-    throw rpgNotLoadedError({ rpgFile: state.rpgFile, reason: loaded.errorCode })
+    })()
   }
-  throw rpgNotLoadedError({ reason: 'no_path_configured' })
+
+  try {
+    return await state.loadingPromise
+  }
+  finally {
+    // Clear the in-flight promise once it settles so a later mtime-bump
+    // can trigger a fresh reload. Both success and failure clear it:
+    // a failed load shouldn't trap subsequent callers in the failure.
+    state.loadingPromise = null
+  }
 }
 
 /**
@@ -365,7 +456,11 @@ export async function tryLoadRPG(
   }
   catch (error) {
     if (error instanceof RPGError && error.code === 'INVALID_PATH') {
-      return { rpg: null, errorCode: 'file_not_found', errorMessage: error.message }
+      // Covers both ENOENT (missing file) and EACCES (permission denied)
+      // — both reach loadRPG's catch as `invalidPathError`. Calling it
+      // `invalid_path` (rather than the prior `file_not_found`) avoids
+      // misclassifying permission-denied loads as missing files.
+      return { rpg: null, errorCode: 'invalid_path', errorMessage: error.message }
     }
     return {
       rpg: null,
@@ -398,12 +493,14 @@ export async function startMcpServer(options: StartMcpServerOptions = {}): Promi
 
   let rpg: RepositoryPlanningGraph | null = null
   let semanticSearch: SemanticSearch | null = null
+  let loadedMtimeMs: number | null = null
 
   if (rpgFile) {
     log.info(`Loading RPG from: ${rpgFile}`)
     const loaded = await tryLoadRPG(rpgFile)
     if (loaded.rpg) {
       rpg = loaded.rpg
+      loadedMtimeMs = await getMtimeMs(rpgFile)
       log.success(`RPG loaded: ${rpg.getConfig().name}`)
     }
     else {
@@ -416,7 +513,8 @@ export async function startMcpServer(options: StartMcpServerOptions = {}): Promi
     }
 
     // Initialize semantic search unless disabled. Skip entirely if the
-    // RPG isn't loaded — no nodes to index.
+    // RPG isn't loaded — no nodes to index. (Lazy-reload re-initializes
+    // search the first time the graph becomes available.)
     if (rpg && !noSearch) {
       try {
         semanticSearch = await initSemanticSearch(rpg, rpgFile)
@@ -443,7 +541,15 @@ export async function startMcpServer(options: StartMcpServerOptions = {}): Promi
     log.info(`Source root path: ${rootPath}`)
   }
 
-  const server = createMcpServer({ rpg, semanticSearch, rootPath, interactive, rpgFile })
+  const server = createMcpServer({
+    rpg,
+    semanticSearch,
+    rootPath,
+    interactive,
+    rpgFile,
+    loadedMtimeMs,
+    noSearch,
+  })
   const transport = new StdioServerTransport()
 
   await server.connect(transport)

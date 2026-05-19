@@ -20,11 +20,13 @@ describe('tryLoadRPG', () => {
     await rm(tmp, { recursive: true, force: true })
   })
 
-  it('returns a file_not_found code without throwing for missing paths', async () => {
+  it('returns an invalid_path code without throwing for missing or unreadable paths', async () => {
     const result = await tryLoadRPG(join(tmp, 'missing.json'))
     expect(result.rpg).toBeNull()
     if (result.rpg === null) {
-      expect(result.errorCode).toBe('file_not_found')
+      // ENOENT (missing) and EACCES (permission-denied) both map here —
+      // hence the broader "invalid_path" label rather than "file_not_found".
+      expect(result.errorCode).toBe('invalid_path')
     }
   })
 
@@ -36,6 +38,22 @@ describe('tryLoadRPG', () => {
     if (result.rpg === null) {
       expect(result.errorCode).toBe('load_failed')
       expect(result.errorMessage.length).toBeGreaterThan(0)
+    }
+  })
+
+  it('is safe to call concurrently with a missing path', async () => {
+    // Sanity check that the function is reentrant — used by the server's
+    // requireRpg path where multiple tool calls may race on the same load.
+    const missing = join(tmp, 'still-missing.json')
+    const results = await Promise.all([
+      tryLoadRPG(missing),
+      tryLoadRPG(missing),
+      tryLoadRPG(missing),
+    ])
+    for (const r of results) {
+      expect(r.rpg).toBeNull()
+      if (r.rpg === null)
+        expect(r.errorCode).toBe('invalid_path')
     }
   })
 })
