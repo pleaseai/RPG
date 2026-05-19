@@ -1,0 +1,21 @@
+packages/graph/tests/meta.test.ts
+  s_344ab7481c5211::t_ef064e8fcd0ad8 33-50
+packages/graph/src/meta.ts
+  s_344ab7481c5211::t_fd35034e15203c 61-65
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.9",
+  "base_commit_sha": "02ec6fe59d521ec0a22ef0badd98e4e86ca3b9a8",
+  "prompts": {},
+  "sessions": {
+    "s_344ab7481c5211": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "900ace05-1921-421b-bfeb-9f5fea3c4eab",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Minsu Lee <amond@amond.net>"
+    }
+  }
+}
