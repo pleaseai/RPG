@@ -1,0 +1,67 @@
+packages/tools/package.json
+  s_38626f8d972532::t_87236d30302ea2 12-13
+packages/tools/src/explore.ts
+  s_38626f8d972532::t_38795e81932357 81-103,110-111,117,122-125
+  s_38626f8d972532::t_2e144d4eeaeeb3 249,252-255
+  s_38626f8d972532::t_c74fd947a08b50 11-15,30-31
+  s_38626f8d972532::t_e9b8554ead8978 44-49
+  s_38626f8d972532::t_33334ed6ee53a5 3
+  s_38626f8d972532::t_25a025c23d78d3 60-61
+packages/mcp/tests/mcp.test.ts
+  s_38626f8d972532::t_55ca78ca53c0fe 22,27
+  s_38626f8d972532::t_e6daea711501a0 372-381
+  s_38626f8d972532::t_b905519b94f779 465-502
+packages/tools/src/index.ts
+  s_38626f8d972532::t_8cab0e141de094 9-11
+packages/mcp/src/server.ts
+  s_38626f8d972532::t_9cedbbb0c31ae1 24,31
+  s_38626f8d972532::t_2c99311ef725f9 108-114
+packages/tools/src/search.ts
+  s_38626f8d972532::t_3e2576c98cb970 33-38
+  s_38626f8d972532::t_194faf60e9504e 78-87,93-112,114
+  s_38626f8d972532::t_3e9c2550974486 3
+  s_38626f8d972532::t_d5eb3ad3cc28a8 51-52
+packages/tools/tests/tools.test.ts
+  s_38626f8d972532::t_49a3e20bf53e61 8
+  s_38626f8d972532::t_41ede335b8c6c0 619-753
+  s_38626f8d972532::t_91cbd388a3bb14 754-936
+packages/tools/src/fetch.ts
+  s_38626f8d972532::t_bd449b30039875 5
+  s_38626f8d972532::t_bea250ebf42292 113,117-124
+  s_38626f8d972532::t_8afc02807a244f 48-49
+  s_38626f8d972532::t_d622c70b3bbbba 131-156
+  s_38626f8d972532::t_64724c7b7babc2 265
+  s_38626f8d972532::t_51222a402b03ac 32-37
+  s_38626f8d972532::t_e33c55b96f516a 244-264,266-267
+packages/tools/src/tree.ts
+  s_38626f8d972532::t_10c75cf063b553 211
+  s_38626f8d972532::t_4d67ed0a8d42e9 3
+  s_38626f8d972532::t_939fa4efc7a45d 1-2,4-210,212
+packages/mcp/src/tools.ts
+  s_38626f8d972532::t_de5f286ba413fa 114-130
+  s_38626f8d972532::t_93d49f7925cd79 16
+  s_38626f8d972532::t_910ffb2e8b08da 32-37
+  s_38626f8d972532::t_f14dcf2ac6e9a1 238,241
+  s_38626f8d972532::t_2fbe28e9172e02 171-176
+  s_38626f8d972532::t_32f0775344c2d3 71-76
+  s_38626f8d972532::t_a289ed06eb3ed8 260,272-274
+  s_38626f8d972532::t_349e10e8e850ed 198,210
+  s_38626f8d972532::t_757d864031c4aa 14
+  s_38626f8d972532::t_eb600e758a27a4 378-392
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.9",
+  "base_commit_sha": "364af5618a389d9c1b5472d797e4420c6e3ea45d",
+  "prompts": {},
+  "sessions": {
+    "s_38626f8d972532": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a217737c-ca58-4ad9-b07e-79d399a29ea3",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Minsu Lee <amond@amond.net>"
+    }
+  }
+}
