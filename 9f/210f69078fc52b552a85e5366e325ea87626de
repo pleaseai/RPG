@@ -1,0 +1,30 @@
+packages/cli/src/cli.ts
+  s_0700e479096c69::t_d531c8bf4ec0a4 147-156
+packages/encoder/tests/vendor-dep-graph.test.ts
+  s_0700e479096c69::t_8d86ecad2c412e 149-184
+packages/visualize/src/load.ts
+  s_0700e479096c69::t_b162700d1654f3 22-26,32,47,53
+  s_0700e479096c69::t_3d72968f385a92 2,38-39,48,50-52,54-55,60-67
+packages/visualize/tests/visualize.test.ts
+  s_0700e479096c69::t_5ac8df3143e1d6 269-292
+packages/encoder/src/vendor-dep-graph.ts
+  s_0700e479096c69::t_d643c63c873fa6 3,6-9
+  s_0700e479096c69::t_65dfae5d530b80 72
+  s_0700e479096c69::t_3dafc7e869ec2e 190-195,197-198,211-212,214,217,219
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10",
+  "base_commit_sha": "9f210f69078fc52b552a85e5366e325ea87626de",
+  "prompts": {},
+  "sessions": {
+    "s_0700e479096c69": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9e77a0c7-85ca-486d-8524-6adb80ffa227",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Minsu Lee <amond@amond.net>"
+    }
+  }
+}
