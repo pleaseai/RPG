@@ -98,6 +98,57 @@ export const StatsInputSchema = z.object({})
 export type StatsInput = z.infer<typeof StatsInputSchema>
 
 /**
+ * Server-level instructions surfaced via MCP `initialize` so the agent
+ * understands what the RPG graph knows about this repository and which
+ * tool answers which kind of question.
+ *
+ * Adapted from the Python reference's `FastMCP(instructions=...)` block at
+ * `vendor/RPG-ZeroRepo/RPG-Kit/scripts/mcp_server.py`, but tailored to
+ * the actual TypeScript tool surface (search/fetch/explore/encode/evolve/stats).
+ */
+export const SOOP_SERVER_INSTRUCTIONS = [
+  'This server provides structured access to the Repository Planning Graph (RPG) for the current workspace — a pre-computed, queryable index of the codebase built by `soop encode` and kept in sync by `soop evolve`.',
+  '',
+  'What the RPG knows about this repository:',
+  '  • The feature hierarchy: high-level functional areas → individual features → the source entities that implement them.',
+  '  • Every code entity: files, classes, and functions with their signatures, line ranges, and (optionally) source code.',
+  '  • Resolved dependency edges between entities: imports, calls, inherits, implements, uses; plus containment (parent ↔ child) and data-flow edges.',
+  '',
+  'What you can ask it for (and which tool answers it):',
+  '  • The definition site of any symbol (function, class, file) by name, behavior, or feature term. → `soop_search`',
+  '  • Full metadata and source code for one or more entities, with their feature paths in the hierarchy. → `soop_fetch`',
+  '  • The callers/callees, parents/children, or full reachable subgraph from a starting node. → `soop_explore`',
+  '  • An overview of how the graph is shaped — node/edge counts, structural breakdown. → `soop_stats`',
+  '  • Building or refreshing the RPG for a repository on disk. → `soop_encode` (cold build), `soop_evolve` (incremental from a git commit range).',
+  '',
+  'Tool selection heuristics:',
+  '  • Start with `soop_search` (mode "auto") for any "where is X?" or "which code does Y?" question.',
+  '  • Use `soop_fetch` after `soop_search` to read the actual signature/source of returned node IDs.',
+  '  • Use `soop_explore` when you need to follow imports/calls or walk the feature tree.',
+  '  • These resolve references semantically and aggregate by feature — far more direct than text search for structural questions.',
+  '',
+  'Error handling:',
+  '  • If a tool returns `error: "RPG_NOT_LOADED"`, the graph has not been built yet. Relay the `nextStep` field verbatim to the user — do not retry.',
+].join('\n')
+
+/**
+ * MCP tool annotations — declared alongside `SOOP_TOOLS` so the
+ * server can pass them through `registerTool(..., { annotations })`.
+ *
+ * `readOnlyHint: true` for tools that only query the loaded graph.
+ * `destructiveHint: false` and `openWorldHint: true` for tools that
+ * touch the filesystem / external git state.
+ */
+export const SOOP_TOOL_ANNOTATIONS = {
+  soop_search: { readOnlyHint: true, openWorldHint: false, idempotentHint: true },
+  soop_fetch: { readOnlyHint: true, openWorldHint: false, idempotentHint: true },
+  soop_explore: { readOnlyHint: true, openWorldHint: false, idempotentHint: true },
+  soop_stats: { readOnlyHint: true, openWorldHint: false, idempotentHint: true },
+  soop_encode: { readOnlyHint: false, destructiveHint: false, openWorldHint: true, idempotentHint: false },
+  soop_evolve: { readOnlyHint: false, destructiveHint: false, openWorldHint: true, idempotentHint: false },
+} as const
+
+/**
  * MCP tool definitions for RPG operations
  */
 export const SOOP_TOOLS = {

@@ -271,6 +271,44 @@ describe('MCP Error Handling', () => {
       expect(error.message).toContain('pipeline crashed')
     })
   })
+
+  describe('enriched RPG_NOT_LOADED payload', () => {
+    it('should attach an actionable nextStep hint', () => {
+      const error = rpgNotLoadedError()
+      expect(error.nextStep).toBeDefined()
+      expect(error.nextStep).toContain('soop encode')
+    })
+
+    it('should round-trip through toPayload', () => {
+      const error = rpgNotLoadedError({ rpgFile: '/tmp/missing.json', reason: 'file_not_found' })
+      const payload = error.toPayload()
+      expect(payload).toEqual({
+        error: 'RPG_NOT_LOADED',
+        message: expect.stringContaining('not loaded'),
+        nextStep: expect.stringContaining('soop encode'),
+        details: {
+          rpgFile: '/tmp/missing.json',
+          reason: 'file_not_found',
+        },
+      })
+    })
+
+    it('should omit nextStep/details when not set', () => {
+      const error = new RPGError(RPGErrorCode.NODE_NOT_FOUND, 'Node missing')
+      const payload = error.toPayload()
+      expect(payload).toEqual({
+        error: 'NODE_NOT_FOUND',
+        message: 'Node missing',
+      })
+      expect(payload).not.toHaveProperty('nextStep')
+      expect(payload).not.toHaveProperty('details')
+    })
+
+    it('should default reason to no_path_configured when no opts provided', () => {
+      const error = rpgNotLoadedError()
+      expect(error.details).toEqual({ reason: 'no_path_configured' })
+    })
+  })
 })
 
 describe('MCP Tool Execution', () => {

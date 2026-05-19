@@ -1,6 +1,6 @@
 import type { Embedding } from '@pleaseai/soop-encoder/embedding'
 import { existsSync } from 'node:fs'
-import { readFile } from 'node:fs/promises'
+import { readFile, stat } from 'node:fs/promises'
 import { basename, dirname, join } from 'node:path'
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js'
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js'
@@ -10,8 +10,9 @@ import { RepositoryPlanningGraph } from '@pleaseai/soop-graph'
 import { decodeAllEmbeddings, parseEmbeddings, parseEmbeddingsJsonl } from '@pleaseai/soop-graph/embeddings'
 import { LocalVectorStore } from '@pleaseai/soop-store/local'
 import { createStderrLogger } from '@pleaseai/soop-utils/logger'
-import { invalidPathError, RPGError } from './errors'
+import { invalidPathError, RPGError, rpgNotLoadedError } from './errors'
 import { InteractiveState, registerInteractiveProtocol } from './interactive'
+import { logToolCall } from './telemetry'
 import {
   EncodeInputSchema,
   EvolveInputSchema,
@@ -25,6 +26,8 @@ import {
   FetchInputBaseSchema,
   FetchInputSchema,
   SearchInputSchema,
+  SOOP_SERVER_INSTRUCTIONS,
+  SOOP_TOOL_ANNOTATIONS,
   SOOP_TOOLS,
   StatsInputSchema,
 } from './tools'
@@ -38,6 +41,42 @@ export interface McpServerOptions {
   rootPath?: string
   /** Enable interactive encoding protocol */
   interactive?: boolean
+  /**
+   * Path to the RPG file on disk. When provided, tool calls will lazily
+   * reload the graph from this path if `rpg` is `null` or if the file's
+   * mtime has changed — mirrors the Python reference's `engine_box`
+   * pattern in `mcp_server.py`, with mtime-based staleness detection
+   * so `soop encode` recovers the server without a restart.
+   */
+  rpgFile?: string
+  /** mtime (ms) of the initially loaded graph, used to detect on-disk updates. */
+  loadedMtimeMs?: number | null
+  /** When true, semantic search is not (re-)initialized on lazy reload. */
+  noSearch?: boolean
+}
+
+/**
+ * Mutable holder for the loaded graph + its file path. Created once per
+ * `createMcpServer` call and shared by every tool handler so a successful
+ * lazy reload becomes visible to subsequent calls without restarting.
+ */
+interface ServerState {
+  rpg: RepositoryPlanningGraph | null
+  rpgFile: string | undefined
+  search: SemanticSearch | null
+  /** mtime (ms) of the currently loaded graph; `null` when no graph is loaded. */
+  loadedMtimeMs: number | null
+  /** When true, semantic search is not (re-)initialized on lazy reload. */
+  noSearch: boolean
+  /**
+   * In-flight load promise, used to dedupe concurrent first-call loads.
+   * If multiple tool calls hit `requireRpg` before the first load
+   * completes, they all await the same promise instead of each triggering
+   * a redundant `readFile` + JSON parse.
+   */
+  loadingPromise: Promise<RepositoryPlanningGraph> | null
+  /** Reference to interactive state (if active) so lazy-reload propagates. */
+  interactive: InteractiveState | null
 }
 
 /**
@@ -51,112 +90,330 @@ export function createMcpServer(
   const options: McpServerOptions = rpgOrOptions && typeof rpgOrOptions === 'object' && 'rpg' in rpgOrOptions
     ? rpgOrOptions
     : { rpg: rpgOrOptions as RepositoryPlanningGraph | null, semanticSearch }
-  const rpg = options.rpg
-  const search = options.semanticSearch ?? semanticSearch ?? null
   const rootPath = options.rootPath
-  const server = new McpServer({
-    name: 'soop-mcp-server',
-    version: '0.1.0',
-  })
 
-  // Register all RPG tools
-  server.tool(
+  const state: ServerState = {
+    rpg: options.rpg,
+    rpgFile: options.rpgFile,
+    search: options.semanticSearch ?? semanticSearch ?? null,
+    loadedMtimeMs: options.loadedMtimeMs ?? null,
+    noSearch: options.noSearch ?? false,
+    loadingPromise: null,
+    interactive: null,
+  }
+
+  const server = new McpServer(
+    {
+      name: 'soop-mcp-server',
+      version: '0.1.0',
+    },
+    {
+      instructions: SOOP_SERVER_INSTRUCTIONS,
+    },
+  )
+
+  // ------------------------------------------------------------------
+  // Tool registrations (migrated to registerTool to attach annotations)
+  // ------------------------------------------------------------------
+
+  server.registerTool(
     SOOP_TOOLS.soop_search.name,
-    SOOP_TOOLS.soop_search.description,
-    SearchInputSchema.shape,
-    async args =>
-      wrapHandler(() => executeSearch(rpg, SearchInputSchema.parse(args), search)),
+    {
+      description: SOOP_TOOLS.soop_search.description,
+      inputSchema: SearchInputSchema.shape,
+      annotations: SOOP_TOOL_ANNOTATIONS.soop_search,
+    },
+    async (args: unknown) =>
+      wrapHandler('soop_search', args, async () => {
+        const rpg = await requireRpg(state)
+        const input = SearchInputSchema.parse(args)
+        const result = await executeSearch(rpg, input, state.search)
+        return {
+          result,
+          summary: { nodes: result.nodes.length, totalMatches: result.totalMatches, mode: result.mode },
+        }
+      }),
   )
 
-  server.tool(
+  server.registerTool(
     SOOP_TOOLS.soop_fetch.name,
-    SOOP_TOOLS.soop_fetch.description,
-    FetchInputBaseSchema.shape,
-    async (args: unknown) => wrapHandler(() => executeFetch(rpg, FetchInputSchema.parse(args), { rootPath })),
+    {
+      description: SOOP_TOOLS.soop_fetch.description,
+      inputSchema: FetchInputBaseSchema.shape,
+      annotations: SOOP_TOOL_ANNOTATIONS.soop_fetch,
+    },
+    async (args: unknown) =>
+      wrapHandler('soop_fetch', args, async () => {
+        const rpg = await requireRpg(state)
+        const input = FetchInputSchema.parse(args)
+        const result = await executeFetch(rpg, input, { rootPath })
+        return {
+          result,
+          summary: { entities: result.entities.length, notFound: result.notFound.length },
+        }
+      }),
   )
 
-  server.tool(
+  server.registerTool(
     SOOP_TOOLS.soop_explore.name,
-    SOOP_TOOLS.soop_explore.description,
-    ExploreInputSchema.shape,
-    async args => wrapHandler(() => executeExplore(rpg, ExploreInputSchema.parse(args))),
+    {
+      description: SOOP_TOOLS.soop_explore.description,
+      inputSchema: ExploreInputSchema.shape,
+      annotations: SOOP_TOOL_ANNOTATIONS.soop_explore,
+    },
+    async (args: unknown) =>
+      wrapHandler('soop_explore', args, async () => {
+        const rpg = await requireRpg(state)
+        const input = ExploreInputSchema.parse(args)
+        const result = await executeExplore(rpg, input)
+        return {
+          result,
+          summary: {
+            nodes: result.nodes.length,
+            edges: result.edges.length,
+            maxDepthReached: result.maxDepthReached,
+          },
+        }
+      }),
   )
 
-  server.tool(
+  server.registerTool(
     SOOP_TOOLS.soop_encode.name,
-    SOOP_TOOLS.soop_encode.description,
-    EncodeInputSchema.shape,
-    async args => wrapHandler(() => executeEncode(EncodeInputSchema.parse(args))),
+    {
+      description: SOOP_TOOLS.soop_encode.description,
+      inputSchema: EncodeInputSchema.shape,
+      annotations: SOOP_TOOL_ANNOTATIONS.soop_encode,
+    },
+    async (args: unknown) =>
+      wrapHandler('soop_encode', args, async () => {
+        const input = EncodeInputSchema.parse(args)
+        const result = await executeEncode(input)
+        return {
+          result,
+          summary: {
+            filesProcessed: result.filesProcessed,
+            entitiesExtracted: result.entitiesExtracted,
+            durationMs: result.duration,
+          },
+        }
+      }),
   )
 
-  server.tool(
+  server.registerTool(
     SOOP_TOOLS.soop_evolve.name,
-    SOOP_TOOLS.soop_evolve.description,
-    EvolveInputSchema.shape,
-    async args => wrapHandler(() => executeEvolve(rpg, EvolveInputSchema.parse(args))),
+    {
+      description: SOOP_TOOLS.soop_evolve.description,
+      inputSchema: EvolveInputSchema.shape,
+      annotations: SOOP_TOOL_ANNOTATIONS.soop_evolve,
+    },
+    async (args: unknown) =>
+      wrapHandler('soop_evolve', args, async () => {
+        const rpg = await requireRpg(state)
+        const input = EvolveInputSchema.parse(args)
+        const result = await executeEvolve(rpg, input)
+        return { result, summary: { ...result } as Record<string, unknown> }
+      }),
   )
 
-  server.tool(
+  server.registerTool(
     SOOP_TOOLS.soop_stats.name,
-    SOOP_TOOLS.soop_stats.description,
-    StatsInputSchema.shape,
-    async () => wrapHandler(() => executeStats(rpg)),
+    {
+      description: SOOP_TOOLS.soop_stats.description,
+      inputSchema: StatsInputSchema.shape,
+      annotations: SOOP_TOOL_ANNOTATIONS.soop_stats,
+    },
+    async () =>
+      wrapHandler('soop_stats', {}, async () => {
+        const rpg = await requireRpg(state)
+        const result = await executeStats(rpg)
+        return { result, summary: { name: result.name } }
+      }),
   )
 
   // Register interactive encoding protocol when explicitly enabled
   if (options.interactive) {
-    const state = new InteractiveState()
-    state.repoPath = options.rootPath ?? null
-    state.rpg = rpg
-    registerInteractiveProtocol(server, state)
+    const interactiveState = new InteractiveState()
+    interactiveState.repoPath = options.rootPath ?? null
+    interactiveState.rpg = state.rpg
+    state.interactive = interactiveState
+    registerInteractiveProtocol(server, interactiveState)
   }
 
   return server
 }
 
 /**
- * Wrap a handler function with standard MCP response formatting
+ * Stat a file and return its mtime in milliseconds, or `null` if the file
+ * is missing or unreadable. Used by `requireRpg` to detect on-disk updates.
  */
-async function wrapHandler<T>(
-  handler: () => T | Promise<T>,
-): Promise<{ content: Array<{ type: 'text', text: string }>, isError?: true }> {
+async function getMtimeMs(filePath: string): Promise<number | null> {
   try {
-    const result = await handler()
-    return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] }
+    const s = await stat(filePath)
+    return s.mtimeMs
   }
-  catch (error) {
-    return formatError(error)
+  catch {
+    return null
   }
 }
 
 /**
- * Format error for MCP response
+ * Lazily resolve the loaded RPG. Reloads when:
+ *   1. No graph is cached yet (`state.rpg == null`), or
+ *   2. The file on disk has a newer mtime than the cached copy.
+ *
+ * Concurrent first-callers share a single in-flight load promise via
+ * `state.loadingPromise` to avoid redundant file reads + JSON parsing.
+ *
+ * Throws an enriched `RPGError` with an actionable `nextStep` when no
+ * graph can be made available.
+ */
+async function requireRpg(state: ServerState): Promise<RepositoryPlanningGraph> {
+  // If we have a cached graph, check whether the file changed on disk.
+  // Skip the stat when no path was configured (the in-memory graph is
+  // the only source of truth in that mode).
+  //
+  // Important: do NOT null `state.rpg` when mtime advances. Keep the
+  // last-known-good graph as a fallback so that (a) concurrent callers
+  // still see the cached graph while reload is in flight, and (b) a
+  // failed reload (partial encode, corrupt rewrite, transient I/O
+  // error) doesn't turn into an outage — we serve the stale graph and
+  // retry on the next call.
+  if (state.rpg && state.rpgFile) {
+    const currentMtime = await getMtimeMs(state.rpgFile)
+    if (currentMtime !== null && state.loadedMtimeMs !== null && currentMtime <= state.loadedMtimeMs) {
+      return state.rpg
+    }
+    if (currentMtime !== null && state.loadedMtimeMs !== null && currentMtime > state.loadedMtimeMs) {
+      log.info(`RPG file mtime changed (${state.loadedMtimeMs} → ${currentMtime}); reloading.`)
+      // Fall through to the loadingPromise path; do not null state.rpg.
+    }
+  }
+  else if (state.rpg) {
+    return state.rpg
+  }
+
+  if (!state.rpgFile) {
+    throw rpgNotLoadedError({ reason: 'no_path_configured' })
+  }
+
+  // Coalesce concurrent loads on the same in-flight promise.
+  if (!state.loadingPromise) {
+    const rpgFile = state.rpgFile
+    state.loadingPromise = (async () => {
+      const loaded = await tryLoadRPG(rpgFile)
+      if (!loaded.rpg) {
+        // Last-known-good fallback: if we already have a cached graph,
+        // keep serving it instead of hard-failing every subsequent tool
+        // call. mtime stays at the old value so the next call retries.
+        if (state.rpg) {
+          log.warn(
+            `RPG reload failed (${loaded.errorCode}: ${loaded.errorMessage}); continuing with cached graph.`,
+          )
+          return state.rpg
+        }
+        throw rpgNotLoadedError({ rpgFile, reason: loaded.errorCode })
+      }
+      const mtime = await getMtimeMs(rpgFile)
+      state.rpg = loaded.rpg
+      state.loadedMtimeMs = mtime
+      if (state.interactive) {
+        state.interactive.rpg = loaded.rpg
+      }
+      log.success(`RPG lazy-loaded from ${rpgFile}: ${loaded.rpg.getConfig().name}`)
+
+      // Re-initialize semantic search on lazy reload so `soop_search`
+      // recovers vector capability after `soop encode`. Best-effort:
+      // failures degrade to string search, never break the load.
+      // Clear the old instance first: if reinit throws, we want a clean
+      // "no search" state rather than a stale index pointing at the old graph.
+      if (!state.noSearch) {
+        state.search = null
+        try {
+          state.search = await initSemanticSearch(loaded.rpg, rpgFile)
+        }
+        catch (error) {
+          log.warn(
+            `Semantic search re-init failed after lazy load, continuing without it: ${error instanceof Error ? error.message : String(error)}`,
+          )
+        }
+      }
+
+      return loaded.rpg
+    })()
+  }
+
+  try {
+    return await state.loadingPromise
+  }
+  finally {
+    // Clear the in-flight promise once it settles so a later mtime-bump
+    // can trigger a fresh reload. Both success and failure clear it:
+    // a failed load shouldn't trap subsequent callers in the failure.
+    state.loadingPromise = null
+  }
+}
+
+/**
+ * Wrap a handler with standard MCP response formatting + telemetry.
+ *
+ * The inner handler should return `{ result, summary }` so telemetry can
+ * record a concise per-tool summary alongside duration. The MCP response
+ * payload contains the full `result` (pretty-printed JSON).
+ */
+async function wrapHandler<T>(
+  tool: string,
+  params: unknown,
+  handler: () => Promise<{ result: T, summary: Record<string, unknown> }>,
+): Promise<{ content: Array<{ type: 'text', text: string }>, isError?: true }> {
+  const start = Date.now()
+  try {
+    const { result, summary } = await handler()
+    void logToolCall({
+      tool,
+      params,
+      summary,
+      durationMs: Date.now() - start,
+    })
+    return { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] }
+  }
+  catch (error) {
+    const errorPayload = formatError(error)
+    void logToolCall({
+      tool,
+      params,
+      summary: {},
+      durationMs: Date.now() - start,
+      error: errorPayload.errorMeta,
+    })
+    return errorPayload.response
+  }
+}
+
+/**
+ * Format an error into the MCP response shape and a concise telemetry summary.
  */
 function formatError(error: unknown): {
-  content: Array<{ type: 'text', text: string }>
-  isError: true
+  response: { content: Array<{ type: 'text', text: string }>, isError: true }
+  errorMeta: { code: string, message: string }
 } {
   if (error instanceof RPGError) {
     return {
-      content: [
-        { type: 'text', text: JSON.stringify({ error: error.code, message: error.message }) },
-      ],
-      isError: true,
+      response: {
+        content: [{ type: 'text', text: JSON.stringify(error.toPayload(), null, 2) }],
+        isError: true,
+      },
+      errorMeta: { code: error.code, message: error.message },
     }
   }
-  if (error instanceof Error) {
-    return {
-      content: [
-        { type: 'text', text: JSON.stringify({ error: 'UNKNOWN_ERROR', message: error.message }) },
-      ],
-      isError: true,
-    }
-  }
+  const message = error instanceof Error ? error.message : String(error)
   return {
-    content: [
-      { type: 'text', text: JSON.stringify({ error: 'UNKNOWN_ERROR', message: String(error) }) },
-    ],
-    isError: true,
+    response: {
+      content: [
+        { type: 'text', text: JSON.stringify({ error: 'UNKNOWN_ERROR', message }, null, 2) },
+      ],
+      isError: true,
+    },
+    errorMeta: { code: 'UNKNOWN_ERROR', message },
   }
 }
 
@@ -200,6 +457,34 @@ export async function loadRPG(filePath: string): Promise<RepositoryPlanningGraph
     : await RepositoryPlanningGraph.fromJSON(graphJson)
 }
 
+/**
+ * Non-throwing wrapper around `loadRPG` — returns either the loaded
+ * graph or a structured failure code suitable for `rpg_unavailable`
+ * payloads. Used by both startup and lazy reload.
+ */
+export async function tryLoadRPG(
+  filePath: string,
+): Promise<{ rpg: RepositoryPlanningGraph, errorCode?: undefined } | { rpg: null, errorCode: string, errorMessage: string }> {
+  try {
+    const rpg = await loadRPG(filePath)
+    return { rpg }
+  }
+  catch (error) {
+    if (error instanceof RPGError && error.code === 'INVALID_PATH') {
+      // Covers both ENOENT (missing file) and EACCES (permission denied)
+      // — both reach loadRPG's catch as `invalidPathError`. Calling it
+      // `invalid_path` (rather than the prior `file_not_found`) avoids
+      // misclassifying permission-denied loads as missing files.
+      return { rpg: null, errorCode: 'invalid_path', errorMessage: error.message }
+    }
+    return {
+      rpg: null,
+      errorCode: 'load_failed',
+      errorMessage: error instanceof Error ? error.message : String(error),
+    }
+  }
+}
+
 export interface StartMcpServerOptions {
   rpgFile?: string
   noSearch?: boolean
@@ -210,26 +495,42 @@ export interface StartMcpServerOptions {
 /**
  * Start the MCP server with parsed options.
  * Called by the `soop mcp` subcommand or directly from `main()`.
+ *
+ * IMPORTANT: This function never exits the process on a graph-load failure.
+ * Mirrors the Python reference's design (`mcp_server.py:383-398`): the
+ * MCP transport must stay up so the client can receive an actionable
+ * `rpg_unavailable` payload telling the user to run `soop encode`. Exiting
+ * here would surface on the client as the opaque `MCP error -32000:
+ * Connection closed`.
  */
 export async function startMcpServer(options: StartMcpServerOptions = {}): Promise<void> {
   const { rpgFile, noSearch, interactive, rootPath } = options
 
   let rpg: RepositoryPlanningGraph | null = null
   let semanticSearch: SemanticSearch | null = null
+  let loadedMtimeMs: number | null = null
 
   if (rpgFile) {
-    try {
-      log.info(`Loading RPG from: ${rpgFile}`)
-      rpg = await loadRPG(rpgFile)
+    log.info(`Loading RPG from: ${rpgFile}`)
+    const loaded = await tryLoadRPG(rpgFile)
+    if (loaded.rpg) {
+      rpg = loaded.rpg
+      loadedMtimeMs = await getMtimeMs(rpgFile)
       log.success(`RPG loaded: ${rpg.getConfig().name}`)
     }
-    catch (error) {
-      log.fatal(`Failed to load RPG: ${error instanceof Error ? error.message : String(error)}`)
-      process.exit(1)
+    else {
+      log.warn(
+        `Failed to load RPG from ${rpgFile} (${loaded.errorCode}): ${loaded.errorMessage}`,
+      )
+      log.warn(
+        'Server will start in degraded mode. The first tool call will retry the load and, if it still fails, return an actionable rpg_unavailable payload.',
+      )
     }
 
-    // Initialize semantic search unless disabled
-    if (!noSearch) {
+    // Initialize semantic search unless disabled. Skip entirely if the
+    // RPG isn't loaded — no nodes to index. (Lazy-reload re-initializes
+    // search the first time the graph becomes available.)
+    if (rpg && !noSearch) {
       try {
         semanticSearch = await initSemanticSearch(rpg, rpgFile)
       }
@@ -239,7 +540,7 @@ export async function startMcpServer(options: StartMcpServerOptions = {}): Promi
         )
       }
     }
-    else {
+    else if (noSearch) {
       log.info('Semantic search disabled (--no-search)')
     }
   }
@@ -247,7 +548,7 @@ export async function startMcpServer(options: StartMcpServerOptions = {}): Promi
     log.info('No RPG file path provided. Server will start without a pre-loaded RPG.')
     log.info('Usage: soop mcp <rpg-file.json> [--root-path <dir>] [--interactive] [--no-search]')
     log.info(
-      'Note: rpg_encode tool will still work, but other tools require an RPG to be loaded.',
+      'Note: soop_encode tool will still work; other tools will return an actionable rpg_unavailable payload until a graph is provided.',
     )
   }
 
@@ -255,7 +556,15 @@ export async function startMcpServer(options: StartMcpServerOptions = {}): Promi
     log.info(`Source root path: ${rootPath}`)
   }
 
-  const server = createMcpServer({ rpg, semanticSearch, rootPath, interactive })
+  const server = createMcpServer({
+    rpg,
+    semanticSearch,
+    rootPath,
+    interactive,
+    rpgFile,
+    loadedMtimeMs,
+    noSearch,
+  })
   const transport = new StdioServerTransport()
 
   await server.connect(transport)
