@@ -271,6 +271,13 @@ async function requireRpg(state: ServerState): Promise<RepositoryPlanningGraph> 
   // If we have a cached graph, check whether the file changed on disk.
   // Skip the stat when no path was configured (the in-memory graph is
   // the only source of truth in that mode).
+  //
+  // Important: do NOT null `state.rpg` when mtime advances. Keep the
+  // last-known-good graph as a fallback so that (a) concurrent callers
+  // still see the cached graph while reload is in flight, and (b) a
+  // failed reload (partial encode, corrupt rewrite, transient I/O
+  // error) doesn't turn into an outage — we serve the stale graph and
+  // retry on the next call.
   if (state.rpg && state.rpgFile) {
     const currentMtime = await getMtimeMs(state.rpgFile)
     if (currentMtime !== null && state.loadedMtimeMs !== null && currentMtime <= state.loadedMtimeMs) {
@@ -278,8 +285,7 @@ async function requireRpg(state: ServerState): Promise<RepositoryPlanningGraph> 
     }
     if (currentMtime !== null && state.loadedMtimeMs !== null && currentMtime > state.loadedMtimeMs) {
       log.info(`RPG file mtime changed (${state.loadedMtimeMs} → ${currentMtime}); reloading.`)
-      state.rpg = null
-      state.loadedMtimeMs = null
+      // Fall through to the loadingPromise path; do not null state.rpg.
     }
   }
   else if (state.rpg) {
@@ -296,6 +302,15 @@ async function requireRpg(state: ServerState): Promise<RepositoryPlanningGraph> 
     state.loadingPromise = (async () => {
       const loaded = await tryLoadRPG(rpgFile)
       if (!loaded.rpg) {
+        // Last-known-good fallback: if we already have a cached graph,
+        // keep serving it instead of hard-failing every subsequent tool
+        // call. mtime stays at the old value so the next call retries.
+        if (state.rpg) {
+          log.warn(
+            `RPG reload failed (${loaded.errorCode}: ${loaded.errorMessage}); continuing with cached graph.`,
+          )
+          return state.rpg
+        }
         throw rpgNotLoadedError({ rpgFile, reason: loaded.errorCode })
       }
       const mtime = await getMtimeMs(rpgFile)
