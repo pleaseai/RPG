@@ -1,0 +1,50 @@
+packages/utils/package.json
+  s_ad30cc294e8a6c::t_d86da512786126 11
+packages/utils/src/session-manager/types.ts
+  s_ad30cc294e8a6c::t_782ff2dd0a13de 30
+  s_ad30cc294e8a6c::t_2e72f5a92661fd 1,3-29,33-34,36
+  s_ad30cc294e8a6c::t_e90130f09a6614 2
+  s_ad30cc294e8a6c::t_1314c7afe359a9 31-32,35
+packages/utils/src/session-manager/gemini-cli.ts
+  s_ad30cc294e8a6c::t_33dc1a58840b11 1,11
+  s_ad30cc294e8a6c::t_8450c6c3f11d7d 2-10,12-14
+packages/utils/src/session-manager/index.ts
+  s_ad30cc294e8a6c::t_cfa5f1290b6b16 9
+  s_ad30cc294e8a6c::t_f84fe967c953d5 1-8,10-31
+packages/utils/src/session-manager/codex.ts
+  s_ad30cc294e8a6c::t_03f7dfdc396acf 1,11
+  s_ad30cc294e8a6c::t_4f09b406624671 2-10,12-18
+packages/utils/src/llm.ts
+  s_ad30cc294e8a6c::t_d86da512786126 8,11,15,255-256,271-272
+packages/utils/src/session-manager/claude-code.ts
+  s_ad30cc294e8a6c::t_f1b8be7016be48 1,3-15,17-45
+  s_ad30cc294e8a6c::t_dcb6bcddf0dcdc 2
+  s_ad30cc294e8a6c::t_370ae50f700c42 16
+packages/utils/src/session-manager/google.ts
+  s_ad30cc294e8a6c::t_1647e3796b1c30 1,11
+  s_ad30cc294e8a6c::t_6503862e9318ae 2-10,12-16
+packages/utils/src/session-manager/openai.ts
+  s_ad30cc294e8a6c::t_c20673edeec35d 1,11
+  s_ad30cc294e8a6c::t_2e6e63b4423c9f 2-10,12-16
+packages/utils/tests/session-manager.test.ts
+  s_ad30cc294e8a6c::t_e059cecd28dd57 1-102
+packages/utils/src/session-manager/anthropic.ts
+  s_ad30cc294e8a6c::t_63a8016645d5c6 2-10,12-16
+  s_ad30cc294e8a6c::t_07e7337a7158bb 1,11
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10",
+  "base_commit_sha": "d89175d9b11ffd5f8bb4ee6d2832d18199446e47",
+  "prompts": {},
+  "sessions": {
+    "s_ad30cc294e8a6c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d009e21d-0db2-4bcc-8a52-9989646aa515",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Minsu Lee <amond@amond.net>"
+    }
+  }
+}
