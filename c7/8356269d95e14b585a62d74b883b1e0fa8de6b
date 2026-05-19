@@ -1,0 +1,19 @@
+packages/mcp/src/server.ts
+  s_5690bc7c0e7595::t_64b2a78e304003 274-280,288,305-313
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.9",
+  "base_commit_sha": "c78356269d95e14b585a62d74b883b1e0fa8de6b",
+  "prompts": {},
+  "sessions": {
+    "s_5690bc7c0e7595": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d860e8fb-9dae-4d81-992e-55a016fb92bc",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Minsu Lee <amond@amond.net>"
+    }
+  }
+}
