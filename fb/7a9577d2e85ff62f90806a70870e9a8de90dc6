@@ -1,0 +1,19 @@
+.please/docs/tracks/completed/git-grounded-sync-20260520/metadata.json
+  s_3993958389bf84::t_84e4c098ce8e3e 4,6,8
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.11",
+  "base_commit_sha": "fb7a9577d2e85ff62f90806a70870e9a8de90dc6",
+  "prompts": {},
+  "sessions": {
+    "s_3993958389bf84": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "92d03900-b544-4429-82e4-8ddd35b07ad4",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Minsu Lee <amond@amond.net>"
+    }
+  }
+}
