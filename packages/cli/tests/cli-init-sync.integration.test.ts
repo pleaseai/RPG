@@ -278,15 +278,20 @@ describe('installHooks', () => {
     expect(existsSync(path.join(tempDir, '.git', 'hooks', 'post-checkout'))).toBe(true)
   })
 
-  it('should not overwrite existing hooks', async () => {
+  it('preserves user-authored hook content while adding the SOOP sentinel block', async () => {
     const hookPath = path.join(tempDir, '.git', 'hooks', 'post-merge')
     mkdirSync(path.dirname(hookPath), { recursive: true })
-    await writeFile(hookPath, '#!/bin/sh\necho existing')
+    await writeFile(hookPath, '#!/bin/sh\necho existing\n')
 
     await installHooks(tempDir)
 
     const content = await readFile(hookPath, 'utf-8')
-    expect(content).toBe('#!/bin/sh\necho existing')
+    // User content survives
+    expect(content).toContain('echo existing')
+    // SOOP block was appended
+    expect(content).toContain('# SOOP-BEGIN post-merge')
+    expect(content).toContain('soop sync')
+    expect(content).toContain('# SOOP-END post-merge')
   })
 
   it('should do nothing for non-git directories', async () => {

@@ -3,6 +3,7 @@ import type { Command } from 'commander'
 import { existsSync } from 'node:fs'
 import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
+import { decideSyncFromCommitDiff } from '@pleaseai/soop-encoder/sync'
 import { decodeAllEmbeddings, parseEmbeddings, parseEmbeddingsJsonl } from '@pleaseai/soop-graph/embeddings'
 import { LocalVectorStore } from '@pleaseai/soop-store/local'
 import { getCurrentBranch, getDefaultBranch, getHeadCommitSha, getMergeBase } from '@pleaseai/soop-utils/git-helpers'
@@ -23,8 +24,12 @@ export function registerSyncCommand(program: Command): void {
     .command('sync')
     .description('Sync canonical RPG to local with incremental evolve')
     .option('--force', 'Force full rebuild (ignore local state)')
+    .option(
+      '--staged-only',
+      'Scope dirty-file detection to the git index (pre-commit hook semantic). Working-tree-but-not-staged changes are ignored.',
+    )
     .action(
-      async (options: { force?: boolean }) => {
+      async (options: { force?: boolean, stagedOnly?: boolean }) => {
         const repoPath = process.cwd()
         const repoDir = path.join(repoPath, '.soop')
         const canonicalPathJsonl = path.join(repoDir, 'graph.jsonl')
@@ -60,13 +65,17 @@ export function registerSyncCommand(program: Command): void {
 
         // 4. Read canonical graph + meta to get base commit
         const { RepositoryPlanningGraph } = await import('@pleaseai/soop-graph')
-        const { metaPathFor, deserializeMeta } = await import('@pleaseai/soop-graph/meta')
+        const { metaPathFor, deserializeMeta, absorbLegacyGithubCommit } = await import('@pleaseai/soop-graph/meta')
         const canonicalContent = await readFile(canonicalPath, 'utf-8')
         let canonicalCommit: string | undefined
+        let canonicalGitMeta: import('@pleaseai/soop-graph/meta').GitMeta | null = null
         try {
           const metaJson = await readFile(metaPathFor(canonicalPath), 'utf-8')
-          const meta = deserializeMeta(JSON.parse(metaJson))
-          canonicalCommit = meta.github?.commit
+          const rawMeta = deserializeMeta(JSON.parse(metaJson))
+          // Absorb legacy github.commit → git.headCommit during the transition window.
+          const meta = absorbLegacyGithubCommit(rawMeta)
+          canonicalCommit = meta.git?.headCommit ?? meta.github?.commit
+          canonicalGitMeta = meta.git ?? null
         }
         catch (metaReadError) {
           log.debug(`Could not read canonical meta file, falling back to graph: ${metaReadError instanceof Error ? metaReadError.message : String(metaReadError)}`)
@@ -76,6 +85,22 @@ export function registerSyncCommand(program: Command): void {
             : await RepositoryPlanningGraph.fromJSON(canonicalContent)
           canonicalCommit = canonicalRpg.getConfig().github?.commit
         }
+
+        // Diagnostic: log the decision-tree assessment against the recorded
+        // baseline. Doesn't drive the copy/evolve flow yet — informational
+        // for users debugging sync behavior and a contract test point for
+        // the pre-commit hook (which calls with --staged-only).
+        const decision = decideSyncFromCommitDiff(
+          repoPath,
+          canonicalGitMeta,
+          { forceFull: options.force, stagedOnly: options.stagedOnly },
+        )
+        log.info(
+          `Sync decision: mode=${decision.mode} reason=${decision.reason} `
+          + `last=${decision.lastCommit?.slice(0, 7) ?? 'none'} `
+          + `current=${decision.currentCommit?.slice(0, 7) ?? 'none'} `
+          + `changed=${decision.changed.length}`,
+        )
 
         // 5. Determine if we need to evolve
         let localState: LocalState | undefined

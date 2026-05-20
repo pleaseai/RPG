@@ -58,7 +58,10 @@ describe('diff helpers — silent-fail behaviour', () => {
 describe('stagedChanges', () => {
   let dir: string
   beforeEach(() => { dir = setupRepo() })
-  afterEach(() => rmSync(dir, { recursive: true, force: true }))
+  afterEach(() => {
+    try { rmSync(dir, { recursive: true, force: true }) }
+    catch { /* best-effort cleanup; OS may race on .git/index unlink */ }
+  })
 
   it('detects unborn-branch staged file via fallback path', () => {
     writeFileSync(path.join(dir, 'a.ts'), 'export const a = 1')
@@ -85,7 +88,10 @@ describe('stagedChanges', () => {
 describe('workingTreeChanges', () => {
   let dir: string
   beforeEach(() => { dir = setupRepo() })
-  afterEach(() => rmSync(dir, { recursive: true, force: true }))
+  afterEach(() => {
+    try { rmSync(dir, { recursive: true, force: true }) }
+    catch { /* best-effort cleanup; OS may race on .git/index unlink */ }
+  })
 
   it('captures tracked modifications + untracked when enabled', () => {
     writeFileSync(path.join(dir, 'a.ts'), 'export const a = 1')
@@ -126,7 +132,10 @@ describe('workingTreeChanges', () => {
 describe('changedFilesBetween + mergeBase', () => {
   let dir: string
   beforeEach(() => { dir = setupRepo() })
-  afterEach(() => rmSync(dir, { recursive: true, force: true }))
+  afterEach(() => {
+    try { rmSync(dir, { recursive: true, force: true }) }
+    catch { /* best-effort cleanup; OS may race on .git/index unlink */ }
+  })
 
   it('returns diff between two commits', () => {
     writeFileSync(path.join(dir, 'a.ts'), 'v1')
