@@ -1,0 +1,31 @@
+packages/utils/src/llm.ts
+  s_da38fb9b27eef9::t_2a98bc91e1eddb 141,143
+  s_da38fb9b27eef9::t_554474f9f97487 266,268-272
+  s_da38fb9b27eef9::t_def1f7d56dd661 138-139,151,159-166,168,176,183-184
+  s_da38fb9b27eef9::t_6d1b70a64a6e55 275,281
+packages/utils/tests/llm.test.ts
+  s_da38fb9b27eef9::t_1797d4359ab777 301
+  s_da38fb9b27eef9::t_37dbf073e8cf47 140
+  s_da38fb9b27eef9::t_e7fa9dcf38d7d4 686
+  s_da38fb9b27eef9::t_caeabca7adb2b0 102,108
+  s_da38fb9b27eef9::t_f7430558060fd2 505
+  s_da38fb9b27eef9::t_0efcbbb8b56da6 221
+  s_da38fb9b27eef9::t_d3f01ef14ad5af 171
+  s_da38fb9b27eef9::t_3de04cb23131a6 118
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10",
+  "base_commit_sha": "95f86e3311895aeb06e4a71fded98f3d476cb7a1",
+  "prompts": {},
+  "sessions": {
+    "s_da38fb9b27eef9": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3b9a141b-f882-470e-960d-2aa94d30b340",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Minsu Lee <amond@amond.net>"
+    }
+  }
+}
