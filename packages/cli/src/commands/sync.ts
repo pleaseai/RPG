@@ -305,8 +305,8 @@ export function registerSyncCommand(program: Command): void {
               }
             }
             const merged = {
-              version: '2.0.0',
               ...existingMeta,
+              version: '2.0.0',
               git: decision.nextGitMeta,
             }
             await writeFile(localMetaPath, JSON.stringify(merged, null, 2))
