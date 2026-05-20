@@ -173,7 +173,9 @@ Pre-merge checklist:
 
 ## Progress
 
-_To be populated by /please:implement._
+- [x] (2026-05-20) Wave 1 — silent-fail git module + meta.git + hook installer primitives (SHA: `ec4c2fe`)
+- [x] (2026-05-20) Wave 2-5 — sync decision tree + hook rewrite + --staged-only flag (SHA: `3c25566`)
+- [x] (2026-05-20) Review fixes applied — RPG instance methods, sync meta persistence, AC-1/AC-2/AC-4 gap tests (SHA: `9bb4d1c`)
 
 ## Decision Log
 
