@@ -1,0 +1,21 @@
+packages/encoder/src/vendor-dep-graph.ts
+  s_0700e479096c69::t_8a80e789e7d976 5-13,15
+packages/encoder/tests/vendor-dep-graph.test.ts
+  s_0700e479096c69::t_9f00931b49048a 23-30
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10",
+  "base_commit_sha": "27d094a921263733101d8dbc935cc271a72a0c43",
+  "prompts": {},
+  "sessions": {
+    "s_0700e479096c69": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "9e77a0c7-85ca-486d-8524-6adb80ffa227",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Minsu Lee <amond@amond.net>"
+    }
+  }
+}
