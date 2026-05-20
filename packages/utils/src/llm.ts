@@ -135,12 +135,12 @@ export interface LLMResponse {
  * Default models for each provider
  */
 const DEFAULT_MODELS: Record<LLMProvider, string> = {
-  'openai': 'gpt-4o',
-  'anthropic': 'claude-sonnet-4.5',
+  'openai': 'gpt-5',
+  'anthropic': 'claude-sonnet-4-6',
   'google': 'gemini-3.1-flash-lite-preview',
-  'claude-code': 'sonnet',
+  'claude-code': 'haiku',
   'codex': 'gpt-5.3-codex',
-  'gemini-cli': 'gemini-2.5-flash',
+  'gemini-cli': 'gemini-3.1-flash-lite-preview',
 }
 
 /**
@@ -148,6 +148,7 @@ const DEFAULT_MODELS: Record<LLMProvider, string> = {
  */
 const CLAUDE_SONNET_PRICING = { input: 3.00, output: 15.00 }
 const CLAUDE_HAIKU_PRICING = { input: 1.00, output: 5.00 }
+const CLAUDE_OPUS_PRICING = { input: 15.00, output: 75.00 }
 const CODEX_GPT5_PRICING = { input: 1.25, output: 10.00 }
 
 const MODEL_PRICING: Record<string, { input: number, output: number }> = {
@@ -155,9 +156,16 @@ const MODEL_PRICING: Record<string, { input: number, output: number }> = {
   'gpt-4.1': { input: 2.00, output: 8.00 },
   'gpt-5': { input: 1.25, output: 10.00 },
   'gpt-5-mini': { input: 0.25, output: 2.00 },
-  'claude-sonnet-4.5': CLAUDE_SONNET_PRICING,
-  'claude-haiku-4.5': CLAUDE_HAIKU_PRICING,
+  'gpt-5.1': { input: 1.25, output: 10.00 },
+  'gpt-5.2': { input: 1.25, output: 10.00 },
+  'gpt-5.2-pro': { input: 15.00, output: 120.00 },
+  'claude-sonnet-4-5': CLAUDE_SONNET_PRICING,
+  'claude-sonnet-4-6': CLAUDE_SONNET_PRICING,
+  'claude-haiku-4-5': CLAUDE_HAIKU_PRICING,
+  'claude-opus-4-5': CLAUDE_OPUS_PRICING,
+  'claude-opus-4-6': CLAUDE_OPUS_PRICING,
   'gemini-3.1-flash-lite-preview': { input: 0.25, output: 1.50 },
+  'gemini-3.1-pro-preview': { input: 2.00, output: 12.00 },
   'gemini-3-flash-preview': { input: 0.50, output: 3.00 },
   'gemini-3-pro-preview': { input: 2.00, output: 12.00 },
   'gemini-2.0-flash': { input: 0.30, output: 2.50 },
@@ -165,14 +173,15 @@ const MODEL_PRICING: Record<string, { input: number, output: number }> = {
   // Pricing reflects equivalent Claude API rates for cost estimation,
   // not actual charges (Claude Code uses subscription billing).
   'sonnet': CLAUDE_SONNET_PRICING,
-  'opus': { input: 15.00, output: 75.00 },
+  'opus': CLAUDE_OPUS_PRICING,
   'haiku': CLAUDE_HAIKU_PRICING,
   // Codex CLI provider uses ChatGPT Plus/Pro subscription.
   // Pricing reflects equivalent OpenAI API rates for cost estimation,
   // not actual charges (Codex CLI uses subscription billing).
   'gpt-5.3-codex': CODEX_GPT5_PRICING,
   'gpt-5.2-codex': CODEX_GPT5_PRICING,
-  'gpt-5.1-codex-max': CODEX_GPT5_PRICING,
+  'gpt-5.2-codex-max': CODEX_GPT5_PRICING,
+  'gpt-5.2-codex-mini': CODEX_GPT5_PRICING,
   // Gemini CLI uses OAuth/free-tier credentials.
   // Pricing reflects equivalent Google API rates for cost estimation.
   'gemini-2.5-flash': { input: 0.15, output: 0.60 },
@@ -254,19 +263,22 @@ function isContextLengthError(error: unknown): boolean {
  * const client = new LLMClient({ provider: 'google', model: 'gemini-3.1-flash-lite-preview' })
  *
  * // Use Claude Haiku (fast, cost-effective)
- * const client = new LLMClient({ provider: 'anthropic', model: 'claude-haiku-4.5' })
+ * const client = new LLMClient({ provider: 'anthropic', model: 'claude-haiku-4-5' })
  *
- * // Use GPT-4o (paper baseline)
- * const client = new LLMClient({ provider: 'openai', model: 'gpt-4o' })
+ * // Use Claude Sonnet 4.6 (production default)
+ * const client = new LLMClient({ provider: 'anthropic', model: 'claude-sonnet-4-6' })
+ *
+ * // Use GPT-5 (latest OpenAI flagship)
+ * const client = new LLMClient({ provider: 'openai', model: 'gpt-5' })
  *
  * // Use Claude Code (no API key needed, requires Claude Pro/Max subscription)
- * const client = new LLMClient({ provider: 'claude-code', model: 'sonnet' })
+ * const client = new LLMClient({ provider: 'claude-code', model: 'haiku' })
  *
  * // Use Codex CLI (no API key needed, requires ChatGPT Plus/Pro subscription)
  * const client = new LLMClient({ provider: 'codex', model: 'gpt-5.3-codex' })
  *
  * // Use Gemini CLI (no API key needed, uses OAuth from `gemini` CLI login)
- * const client = new LLMClient({ provider: 'gemini-cli', model: 'gemini-2.5-flash' })
+ * const client = new LLMClient({ provider: 'gemini-cli', model: 'gemini-3.1-flash-lite-preview' })
  * ```
  */
 /** True when the AI SDK signals the error is safe to retry. */
