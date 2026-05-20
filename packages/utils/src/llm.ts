@@ -1,26 +1,21 @@
 import type { GoogleLanguageModelOptions } from '@ai-sdk/google'
-import type { ModelMessage } from 'ai'
+import type { LanguageModel, ModelMessage } from 'ai'
 import type { ClaudeCodeSettings } from 'ai-sdk-provider-claude-code'
 import type { CodexCliSettings } from 'ai-sdk-provider-codex-cli'
 import type { GeminiProviderOptions } from 'ai-sdk-provider-gemini-cli'
 import type { ZodType } from 'zod/v4'
 import type { Memory } from './memory'
-import { spawn } from 'node:child_process'
-import { createAnthropic } from '@ai-sdk/anthropic'
-import { createGoogleGenerativeAI } from '@ai-sdk/google'
-import { createOpenAI } from '@ai-sdk/openai'
-import { generateText, NoObjectGeneratedError, Output } from 'ai'
-import { createClaudeCode } from 'ai-sdk-provider-claude-code'
-import { createCodexCli } from 'ai-sdk-provider-codex-cli'
-import { createGeminiProvider } from 'ai-sdk-provider-gemini-cli'
+import type { LanguageModelFactory, LLMProvider, SessionManager } from './session-manager'
+import { APICallError, generateText, NoObjectGeneratedError, Output } from 'ai'
+import { LLMCallLog } from './llm-call-log'
 import { createLogger } from './logger'
+import { createSessionManager } from './session-manager'
+
+type GenerateTextParams = Parameters<typeof generateText>[0]
 
 const log = createLogger('LLMClient')
 
-/**
- * LLM provider type
- */
-export type LLMProvider = 'openai' | 'anthropic' | 'google' | 'claude-code' | 'codex' | 'gemini-cli'
+export type { LLMProvider }
 
 /**
  * LLM client options
@@ -48,6 +43,17 @@ export interface LLMOptions {
   geminiCliSettings?: GeminiProviderOptions
   /** Google provider settings (only used when provider is 'google') */
   googleSettings?: GoogleLanguageModelOptions
+  /**
+   * Directory where per-call session traces are persisted (currently used by
+   * the claude-code provider to copy `~/.claude/projects/<encoded>/<uuid>.jsonl`).
+   * When unset, trace capture is off.
+   */
+  sessionTraceDir?: string
+  /**
+   * Path to the per-call audit-log SQLite database. When unset, no log is
+   * written. Typically `.soop/cache/llm-call-log.db`.
+   */
+  callLogPath?: string
 }
 
 export type { GoogleLanguageModelOptions }
@@ -94,6 +100,11 @@ export interface CallOptions {
    * Only used when a schema is passed to completeJSON() / generateJSON().
    */
   schemaDescription?: string
+  /**
+   * Free-form tag describing what this call is for (e.g., `semantic-parse`).
+   * Surfaces in session-trace filenames and (future) call-log rows.
+   */
+  purpose?: string
 }
 
 /**
@@ -166,54 +177,6 @@ const MODEL_PRICING: Record<string, { input: number, output: number }> = {
   // Pricing reflects equivalent Google API rates for cost estimation.
   'gemini-2.5-flash': { input: 0.15, output: 0.60 },
   'gemini-2.5-pro': { input: 1.25, output: 10.00 },
-}
-
-/**
- * Create provider instance
- */
-function createProvider(provider: LLMProvider, apiKey?: string, claudeCodeSettings?: ClaudeCodeSettings, codexSettings?: CodexCliSettings, geminiCliSettings?: GeminiProviderOptions) {
-  switch (provider) {
-    case 'openai':
-      return createOpenAI({
-        apiKey: apiKey ?? process.env.OPENAI_API_KEY,
-      })
-    case 'anthropic':
-      return createAnthropic({
-        apiKey: apiKey ?? process.env.ANTHROPIC_API_KEY,
-      })
-    case 'google':
-      return createGoogleGenerativeAI({
-        apiKey: apiKey ?? process.env.GOOGLE_GENERATIVE_AI_API_KEY,
-      })
-    case 'claude-code': {
-      const settings: ClaudeCodeSettings = {
-        // Defaults for automated/non-interactive use
-        pathToClaudeCodeExecutable: process.env.CLAUDE_BIN ?? 'claude',
-        persistSession: false,
-        permissionMode: 'bypassPermissions',
-        ...claudeCodeSettings,
-        stderr: (data) => { log.debug('[claude stderr]', data.toString().trim()) },
-        spawnClaudeCodeProcess: (options) => {
-          // Remove CLAUDECODE and CLAUDE_CODE_SSE_PORT to allow running
-          // inside an existing Claude Code session without being blocked.
-          const { CLAUDECODE: _, CLAUDE_CODE_SSE_PORT: __, ...env } = options.env
-          return spawn(options.command, options.args, {
-            cwd: options.cwd,
-            env,
-            signal: options.signal,
-            stdio: ['pipe', 'pipe', 'pipe'],
-          })
-        },
-      }
-      return createClaudeCode({ defaultSettings: settings })
-    }
-    case 'codex':
-      return createCodexCli(codexSettings ? { defaultSettings: codexSettings } : undefined)
-    case 'gemini-cli':
-      return createGeminiProvider(geminiCliSettings ?? {})
-    default:
-      throw new Error(`Unsupported LLM provider: ${String(provider satisfies never)}`)
-  }
 }
 
 /**
@@ -306,9 +269,16 @@ function isContextLengthError(error: unknown): boolean {
  * const client = new LLMClient({ provider: 'gemini-cli', model: 'gemini-2.5-flash' })
  * ```
  */
+/** True when the AI SDK signals the error is safe to retry. */
+function isRetryableError(err: unknown): boolean {
+  return APICallError.isInstance(err) && err.isRetryable === true
+}
+
 export class LLMClient {
   private readonly options: LLMOptions
-  private readonly providerInstance: ReturnType<typeof createProvider>
+  private readonly sessionManager: SessionManager
+  private readonly providerInstance: LanguageModelFactory
+  private readonly callLog: LLMCallLog | null
   private usageStats: TokenUsageStats = { ...INITIAL_USAGE_STATS }
 
   constructor(options: LLMOptions) {
@@ -323,7 +293,38 @@ export class LLMClient {
         `'googleSettings' was provided for a non-Google provider ('${options.provider}'). These settings will be ignored.`,
       )
     }
-    this.providerInstance = createProvider(options.provider, options.apiKey, options.claudeCodeSettings, options.codexSettings, options.geminiCliSettings)
+    this.sessionManager = createSessionManager(options)
+    this.providerInstance = this.sessionManager.createProvider()
+    this.callLog = options.callLogPath
+      ? new LLMCallLog({ dbPath: options.callLogPath })
+      : null
+  }
+
+  /**
+   * Persist an audit record for the most recent call.
+   * Errors during logging are swallowed (best-effort observability).
+   */
+  private async recordCall(
+    input: { provider: LLMProvider, model: string, purpose: string, prompt: string, response?: string, durationMs: number, retries: number, error?: string },
+  ): Promise<void> {
+    if (!this.callLog) {
+      return
+    }
+    try {
+      await this.callLog.record({
+        provider: input.provider,
+        model: input.model,
+        purpose: input.purpose,
+        prompt: input.prompt,
+        response: input.response,
+        durationMs: input.durationMs,
+        retries: input.retries,
+        error: input.error,
+      })
+    }
+    catch (err) {
+      log.warn(`Failed to record LLM call: ${(err as Error).message}`)
+    }
   }
 
   private buildProviderOptions(callOptions?: CallOptions): Parameters<typeof generateText>[0]['providerOptions'] {
@@ -338,40 +339,88 @@ export class LLMClient {
   }
 
   /**
-   * Shared helper for generateText calls with error handling and usage tracking.
+   * Drive a single `generateText` invocation with the retry loop,
+   * session-trace capture, audit logging, and usage tracking required
+   * by every public path on this class.
+   *
+   * For providers whose SessionManager exposes `beginCall()` (currently
+   * claude-code), this regenerates the session UUID on each retryable
+   * failure; for other providers, AI-SDK internal retry handles it.
    */
-  private async callGenerateText(
-    prompt: string,
-    systemPrompt?: string,
-    output?: Parameters<typeof generateText>[0]['output'],
-    callOptions?: CallOptions,
-  ): Promise<Awaited<ReturnType<typeof generateText>>> {
+  private async runWithSession(args: {
+    callOptions: CallOptions | undefined
+    buildParams: (model: LanguageModel) => GenerateTextParams
+    promptForLog: string
+    promptLengthForOnError: number
+  }): Promise<Awaited<ReturnType<typeof generateText>>> {
+    const { callOptions, buildParams, promptForLog, promptLengthForOnError } = args
     const modelId = this.options.model ?? DEFAULT_MODELS[this.options.provider]
-    const model = this.providerInstance(modelId)
-    const timeout = callOptions?.timeout ?? this.options.timeout ?? 120_000
-    const maxOutputTokens = callOptions?.maxTokens ?? this.options.maxTokens
+    const purpose = callOptions?.purpose ?? 'general'
 
-    let result: Awaited<ReturnType<typeof generateText>>
-    try {
-      result = await generateText({
-        model,
-        output,
-        system: systemPrompt,
-        prompt,
-        maxOutputTokens,
-        temperature: this.options.temperature,
-        abortSignal: AbortSignal.timeout(timeout),
-        providerOptions: this.buildProviderOptions(callOptions),
-        headers: callOptions?.headers,
-        maxRetries: callOptions?.maxApiRetries,
+    const callSession = this.sessionManager.beginCall?.(modelId, purpose)
+    const maxAttempts = callSession ? (callOptions?.maxApiRetries ?? 2) + 1 : 1
+    const aiSdkMaxRetries = callSession?.disableAiSdkRetry ? 0 : callOptions?.maxApiRetries
+
+    let lastError: Error | undefined
+    let result: Awaited<ReturnType<typeof generateText>> | undefined
+    let retries = 0
+    const startedAt = Date.now()
+
+    for (let attempt = 0; attempt < maxAttempts; attempt++) {
+      const model = callSession ? callSession.model : this.providerInstance(modelId)
+      try {
+        result = await generateText({
+          ...buildParams(model),
+          maxRetries: aiSdkMaxRetries,
+        })
+        lastError = undefined
+        break
+      }
+      catch (error) {
+        const err = error instanceof Error ? error : new Error(String(error))
+        lastError = err
+        if (!callSession || !isRetryableError(err) || attempt === maxAttempts - 1) {
+          break
+        }
+        log.debug(`${modelId} attempt ${attempt + 1} failed (${err.message}); regenerating session and retrying`)
+        retries++
+        callSession.regenerate()
+      }
+    }
+
+    if (callSession) {
+      await callSession.finalize({ success: result !== undefined }).catch((err: unknown) => {
+        log.warn(`Session finalize failed: ${(err as Error).message}`)
       })
     }
-    catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error))
+
+    const durationMs = Date.now() - startedAt
+
+    if (!result) {
+      const err = lastError ?? new Error('generateText returned no result')
+      await this.recordCall({
+        provider: this.options.provider,
+        model: modelId,
+        purpose,
+        prompt: promptForLog,
+        durationMs,
+        retries,
+        error: err.message,
+      })
       log.error(`${modelId} error: ${err.message}`, err)
-      this.options.onError?.(err, { model: modelId, promptLength: prompt.length })
+      this.options.onError?.(err, { model: modelId, promptLength: promptLengthForOnError })
       throw err
     }
+
+    await this.recordCall({
+      provider: this.options.provider,
+      model: modelId,
+      purpose,
+      prompt: promptForLog,
+      response: result.text,
+      durationMs,
+      retries,
+    })
 
     const inputTokens = result.usage?.inputTokens ?? 0
     const outputTokens = result.usage?.outputTokens ?? 0
@@ -381,6 +430,33 @@ export class LLMClient {
     this.usageStats.requestCount++
 
     return result
+  }
+
+  private async callGenerateText(
+    prompt: string,
+    systemPrompt?: string,
+    output?: GenerateTextParams['output'],
+    callOptions?: CallOptions,
+  ): Promise<Awaited<ReturnType<typeof generateText>>> {
+    const timeout = callOptions?.timeout ?? this.options.timeout ?? 120_000
+    const maxOutputTokens = callOptions?.maxTokens ?? this.options.maxTokens
+
+    return this.runWithSession({
+      callOptions,
+      buildParams: model => ({
+        model,
+        output,
+        system: systemPrompt,
+        prompt,
+        maxOutputTokens,
+        temperature: this.options.temperature,
+        abortSignal: AbortSignal.timeout(timeout),
+        providerOptions: this.buildProviderOptions(callOptions),
+        headers: callOptions?.headers,
+      }),
+      promptForLog: prompt,
+      promptLengthForOnError: prompt.length,
+    })
   }
 
   /**
@@ -517,17 +593,16 @@ export class LLMClient {
    */
   private async callGenerateTextWithMessages(
     messages: ModelMessage[],
-    output?: Parameters<typeof generateText>[0]['output'],
+    output?: GenerateTextParams['output'],
     callOptions?: CallOptions,
   ): Promise<Awaited<ReturnType<typeof generateText>>> {
-    const modelId = this.options.model ?? DEFAULT_MODELS[this.options.provider]
-    const model = this.providerInstance(modelId)
     const timeout = callOptions?.timeout ?? this.options.timeout ?? 120_000
     const maxOutputTokens = callOptions?.maxTokens ?? this.options.maxTokens
+    const flatContent = messages.map(m => (typeof m.content === 'string' ? m.content : JSON.stringify(m.content)))
 
-    let result: Awaited<ReturnType<typeof generateText>>
-    try {
-      result = await generateText({
+    return this.runWithSession({
+      callOptions,
+      buildParams: model => ({
         model,
         output,
         messages,
@@ -536,28 +611,10 @@ export class LLMClient {
         abortSignal: AbortSignal.timeout(timeout),
         providerOptions: this.buildProviderOptions(callOptions),
         headers: callOptions?.headers,
-        maxRetries: callOptions?.maxApiRetries,
-      })
-    }
-    catch (error) {
-      const err = error instanceof Error ? error : new Error(String(error))
-      log.error(`${modelId} error: ${err.message}`, err)
-      const totalLength = messages.reduce((sum, m) => {
-        const content = typeof m.content === 'string' ? m.content : JSON.stringify(m.content)
-        return sum + content.length
-      }, 0)
-      this.options.onError?.(err, { model: modelId, promptLength: totalLength })
-      throw err
-    }
-
-    const inputTokens = result.usage?.inputTokens ?? 0
-    const outputTokens = result.usage?.outputTokens ?? 0
-    this.usageStats.totalPromptTokens += inputTokens
-    this.usageStats.totalCompletionTokens += outputTokens
-    this.usageStats.totalTokens += inputTokens + outputTokens
-    this.usageStats.requestCount++
-
-    return result
+      }),
+      promptForLog: flatContent.join('\n'),
+      promptLengthForOnError: flatContent.reduce((sum, c) => sum + c.length, 0),
+    })
   }
 
   /**
