@@ -1,0 +1,19 @@
+packages/cli/src/commands/sync.ts
+  s_3993958389bf84::t_4d33b815fbeee2 309
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.11",
+  "base_commit_sha": "a24a4ff4f553abb6684df512318d1e35fa01b523",
+  "prompts": {},
+  "sessions": {
+    "s_3993958389bf84": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "92d03900-b544-4429-82e4-8ddd35b07ad4",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Minsu Lee <amond@amond.net>"
+    }
+  }
+}
