@@ -1,0 +1,26 @@
+packages/utils/src/git/read-head.ts
+  s_3993958389bf84::t_e08695969fd39a 79-86,90,92,94
+packages/utils/tests/git/read-head.test.ts
+  s_3993958389bf84::t_0051f55e7af528 82-83,85
+  s_3993958389bf84::t_17ebbb505057b4 2
+packages/cli/src/commands/hooks.ts
+  s_3993958389bf84::t_45dfef2a6f4d41 35-47,50
+packages/cli/tests/hooks/resolver.test.ts
+  s_3993958389bf84::t_c6e827c1951d36 51-52,55
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.11",
+  "base_commit_sha": "5e5920cc7cb3a1380670ebaa6f522101bc3bc77a",
+  "prompts": {},
+  "sessions": {
+    "s_3993958389bf84": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "92d03900-b544-4429-82e4-8ddd35b07ad4",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Minsu Lee <amond@amond.net>"
+    }
+  }
+}
