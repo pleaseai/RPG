@@ -48,9 +48,11 @@ describe('resolveGitHooksDir', () => {
 
   it('routes worktree (.git is a file, parent = worktrees) to main repo hooks', () => {
     g(dir, ['init', '-b', 'main'])
-    execFileSync(resolveGitBinary(), ['commit', '--allow-empty', '-m', 'init'], { cwd: dir })
+    // user.email / user.name must be set BEFORE the commit — otherwise
+    // the commit fails on hosts without a global git config.
     execFileSync(resolveGitBinary(), ['config', 'user.email', 't@t.com'], { cwd: dir })
     execFileSync(resolveGitBinary(), ['config', 'user.name', 't'], { cwd: dir })
+    execFileSync(resolveGitBinary(), ['commit', '--allow-empty', '-m', 'init'], { cwd: dir })
     const worktreeDir = path.join(dir, '..', `soop-wt-${path.basename(dir)}`)
     try {
       // Use a fresh branch so it doesn't collide with the main checkout

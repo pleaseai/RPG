@@ -1,5 +1,5 @@
 import { execFileSync } from 'node:child_process'
-import { mkdtempSync, rmSync } from 'node:fs'
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { resolveGitBinary } from '@pleaseai/soop-utils/git-path'
@@ -79,9 +79,10 @@ describe('readHead', () => {
 
   it('returns null if path is a file rather than a directory', () => {
     execFileSync(resolveGitBinary(), ['commit', '--allow-empty', '-m', 'init'], { cwd: dir })
-    // Pass a path to a file inside the repo
+    // Pass a path to a file inside the repo. Use writeFileSync from node:fs
+    // for cross-platform compatibility (`touch` is not available on Windows).
     const filePath = path.join(dir, 'foo.txt')
-    execFileSync('touch', [filePath])
+    writeFileSync(filePath, '')
     expect(readHead(filePath)).toBeNull()
   })
 

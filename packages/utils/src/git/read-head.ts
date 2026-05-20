@@ -76,15 +76,22 @@ export function readHead(repoDir: string | null | undefined): GitHead | null {
     return null
   }
 
-  const headCommit = runGitReadonly(['rev-parse', 'HEAD'], repoDir)
+  // Shared deadline budget — DEFAULT_TIMEOUT_MS for the *whole* function,
+  // not per-call. Without this, four sequential calls would each get a
+  // fresh 5s allowance, allowing total runtime to drift well past the
+  // sub-second budget hooks expect.
+  const startMs = Date.now()
+  const remaining = (): number => Math.max(50, DEFAULT_TIMEOUT_MS - (Date.now() - startMs))
+
+  const headCommit = runGitReadonly(['rev-parse', 'HEAD'], repoDir, remaining())
   if (!headCommit)
     return null
 
-  const headShort = runGitReadonly(['rev-parse', '--short', 'HEAD'], repoDir)
+  const headShort = runGitReadonly(['rev-parse', '--short', 'HEAD'], repoDir, remaining())
   // `symbolic-ref` fails on detached HEAD; runGitReadonly returns null, keep as null.
-  const headBranch = runGitReadonly(['symbolic-ref', '--short', 'HEAD'], repoDir)
+  const headBranch = runGitReadonly(['symbolic-ref', '--short', 'HEAD'], repoDir, remaining())
   // ISO 8601 UTC timestamp of the HEAD commit.
-  const headTimestamp = runGitReadonly(['show', '-s', '--format=%cI', 'HEAD'], repoDir)
+  const headTimestamp = runGitReadonly(['show', '-s', '--format=%cI', 'HEAD'], repoDir, remaining())
 
   return { headCommit, headShort, headBranch, headTimestamp }
 }

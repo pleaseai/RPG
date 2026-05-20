@@ -32,12 +32,22 @@ const STAGED_SYNC_BODY = [
 
 /**
  * Legacy snippet shipped by `soop init --hooks` before sentinel blocks.
- * The 5-line shape (marker comment + 4 body lines) is stripped during
- * upgrade so users don't end up running both the old snippet and the
- * new SOOP block.
+ * The original snippet spans 8 lines starting at the marker:
+ *
+ *   1: # Repo Please auto-sync hook — installed by "soop init --hooks"
+ *   2: # Runs soop sync after git operations. Failures do not block git.
+ *   3: (blank)
+ *   4: if command -v soop ...
+ *   5:   soop sync || ...
+ *   6: elif command -v bunx ...
+ *   7:   bunx soop sync || ...
+ *   8: fi
+ *
+ * A shorter lineCount would leave orphaned `elif`/`fi` tokens behind and
+ * produce a syntactically invalid hook script after upgrade.
  */
 const LEGACY_BLOCKS: readonly LegacyBlock[] = [
-  { marker: '# Repo Please auto-sync hook', lineCount: 5 },
+  { marker: '# Repo Please auto-sync hook', lineCount: 8 },
 ]
 
 interface HookSpec {
