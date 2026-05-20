@@ -1,0 +1,33 @@
+packages/utils/tests/git/read-head.test.ts
+  s_3993958389bf84::t_2e5bece93c1e0d 88-95
+  s_3993958389bf84::t_044487d36acab2 7
+  s_3993958389bf84::t_e232b0c39af1f8 87,96-116
+packages/cli/tests/cli-sync-decision.integration.test.ts
+  s_3993958389bf84::t_8313c780a56c02 86-108
+packages/cli/src/commands/sync.ts
+  s_3993958389bf84::t_223430ade34ee5 287-342
+packages/graph/src/rpg.ts
+  s_3993958389bf84::t_b86b1e9b0027d3 19
+  s_3993958389bf84::t_1703c9fb87159e 530-552
+  s_3993958389bf84::t_6300c7944ab472 741-743,748-749,771-773,778-779
+packages/graph/tests/meta.test.ts
+  s_3993958389bf84::t_9199317f5831d8 182-196,198-199,201-203,205-214
+  s_3993958389bf84::t_c6d480ba6b4977 197,200,204,215-279
+  s_3993958389bf84::t_900c56493e771f 2
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.11",
+  "base_commit_sha": "9bb4d1c06ca9037a38535d6889c1a04d6d6c9127",
+  "prompts": {},
+  "sessions": {
+    "s_3993958389bf84": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "92d03900-b544-4429-82e4-8ddd35b07ad4",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Minsu Lee <amond@amond.net>"
+    }
+  }
+}
