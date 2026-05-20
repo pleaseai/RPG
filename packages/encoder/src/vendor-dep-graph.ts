@@ -1,11 +1,18 @@
 import type { RepositoryPlanningGraph } from '@pleaseai/soop-graph'
 import type { LowLevelNode, Node } from '@pleaseai/soop-graph/node'
-import path from 'node:path'
 import { isLowLevelNode } from '@pleaseai/soop-graph/node'
 
-/** Normalize a path to use forward-slash separators on all platforms. */
+/**
+ * Normalize a path to use forward-slash separators on all platforms.
+ *
+ * `path.sep` is host-dependent — `'/'` on POSIX and `'\\'` on Windows — so
+ * splitting on it alone leaves Windows-shaped inputs (`a\\b`) untouched
+ * when this module runs on a POSIX host (the common case in CI). Forward
+ * slashes are valid path separators on Windows too, so unconditionally
+ * collapsing both separator forms to `/` is safe everywhere.
+ */
 function toPosix(p: string): string {
-  return p.split(path.sep).join('/')
+  return p.replaceAll('\\', '/')
 }
 
 /**

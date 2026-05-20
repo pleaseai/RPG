@@ -20,6 +20,14 @@ describe('pathToModule', () => {
   it('drops everything past the first colon (entity suffix)', () => {
     expect(pathToModule('src/foo.ts:Bar')).toBe('src.foo')
   })
+
+  it('normalizes Windows-shaped paths regardless of host OS', () => {
+    // Even on POSIX where path.sep is '/', backslash-separated inputs must
+    // still be collapsed to forward slashes so module IDs are consistent.
+    expect(pathToModule('src\\foo\\bar.ts')).toBe('src.foo.bar')
+    expect(pathToModule('src\\foo\\__init__.py')).toBe('src.foo')
+    expect(pathToModule('src\\foo.ts:Bar')).toBe('src.foo')
+  })
 })
 
 describe('toVendorDepGraph', () => {
