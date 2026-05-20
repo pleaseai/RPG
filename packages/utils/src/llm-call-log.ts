@@ -197,8 +197,8 @@ export class LLMCallLog {
     )
     this._stats = this.db.prepare(
       `SELECT COUNT(*) AS total,
-              SUM(CASE WHEN error IS NULL THEN 1 ELSE 0 END) AS ok,
-              SUM(CASE WHEN error IS NOT NULL THEN 1 ELSE 0 END) AS failed
+              COALESCE(SUM(CASE WHEN error IS NULL THEN 1 ELSE 0 END), 0) AS ok,
+              COALESCE(SUM(CASE WHEN error IS NOT NULL THEN 1 ELSE 0 END), 0) AS failed
          FROM llm_call_log`,
     )
   }

@@ -103,6 +103,15 @@ describe('LLMCallLog', () => {
     expect(stats.totalCalls).toBe(0)
     log.close()
   })
+
+  it('returns zero counts when the table is empty (COALESCE on SUM)', async () => {
+    const log = new LLMCallLog({ dbPath: path.join(dir, 'log.db') })
+    const stats = log.stats()
+    expect(stats.totalCalls).toBe(0)
+    expect(stats.successfulCalls).toBe(0)
+    expect(stats.failedCalls).toBe(0)
+    log.close()
+  })
 })
 
 describe('LLMClient + LLMCallLog integration', () => {

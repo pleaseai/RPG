@@ -78,7 +78,7 @@ export class ClaudeCodeSessionManager implements SessionManager {
       ...(sessionId !== undefined && { sessionId }),
       stderr: (data) => { log.debug('[claude stderr]', data.toString().trim()) },
       spawnClaudeCodeProcess: (spawnOptions) => {
-        const { CLAUDECODE: _, CLAUDE_CODE_SSE_PORT: __, ...env } = spawnOptions.env
+        const { CLAUDECODE: _, CLAUDE_CODE_SSE_PORT: __, ...env } = spawnOptions.env ?? process.env
         return spawn(spawnOptions.command, spawnOptions.args, {
           cwd: spawnOptions.cwd,
           env,
@@ -116,7 +116,8 @@ export class ClaudeCodeSessionManager implements SessionManager {
     await mkdir(traceDir, { recursive: true })
     const ts = formatTimestamp(new Date())
     const safePurpose = purpose.replace(PURPOSE_UNSAFE, '_')
-    const dest = path.join(traceDir, `${ts}-${safePurpose}.jsonl`)
+    const shortId = sessionId.slice(0, 8)
+    const dest = path.join(traceDir, `${ts}-${safePurpose}-${shortId}.jsonl`).split(path.sep).join('/')
     try {
       await copyFile(source, dest)
       log.debug(`Captured Claude session trace: ${dest}`)
