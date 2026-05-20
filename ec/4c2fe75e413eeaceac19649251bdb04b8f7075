@@ -1,0 +1,57 @@
+packages/utils/src/git/read-head.ts
+  s_3993958389bf84::t_6d4fe976b5a2f5 1-90
+packages/cli/tests/hooks/resolver.test.ts
+  s_3993958389bf84::t_0eee0c1beed9af 54
+  s_3993958389bf84::t_45d21e0ad0ab4f 2
+  s_3993958389bf84::t_5ea7e350f960a6 56-57
+  s_3993958389bf84::t_430eec1cb88629 1,3-53,55,58-59,63-102
+  s_3993958389bf84::t_5ed5f35363163c 60-62
+packages/utils/tests/git/read-head.test.ts
+  s_3993958389bf84::t_9c1f96ba52be19 1-87
+packages/graph/tests/meta.test.ts
+  s_3993958389bf84::t_d0a14edd81c4b6 2-8
+  s_3993958389bf84::t_29b33a02166ac6 114-200
+packages/utils/package.json
+  s_3993958389bf84::t_f08606b9c94b5a 17
+packages/cli/src/hooks/installer.ts
+  s_3993958389bf84::t_be890e80baabcb 1-135
+packages/cli/tests/hooks/installer.test.ts
+  s_3993958389bf84::t_65e543a1d5fbf5 1-57,59-63,65-126
+  s_3993958389bf84::t_0eee0c1beed9af 58,64
+.please/docs/tracks/active/git-grounded-sync-20260520/plan.md
+  s_3993958389bf84::t_7e7b3821ecfac4 115-119,121-122
+packages/utils/src/git/diff.ts
+  s_3993958389bf84::t_0eee0c1beed9af 1,3
+  s_3993958389bf84::t_83b2065df6d7bb 2,4-155
+packages/graph/src/meta.ts
+  s_3993958389bf84::t_4caab8897ddb38 3,6-24,34-38,58-60,62-66,71,79-81,85,90-131
+packages/cli/src/hooks/resolver.ts
+  s_3993958389bf84::t_62fdf07b276db9 1-94
+packages/utils/src/git/name-status.ts
+  s_3993958389bf84::t_c18c5489ca55cf 1-61,64-69,72-80,82-90
+  s_3993958389bf84::t_30124b6d74a7f7 62-63,70-71,81
+packages/utils/src/git/index.ts
+  s_3993958389bf84::t_639fee8d1c44fc 1-16
+  s_3993958389bf84::t_0eee0c1beed9af 17-22
+packages/utils/tests/git/name-status.test.ts
+  s_3993958389bf84::t_fe9366f72e7f42 1-100
+packages/utils/tests/git/diff.test.ts
+  s_3993958389bf84::t_4e6164c34461e8 1-166,168,170-176
+  s_3993958389bf84::t_a0138361972ed2 167,169
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.11",
+  "base_commit_sha": "ec4c2fe75e413eeaceac19649251bdb04b8f7075",
+  "prompts": {},
+  "sessions": {
+    "s_3993958389bf84": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "92d03900-b544-4429-82e4-8ddd35b07ad4",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Minsu Lee <amond@amond.net>"
+    }
+  }
+}
