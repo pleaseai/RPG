@@ -99,13 +99,13 @@ describe('LLMClient', () => {
   describe('constructor', () => {
     it('should use default model for openai provider', () => {
       const client = new LLMClient({ provider: 'openai' })
-      expect(client.getModel()).toBe('gpt-4o')
+      expect(client.getModel()).toBe('gpt-5')
       expect(client.getProvider()).toBe('openai')
     })
 
     it('should use default model for anthropic provider', () => {
       const client = new LLMClient({ provider: 'anthropic' })
-      expect(client.getModel()).toBe('claude-sonnet-4.5')
+      expect(client.getModel()).toBe('claude-sonnet-4-6')
     })
 
     it('should use default model for google provider', () => {
@@ -115,7 +115,7 @@ describe('LLMClient', () => {
 
     it('should use default model for claude-code provider', () => {
       const client = new LLMClient({ provider: 'claude-code' })
-      expect(client.getModel()).toBe('sonnet')
+      expect(client.getModel()).toBe('haiku')
       expect(client.getProvider()).toBe('claude-code')
     })
 
@@ -137,7 +137,7 @@ describe('LLMClient', () => {
 
     it('should use default model for gemini-cli provider', () => {
       const client = new LLMClient({ provider: 'gemini-cli' })
-      expect(client.getModel()).toBe('gemini-2.5-flash')
+      expect(client.getModel()).toBe('gemini-3.1-flash-lite-preview')
       expect(client.getProvider()).toBe('gemini-cli')
     })
 
@@ -168,7 +168,7 @@ describe('LLMClient', () => {
       expect(result.usage.promptTokens).toBe(10)
       expect(result.usage.completionTokens).toBe(5)
       expect(result.usage.totalTokens).toBe(15)
-      expect(result.model).toBe('gpt-4o')
+      expect(result.model).toBe('gpt-5')
     })
 
     it('should pass system prompt to generateText', async () => {
@@ -218,7 +218,7 @@ describe('LLMClient', () => {
       const result = await client.complete('test prompt')
 
       expect(result.content).toBe('claude-code response')
-      expect(result.model).toBe('sonnet')
+      expect(result.model).toBe('haiku')
     })
 
     it('should pass claudeCodeSettings to createClaudeCode', async () => {
@@ -298,7 +298,7 @@ describe('LLMClient', () => {
       const result = await client.complete('test prompt')
 
       expect(result.content).toBe('gemini-cli response')
-      expect(result.model).toBe('gemini-2.5-flash')
+      expect(result.model).toBe('gemini-3.1-flash-lite-preview')
     })
 
     it('should pass geminiCliSettings to createGeminiProvider', async () => {
@@ -502,7 +502,7 @@ describe('LLMClient', () => {
       await expect(client.complete('prompt')).rejects.toThrow('API timeout')
       expect(onError).toHaveBeenCalledWith(
         expect.any(Error),
-        expect.objectContaining({ model: 'gpt-4o' }),
+        expect.objectContaining({ model: 'gpt-5' }),
       )
     })
   })
@@ -683,7 +683,7 @@ describe('LLMClient', () => {
       const result = await client.generate(memory)
 
       expect(result.content).toBe('multi-turn response')
-      expect(result.model).toBe('gpt-4o')
+      expect(result.model).toBe('gpt-5')
       expect(vi.mocked(generateText)).toHaveBeenCalledWith(
         expect.objectContaining({
           messages: expect.arrayContaining([
