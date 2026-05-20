@@ -1,0 +1,24 @@
+packages/utils/tests/llm-call-log.test.ts
+  s_1baad9cd0fbf78::t_d43553499f7c37 106-114
+packages/utils/src/llm-call-log.ts
+  s_1baad9cd0fbf78::t_d43553499f7c37 200-201
+packages/utils/src/session-manager/claude-code.ts
+  s_1baad9cd0fbf78::t_d43553499f7c37 119-120
+  s_1baad9cd0fbf78::t_8fc41f4cf52916 81
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10",
+  "base_commit_sha": "ef6ce98bdafa84e765eaffcb653e8b7ba0809b85",
+  "prompts": {},
+  "sessions": {
+    "s_1baad9cd0fbf78": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "324cf10e-8378-4bb5-8a9d-5d9404ecb3ec",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Minsu Lee <amond@amond.net>"
+    }
+  }
+}
