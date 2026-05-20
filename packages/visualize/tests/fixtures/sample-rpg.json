@@ -1,0 +1,68 @@
+{
+  "repo_name": "sample-repo",
+  "repo_info": "Tiny synthetic fixture used by @pleaseai/soop-visualize tests.",
+  "data_flow": [],
+  "excluded_files": [],
+  "repo_node_id": "sample-repo_L0",
+  "nodes": [
+    {
+      "id": "sample-repo_L0",
+      "name": "sample-repo",
+      "node_type": "repo",
+      "level": 0,
+      "meta": {
+        "type_name": "repo",
+        "path": ".",
+        "description": "Root",
+        "content": ""
+      }
+    },
+    {
+      "id": "src",
+      "name": "src",
+      "node_type": "functional_area",
+      "level": 1,
+      "meta": {
+        "type_name": "directory",
+        "path": "src",
+        "description": "Source directory",
+        "content": ""
+      }
+    },
+    {
+      "id": "src/util.ts",
+      "name": "util.ts",
+      "node_type": "feature",
+      "level": 2,
+      "meta": {
+        "type_name": "file",
+        "path": "src/util.ts",
+        "description": "Utility helpers",
+        "content": ""
+      }
+    },
+    {
+      "id": "src/util.ts:helper:1",
+      "name": "helper",
+      "node_type": "feature",
+      "level": 3,
+      "meta": {
+        "type_name": "function",
+        "path": "src/util.ts",
+        "description": "Top-level helper function",
+        "content": ""
+      }
+    }
+  ],
+  "edges": [
+    { "src": "sample-repo_L0", "dst": "src", "relation": "composes", "meta": null },
+    { "src": "src", "dst": "src/util.ts", "relation": "composes", "meta": null },
+    { "src": "src/util.ts", "dst": "src/util.ts:helper:1", "relation": "composes", "meta": null }
+  ],
+  "_dep_to_rpg_map": {
+    "src/util.ts": ["src/util.ts"],
+    "src/util.ts:helper": ["src/util.ts:helper:1"]
+  },
+  "dep_graph": null,
+  "dep_graph_file": "dep_graph.json"
+}

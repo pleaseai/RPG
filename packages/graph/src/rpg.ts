@@ -93,10 +93,24 @@ export type { PythonRPG as SerializedRPG } from './python-format'
 export class RepositoryPlanningGraph {
   private readonly context: ContextStore
   private readonly config: RPGConfig
+  private depGraphFile: string | null = null
 
   constructor(config: RPGConfig, context: ContextStore) {
     this.config = config
     this.context = context
+  }
+
+  /**
+   * Record the (relative) path of a sidecar dep_graph.json so that the
+   * next serialize() / save() embeds a `dep_graph_file` reference.
+   * Mirrors RPG-Kit `run_encode.py` lines 119-130.
+   */
+  setDepGraphFile(relativePath: string | null): void {
+    this.depGraphFile = relativePath
+  }
+
+  getDepGraphFile(): string | null {
+    return this.depGraphFile
   }
 
   /**
@@ -508,6 +522,7 @@ export class RepositoryPlanningGraph {
       edges: pythonEdges,
       _dep_to_rpg_map: {},
       dep_graph: null,
+      ...(this.depGraphFile ? { dep_graph_file: this.depGraphFile } : {}),
     }
   }
 
@@ -600,6 +615,10 @@ export class RepositoryPlanningGraph {
       catch (error) {
         log.warn(`Skipping invalid data_flow during deserialization: ${error instanceof Error ? error.message : String(error)}`)
       }
+    }
+
+    if (parsed.dep_graph_file) {
+      rpg.setDepGraphFile(parsed.dep_graph_file)
     }
 
     return rpg

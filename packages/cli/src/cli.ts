@@ -25,6 +25,8 @@ import { registerSyncCommand } from './commands/sync'
 
 const log = createLogger('CLI')
 
+const RPG_EXT_RE = /\.jsonl?$/i
+
 config({ path: ['.env.local', '.env'], quiet: true })
 
 program
@@ -60,6 +62,8 @@ program
   .option('--verbose', 'Show detailed progress')
   .option('--min-batch-tokens <tokens>', 'Minimum tokens per batch (default: 10000)')
   .option('--max-batch-tokens <tokens>', 'Maximum tokens per batch (default: 50000)')
+  .option('--no-dep-graph', 'Skip writing the vendor-schema dep_graph.json sidecar')
+  .option('--no-viz', 'Skip writing the HTML visualization next to the RPG output')
   .action(
     async (
       repoPath: string,
@@ -79,6 +83,8 @@ program
         verbose?: boolean
         minBatchTokens?: string
         maxBatchTokens?: string
+        depGraph?: boolean
+        viz?: boolean
       },
     ) => {
       if (options.verbose) {
@@ -117,6 +123,47 @@ program
       const outputPath = options.output ?? (options.format === 'json' ? 'rpg.json' : 'rpg.jsonl')
       await encoder.save(outputPath)
 
+      // Step 2: write dep_graph.json sidecar (matches RPG-Kit run_encode.py:98-140).
+      // Defensive try/catch so a serializer hiccup never blocks the main encode.
+      let depGraphPath: string | undefined
+      if (options.depGraph !== false) {
+        const candidate = path.join(path.dirname(outputPath), 'dep_graph.json')
+        try {
+          depGraphPath = await encoder.writeDepGraph(candidate, { rpgPath: outputPath })
+          // Re-save the RPG so the dep_graph_file field lands on disk.
+          await encoder.save(outputPath)
+        }
+        catch (err) {
+          depGraphPath = undefined
+          log.warn(`dep_graph step failed: ${err instanceof Error ? err.message : String(err)}`)
+        }
+      }
+
+      // Step 4: render the interactive HTML next to the RPG output.
+      let vizPath: string | undefined
+      if (options.viz !== false) {
+        try {
+          const { generateHtml, loadRpg } = await import('@pleaseai/soop-visualize')
+          // `loadRpg` expects the canonical JSON RPG payload. When the
+          // user picked JSONL, parse the in-memory RPG directly instead
+          // of re-reading the JSONL output, and merge the dep_graph from
+          // disk so the resulting view matches the saved artifacts.
+          const data = outputPath.endsWith('.jsonl')
+            ? JSON.parse(await result.rpg.toJSON())
+            : await loadRpg(outputPath, depGraphPath)
+          if (outputPath.endsWith('.jsonl') && depGraphPath) {
+            data.dep_graph = JSON.parse(await readFile(depGraphPath, 'utf-8'))
+          }
+          const html = await generateHtml(data)
+          vizPath = `${outputPath.replace(RPG_EXT_RE, '')}.html`
+          await writeFile(vizPath, html)
+        }
+        catch (err) {
+          vizPath = undefined
+          log.warn(`visualize step failed: ${err instanceof Error ? err.message : String(err)}`)
+        }
+      }
+
       // Generate embeddings for vector/hybrid search
       if (options.search === 'vector' || options.search === 'hybrid') {
         const embedSha = getHeadCommitSha(path.resolve(repoPath))
@@ -135,6 +182,10 @@ program
       console.log(`  Entities extracted: ${result.entitiesExtracted}`)
       console.log(`  Duration: ${result.duration}ms`)
       console.log(`  Output: ${outputPath}`)
+      if (depGraphPath)
+        console.log(`  Dep graph: ${depGraphPath}`)
+      if (vizPath)
+        console.log(`  Visualization: ${vizPath}`)
 
       if (options.verbose) {
         console.log('\nGraph statistics:')
