@@ -189,3 +189,41 @@ Pre-merge checklist:
 - soop's current `sync` already calls `getMergeBase` — but with `(defaultBranch, HEAD)`, not `(lastCommit, HEAD)`. This is fundamentally different semantics: "how far has my branch diverged from main" vs "is my baseline still on the current history line." Both have value; the new decision tree subsumes the latter and the former becomes a separate concern (the "needs evolve" check based on branch position).
 - `getDefaultBranch` falls back to literal `'main'` with a warning when nothing else resolves — fine for current code but worth noting that the new silent-fail philosophy avoids logging-by-default in helpers (caller decides).
 - The current `hooks.ts` skips installing if a hook file already exists, even if that file is empty or has only user content. The sentinel-block design improves this: user content is preserved and only the SOOP block is managed.
+
+## Outcomes & Retrospective
+
+### What Was Shipped
+
+Phase 1 + Phase 2 from the original 4-phase plan, delivered as PR #307:
+
+- `@pleaseai/soop-utils/git` — 5 silent-fail helpers + name-status parser, 30 tests
+- `RPGMetaSchema.git` field + `RepositoryPlanningGraph.{set,get,clear}GitMeta()` instance methods + legacy `github.commit` absorption with one-time deprecation warning, 20 tests
+- `decideSyncFromCommitDiff()` decision tree in `@pleaseai/soop-encoder/sync` with full 7-row matrix, merge-base divergence detection, 50-file safety net, `stagedOnly` mode, 13 tests
+- Sentinel-block hook installer + `resolveGitHooksDir()` covering plain repo / worktree / `--separate-git-dir` / `core.hooksPath`, 23 tests
+- `soop init --hooks` now installs pre-commit / post-merge / post-checkout via sentinel blocks with legacy snippet migration
+- `soop sync` advances `meta.git` after a successful sync and refreshes branch/timestamp drift on noop
+- `soop sync --staged-only` exposed as a documented public CLI flag
+- 6 end-to-end integration scenarios (rebase, amend, reset, linear, staged-only, over-limit, chained noop→linear→diverged)
+
+**Total: 93 new tests, all passing. No regressions.**
+
+### What Went Well
+
+- Vertical-slice task breakdown (T001-T012 in 5 waves with explicit dependencies) made parallel work obvious; foundational helpers landed in Wave 1 before consumers in Wave 2-5.
+- Decision to **coexist** rather than refactor the existing throwing `git-helpers` API preserved error-reporting semantics in `sync.ts` while giving a clean migration target.
+- Decision to put `gitMeta` in `RPGMetaSchema` (sidecar) rather than the 818-LOC graph class kept the change additive and low-blast-radius.
+- Per-test tmp git repos via `mktemp -d` + `git init` + scripted commits worked well — every decision-tree row got its own scenario without subprocess mocking.
+- Spec compliance review caught 6 gaps before merge (RPG instance methods missing, sync.ts not persisting nextGitMeta, shallow/timeout test cases) that the initial implementation pass missed.
+
+### What Could Improve
+
+- The "RPG instance methods (setGitMeta/clearGitMeta)" requirement was implicit in FR-2 spec text but easy to miss when implementation focused on the meta-sidecar layer first. Future specs that span both data layer and instance API should make that split explicit.
+- The CI batch options test (`packages/cli/tests/cli-batch-options.test.ts`) and several ast/encoder/mcp tests were already failing on `main` due to missing `@pleaseai/soop-ast` WASM bindings. Should be a separate cleanup track — currently masks regression signal.
+- macOS tmp directory symlinks (`/var → /private/var`) caught the worktree resolver test; used `realpathSync` for both sides as the fix. Worth a one-liner in the gotchas file.
+
+### Tech Debt Created
+
+- `sync.ts` still uses the legacy `canonicalCommit`-driven copy/evolve flow alongside the new `decideSyncFromCommitDiff()` diagnostic. The decision tree is informational + advances `meta.git`, but the copy/evolve decision itself is unchanged. A follow-up could replace the ad-hoc `needsEvolve` logic with `decision.mode === 'incremental'` once the encoder.evolve API accepts `changed`/`renames` directly.
+- Legacy `meta.github.commit` is still written on save during the transition window. Spec calls for dropping it after one minor; needs a follow-up release coordination decision.
+- `cli-init-sync.integration.test.ts:232` still asserts `graph.config.github.commit` — migration to `meta.git.headCommit` deferred to keep the diff focused.
+- Deferred items for `background-evolve-hooks` track: post-commit 2-phase, `mkdir` lock, env scrubbing, `SOOP_NO_GIT_META` opt-out, codegen branch lifecycle.
