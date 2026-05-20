@@ -1,0 +1,19 @@
+.please/config.yml
+  s_3993958389bf84::t_d2b041586da2f1 1
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.4.10",
+  "base_commit_sha": "8e1653797c94af5e2a0738671c6d480ab354104c",
+  "prompts": {},
+  "sessions": {
+    "s_3993958389bf84": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "92d03900-b544-4429-82e4-8ddd35b07ad4",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Minsu Lee <amond@amond.net>"
+    }
+  }
+}
