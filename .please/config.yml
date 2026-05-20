@@ -1,4 +1,4 @@
-schema_version: 2          # Config schema version (do not edit manually)
+schema_version: 4          # Config schema version (do not edit manually)
 
 language: en   # Output language (ko | en)
 

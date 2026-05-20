@@ -3,6 +3,7 @@ import type { Command } from 'commander'
 import { existsSync } from 'node:fs'
 import { copyFile, mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
+import { decideSyncFromCommitDiff } from '@pleaseai/soop-encoder/sync'
 import { decodeAllEmbeddings, parseEmbeddings, parseEmbeddingsJsonl } from '@pleaseai/soop-graph/embeddings'
 import { LocalVectorStore } from '@pleaseai/soop-store/local'
 import { getCurrentBranch, getDefaultBranch, getHeadCommitSha, getMergeBase } from '@pleaseai/soop-utils/git-helpers'
@@ -23,8 +24,12 @@ export function registerSyncCommand(program: Command): void {
     .command('sync')
     .description('Sync canonical RPG to local with incremental evolve')
     .option('--force', 'Force full rebuild (ignore local state)')
+    .option(
+      '--staged-only',
+      'Scope dirty-file detection to the git index (pre-commit hook semantic). Working-tree-but-not-staged changes are ignored.',
+    )
     .action(
-      async (options: { force?: boolean }) => {
+      async (options: { force?: boolean, stagedOnly?: boolean }) => {
         const repoPath = process.cwd()
         const repoDir = path.join(repoPath, '.soop')
         const canonicalPathJsonl = path.join(repoDir, 'graph.jsonl')
@@ -60,13 +65,17 @@ export function registerSyncCommand(program: Command): void {
 
         // 4. Read canonical graph + meta to get base commit
         const { RepositoryPlanningGraph } = await import('@pleaseai/soop-graph')
-        const { metaPathFor, deserializeMeta } = await import('@pleaseai/soop-graph/meta')
+        const { metaPathFor, deserializeMeta, absorbLegacyGithubCommit } = await import('@pleaseai/soop-graph/meta')
         const canonicalContent = await readFile(canonicalPath, 'utf-8')
         let canonicalCommit: string | undefined
+        let canonicalGitMeta: import('@pleaseai/soop-graph/meta').GitMeta | null = null
         try {
           const metaJson = await readFile(metaPathFor(canonicalPath), 'utf-8')
-          const meta = deserializeMeta(JSON.parse(metaJson))
-          canonicalCommit = meta.github?.commit
+          const rawMeta = deserializeMeta(JSON.parse(metaJson))
+          // Absorb legacy github.commit → git.headCommit during the transition window.
+          const meta = absorbLegacyGithubCommit(rawMeta)
+          canonicalCommit = meta.git?.headCommit ?? meta.github?.commit
+          canonicalGitMeta = meta.git ?? null
         }
         catch (metaReadError) {
           log.debug(`Could not read canonical meta file, falling back to graph: ${metaReadError instanceof Error ? metaReadError.message : String(metaReadError)}`)
@@ -76,6 +85,22 @@ export function registerSyncCommand(program: Command): void {
             : await RepositoryPlanningGraph.fromJSON(canonicalContent)
           canonicalCommit = canonicalRpg.getConfig().github?.commit
         }
+
+        // Diagnostic: log the decision-tree assessment against the recorded
+        // baseline. Doesn't drive the copy/evolve flow yet — informational
+        // for users debugging sync behavior and a contract test point for
+        // the pre-commit hook (which calls with --staged-only).
+        const decision = decideSyncFromCommitDiff(
+          repoPath,
+          canonicalGitMeta,
+          { forceFull: options.force, stagedOnly: options.stagedOnly },
+        )
+        log.info(
+          `Sync decision: mode=${decision.mode} reason=${decision.reason} `
+          + `last=${decision.lastCommit?.slice(0, 7) ?? 'none'} `
+          + `current=${decision.currentCommit?.slice(0, 7) ?? 'none'} `
+          + `changed=${decision.changed.length}`,
+        )
 
         // 5. Determine if we need to evolve
         let localState: LocalState | undefined
@@ -258,6 +283,62 @@ export function registerSyncCommand(program: Command): void {
           embeddingsLoaded,
         }
         await writeFile(localStatePath, JSON.stringify(newState, null, 2))
+
+        // 8. Persist the new git baseline to the LOCAL meta file so the
+        //    next sync's decision tree has a current `meta.git.headCommit`
+        //    to diff against. Best-effort — failure here is non-fatal since
+        //    the canonical graph is the source of truth and the diagnostic
+        //    has already been logged above.
+        if (decision.nextGitMeta) {
+          try {
+            const localMetaPath = metaPathFor(localGraphPath)
+            // Read current local meta (copied from canonical above) then
+            // overlay the fresh git baseline. If the file doesn't exist,
+            // synthesize a minimal meta object.
+            let existingMeta: Record<string, unknown> = {}
+            if (existsSync(localMetaPath)) {
+              try {
+                existingMeta = JSON.parse(await readFile(localMetaPath, 'utf-8')) as Record<string, unknown>
+              }
+              catch {
+                existingMeta = {}
+              }
+            }
+            const merged = {
+              ...existingMeta,
+              version: '2.0.0',
+              git: decision.nextGitMeta,
+            }
+            await writeFile(localMetaPath, JSON.stringify(merged, null, 2))
+            log.debug(`Advanced local meta.git to ${decision.nextGitMeta.headCommit.slice(0, 7)}`)
+          }
+          catch (metaWriteError) {
+            log.debug(
+              `Could not write local meta.git: ${metaWriteError instanceof Error ? metaWriteError.message : String(metaWriteError)}`,
+            )
+          }
+        }
+        else if (decision.metaDrift) {
+          // noop with branch/timestamp drift — refresh those fields without
+          // advancing headCommit. This keeps `soop status`-style readers in
+          // sync after `git branch -m` or same-SHA checkouts.
+          try {
+            const localMetaPath = metaPathFor(localGraphPath)
+            if (existsSync(localMetaPath)) {
+              const existing = JSON.parse(await readFile(localMetaPath, 'utf-8')) as { git?: Record<string, unknown> }
+              if (existing.git) {
+                const drifted = { ...existing, git: { ...existing.git, ...decision.metaDrift } }
+                await writeFile(localMetaPath, JSON.stringify(drifted, null, 2))
+                log.debug('Refreshed local meta.git branch/timestamp drift')
+              }
+            }
+          }
+          catch (driftError) {
+            log.debug(
+              `Could not refresh meta.git drift: ${driftError instanceof Error ? driftError.message : String(driftError)}`,
+            )
+          }
+        }
 
         log.success('Sync complete')
       },

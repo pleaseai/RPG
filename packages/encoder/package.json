@@ -29,6 +29,8 @@
     "./reorganization": "./src/reorganization/index.ts",
     "./reorganization/domain-discovery": "./src/reorganization/domain-discovery.ts",
     "./reorganization/hierarchy-builder": "./src/reorganization/hierarchy-builder.ts",
+    "./sync": "./src/sync/index.ts",
+    "./sync/commit-diff": "./src/sync/commit-diff.ts",
     "./type-inference-patterns": "./src/type-inference-patterns.ts",
     "./type-inferrer": "./src/type-inferrer.ts",
     "./embedding-manager": "./src/embedding-manager.ts"

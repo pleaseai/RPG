@@ -16,7 +16,7 @@ import {
   isFunctionalEdge,
   LegacyDataFlowEdgeSchema,
 } from './edge'
-import { serializeMeta } from './meta'
+import { absorbLegacyGithubCommit, type GitMeta, serializeMeta } from './meta'
 import {
   createHighLevelNode,
   createLowLevelNode,
@@ -527,7 +527,29 @@ export class RepositoryPlanningGraph {
   }
 
   serializeMeta(graphPath?: string): RPGMeta {
-    return serializeMeta(this.config, graphPath)
+    return serializeMeta(this.config, graphPath, this.gitMeta ?? undefined)
+  }
+
+  // ==================== Git Meta ====================
+
+  private gitMeta: GitMeta | null = null
+
+  /**
+   * Record the git baseline (commit / branch / timestamp) the graph was
+   * last synced against. Emitted as `meta.git` on the next save.
+   */
+  setGitMeta(meta: GitMeta | null): void {
+    this.gitMeta = meta
+  }
+
+  /** Clear the git baseline. Equivalent to `setGitMeta(null)`. */
+  clearGitMeta(): void {
+    this.gitMeta = null
+  }
+
+  /** Read the current git baseline, or `null` when none is set. */
+  getGitMeta(): GitMeta | null {
+    return this.gitMeta
   }
 
   async toJSON(): Promise<string> {
@@ -716,11 +738,15 @@ export class RepositoryPlanningGraph {
     const rpg = await RepositoryPlanningGraph.fromJSON(graphJson, context)
     if (metaJson) {
       const { deserializeMeta } = await import('./meta')
-      const meta = deserializeMeta(JSON.parse(metaJson), graphPath)
+      const rawMeta = deserializeMeta(JSON.parse(metaJson), graphPath)
+      // Absorb legacy github.commit → git.headCommit when no git block exists
+      const meta = absorbLegacyGithubCommit(rawMeta)
       rpg.updateConfig({
         rootPath: meta.rootPath,
         github: meta.github,
       })
+      if (meta.git)
+        rpg.setGitMeta(meta.git)
     }
     return rpg
   }
@@ -742,11 +768,15 @@ export class RepositoryPlanningGraph {
     const rpg = await RepositoryPlanningGraph.fromJSONL(graphJsonl, context)
     if (metaJson) {
       const { deserializeMeta } = await import('./meta')
-      const meta = deserializeMeta(JSON.parse(metaJson), graphPath)
+      const rawMeta = deserializeMeta(JSON.parse(metaJson), graphPath)
+      // Absorb legacy github.commit → git.headCommit when no git block exists
+      const meta = absorbLegacyGithubCommit(rawMeta)
       rpg.updateConfig({
         rootPath: meta.rootPath,
         github: meta.github,
       })
+      if (meta.git)
+        rpg.setGitMeta(meta.git)
     }
     return rpg
   }

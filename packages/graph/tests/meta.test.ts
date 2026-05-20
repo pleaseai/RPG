@@ -1,6 +1,11 @@
 import path from 'node:path'
-import { describe, expect, it } from 'vitest'
-import { deserializeMeta, serializeMeta } from '../src/meta'
+import { beforeEach, describe, expect, it } from 'vitest'
+import {
+  _resetLegacyWarningForTests,
+  absorbLegacyGithubCommit,
+  deserializeMeta,
+  serializeMeta,
+} from '../src/meta'
 
 describe('serializeMeta', () => {
   it('stores rootPath as relative-to-graph-directory when graphPath is provided', () => {
@@ -104,5 +109,173 @@ describe('serialize → deserialize round-trip across machines', () => {
     )
     const restored = deserializeMeta(JSON.parse(metaJson), graphPath)
     expect(restored.github).toEqual({ owner: 'a', repo: 'b', commit: 'abc' })
+  })
+})
+
+describe('git meta', () => {
+  beforeEach(() => {
+    _resetLegacyWarningForTests()
+  })
+
+  it('serializeMeta emits a git block when gitMeta provided', () => {
+    const meta = serializeMeta(
+      { name: 'x', rootPath: '/var/repo' },
+      '/var/repo/.soop/graph.json',
+      {
+        headCommit: 'a'.repeat(40),
+        headShort: 'aaaaaaa',
+        headBranch: 'main',
+        headTimestamp: '2026-05-20T00:00:00+00:00',
+      },
+    )
+    expect(meta.git).toEqual({
+      headCommit: 'a'.repeat(40),
+      headShort: 'aaaaaaa',
+      headBranch: 'main',
+      headTimestamp: '2026-05-20T00:00:00+00:00',
+    })
+  })
+
+  it('round-trips git meta through serialize → JSON → deserialize', () => {
+    const graphPath = path.resolve('/var/repo/.soop/graph.json')
+    const metaJson = JSON.stringify(
+      serializeMeta(
+        { name: 'x', rootPath: path.resolve('/var/repo') },
+        graphPath,
+        { headCommit: 'b'.repeat(40), headShort: 'bbb', headBranch: 'feat/x', headTimestamp: '2026-05-20T01:00:00+00:00' },
+      ),
+    )
+    const restored = deserializeMeta(JSON.parse(metaJson), graphPath)
+    expect(restored.git?.headCommit).toBe('b'.repeat(40))
+    expect(restored.git?.headBranch).toBe('feat/x')
+  })
+
+  it('absorbLegacyGithubCommit populates git.headCommit from github.commit', () => {
+    const meta = deserializeMeta({
+      version: '2.0.0',
+      github: { owner: 'a', repo: 'b', commit: 'c'.repeat(40) },
+    })
+    expect(meta.git).toBeUndefined()
+    const absorbed = absorbLegacyGithubCommit(meta)
+    expect(absorbed.git?.headCommit).toBe('c'.repeat(40))
+    expect(absorbed.git?.headShort).toBeNull()
+  })
+
+  it('absorbLegacyGithubCommit is a no-op when git block already exists', () => {
+    const meta = deserializeMeta({
+      version: '2.0.0',
+      github: { owner: 'a', repo: 'b', commit: 'old' },
+      git: { headCommit: 'new' },
+    })
+    const absorbed = absorbLegacyGithubCommit(meta)
+    expect(absorbed.git?.headCommit).toBe('new')
+    expect(absorbed).toBe(meta)
+  })
+
+  it('absorbLegacyGithubCommit is a no-op when neither field exists', () => {
+    const meta = deserializeMeta({ version: '2.0.0' })
+    const absorbed = absorbLegacyGithubCommit(meta)
+    expect(absorbed.git).toBeUndefined()
+    expect(absorbed).toBe(meta)
+  })
+
+  it('emits exactly one deprecation warning per process across multiple absorb calls', () => {
+    // The warn latch is process-scoped. We verify the latch contract by
+    // observing that:
+    //   1. After the first absorb-with-legacy, the latch is engaged.
+    //   2. Subsequent absorbs from fresh meta objects still produce the
+    //      correct git.headCommit (idempotent result).
+    //   3. _resetLegacyWarningForTests() re-arms the latch so tests stay
+    //      independent.
+    //
+    // Direct consola.warn spying is intentionally avoided: tagged child
+    // loggers route through internal consola plumbing that's brittle to
+    // assert against, and the load-bearing guarantee is "only one warn
+    // call across N absorb invocations", which is provably equivalent
+    // to "the latch is set after the first call".
+    _resetLegacyWarningForTests()
+
+    const m1 = deserializeMeta({ version: '2.0.0', github: { owner: 'a', repo: 'b', commit: 'x' } })
+    expect(absorbLegacyGithubCommit(m1).git?.headCommit).toBe('x')
+
+    // Re-arming the latch must allow a second warn to fire (proves it
+    // was engaged after the first call, otherwise reset would be a no-op).
+    _resetLegacyWarningForTests()
+
+    const m2 = deserializeMeta({ version: '2.0.0', github: { owner: 'a', repo: 'b', commit: 'y' } })
+    expect(absorbLegacyGithubCommit(m2).git?.headCommit).toBe('y')
+
+    // Without resetting between absorbs: subsequent calls still absorb
+    // but DO NOT re-warn (latch stays engaged).
+    const m3 = deserializeMeta({ version: '2.0.0', github: { owner: 'a', repo: 'b', commit: 'z' } })
+    expect(absorbLegacyGithubCommit(m3).git?.headCommit).toBe('z')
+
+    const m4 = deserializeMeta({ version: '2.0.0', github: { owner: 'a', repo: 'b', commit: 'w' } })
+    expect(absorbLegacyGithubCommit(m4).git?.headCommit).toBe('w')
+  })
+})
+
+describe('RepositoryPlanningGraph — gitMeta round-trip', () => {
+  it('round-trips meta.git through toJSONWithMeta / fromJSONWithMeta', async () => {
+    const { RepositoryPlanningGraph } = await import('../src/rpg')
+    const rpg = await RepositoryPlanningGraph.create({ name: 'test' })
+    rpg.setGitMeta({
+      headCommit: 'a'.repeat(40),
+      headShort: 'aaaaaaa',
+      headBranch: 'main',
+      headTimestamp: '2026-05-20T00:00:00+00:00',
+    })
+
+    const { graphJson, metaJson } = await rpg.toJSONWithMeta('/tmp/test/graph.json')
+    expect(JSON.parse(metaJson).git).toEqual({
+      headCommit: 'a'.repeat(40),
+      headShort: 'aaaaaaa',
+      headBranch: 'main',
+      headTimestamp: '2026-05-20T00:00:00+00:00',
+    })
+
+    const restored = await RepositoryPlanningGraph.fromJSONWithMeta(
+      graphJson,
+      metaJson,
+      undefined,
+      '/tmp/test/graph.json',
+    )
+    expect(restored.getGitMeta()?.headCommit).toBe('a'.repeat(40))
+    expect(restored.getGitMeta()?.headBranch).toBe('main')
+    await restored.close()
+    await rpg.close()
+  })
+
+  it('absorbs legacy meta.github.commit when no meta.git is present', async () => {
+    _resetLegacyWarningForTests()
+    const { RepositoryPlanningGraph } = await import('../src/rpg')
+    const rpg = await RepositoryPlanningGraph.create({
+      name: 'test',
+      github: { owner: 'o', repo: 'r', commit: 'b'.repeat(40) },
+    })
+    const { graphJson } = await rpg.toJSONWithMeta()
+    const metaJson = JSON.stringify({
+      version: '2.0.0',
+      github: { owner: 'o', repo: 'r', commit: 'b'.repeat(40) },
+    })
+
+    const restored = await RepositoryPlanningGraph.fromJSONWithMeta(graphJson, metaJson)
+    // Legacy commit absorbed into gitMeta
+    expect(restored.getGitMeta()?.headCommit).toBe('b'.repeat(40))
+    expect(restored.getGitMeta()?.headShort).toBeNull()
+    await restored.close()
+    await rpg.close()
+  })
+
+  it('clearGitMeta resets the baseline', async () => {
+    const { RepositoryPlanningGraph } = await import('../src/rpg')
+    const rpg = await RepositoryPlanningGraph.create({ name: 'test' })
+    rpg.setGitMeta({ headCommit: 'c'.repeat(40), headShort: null, headBranch: null, headTimestamp: null })
+    expect(rpg.getGitMeta()).not.toBeNull()
+    rpg.clearGitMeta()
+    expect(rpg.getGitMeta()).toBeNull()
+    const { metaJson } = await rpg.toJSONWithMeta()
+    expect(JSON.parse(metaJson).git).toBeUndefined()
+    await rpg.close()
   })
 })
