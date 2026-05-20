@@ -14,6 +14,7 @@
     "./memory": "./src/memory.ts",
     "./git-path": "./src/git-path.ts",
     "./git-helpers": "./src/git-helpers.ts",
+    "./git": "./src/git/index.ts",
     "./logger": "./src/logger.ts"
   },
   "dependencies": {
