@@ -284,6 +284,62 @@ export function registerSyncCommand(program: Command): void {
         }
         await writeFile(localStatePath, JSON.stringify(newState, null, 2))
 
+        // 8. Persist the new git baseline to the LOCAL meta file so the
+        //    next sync's decision tree has a current `meta.git.headCommit`
+        //    to diff against. Best-effort — failure here is non-fatal since
+        //    the canonical graph is the source of truth and the diagnostic
+        //    has already been logged above.
+        if (decision.nextGitMeta) {
+          try {
+            const localMetaPath = metaPathFor(localGraphPath)
+            // Read current local meta (copied from canonical above) then
+            // overlay the fresh git baseline. If the file doesn't exist,
+            // synthesize a minimal meta object.
+            let existingMeta: Record<string, unknown> = {}
+            if (existsSync(localMetaPath)) {
+              try {
+                existingMeta = JSON.parse(await readFile(localMetaPath, 'utf-8')) as Record<string, unknown>
+              }
+              catch {
+                existingMeta = {}
+              }
+            }
+            const merged = {
+              version: '2.0.0',
+              ...existingMeta,
+              git: decision.nextGitMeta,
+            }
+            await writeFile(localMetaPath, JSON.stringify(merged, null, 2))
+            log.debug(`Advanced local meta.git to ${decision.nextGitMeta.headCommit.slice(0, 7)}`)
+          }
+          catch (metaWriteError) {
+            log.debug(
+              `Could not write local meta.git: ${metaWriteError instanceof Error ? metaWriteError.message : String(metaWriteError)}`,
+            )
+          }
+        }
+        else if (decision.metaDrift) {
+          // noop with branch/timestamp drift — refresh those fields without
+          // advancing headCommit. This keeps `soop status`-style readers in
+          // sync after `git branch -m` or same-SHA checkouts.
+          try {
+            const localMetaPath = metaPathFor(localGraphPath)
+            if (existsSync(localMetaPath)) {
+              const existing = JSON.parse(await readFile(localMetaPath, 'utf-8')) as { git?: Record<string, unknown> }
+              if (existing.git) {
+                const drifted = { ...existing, git: { ...existing.git, ...decision.metaDrift } }
+                await writeFile(localMetaPath, JSON.stringify(drifted, null, 2))
+                log.debug('Refreshed local meta.git branch/timestamp drift')
+              }
+            }
+          }
+          catch (driftError) {
+            log.debug(
+              `Could not refresh meta.git drift: ${driftError instanceof Error ? driftError.message : String(driftError)}`,
+            )
+          }
+        }
+
         log.success('Sync complete')
       },
     )

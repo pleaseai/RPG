@@ -4,7 +4,7 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { resolveGitBinary } from '@pleaseai/soop-utils/git-path'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { readHead } from '../../src/git/read-head'
+import { readHead, runGitReadonly } from '../../src/git/read-head'
 
 function git(cwd: string, args: string[]): string {
   return execFileSync(resolveGitBinary(), args, {
@@ -83,5 +83,35 @@ describe('readHead', () => {
     const filePath = path.join(dir, 'foo.txt')
     execFileSync('touch', [filePath])
     expect(readHead(filePath)).toBeNull()
+  })
+
+  it('runGitReadonly returns null when timeout fires before git completes', () => {
+    execFileSync(resolveGitBinary(), ['commit', '--allow-empty', '-m', 'init'], { cwd: dir })
+    // 1ms is well below the time for any subprocess spawn → timeout fires,
+    // helper returns null instead of throwing.
+    const result = runGitReadonly(['rev-parse', 'HEAD'], dir, 1)
+    expect(result).toBeNull()
+  })
+
+  it('returns HEAD info for a shallow clone (depth=1)', () => {
+    // Source repo with two commits
+    execFileSync(resolveGitBinary(), ['commit', '--allow-empty', '-m', 'c1'], { cwd: dir })
+    execFileSync(resolveGitBinary(), ['commit', '--allow-empty', '-m', 'c2'], { cwd: dir })
+
+    const shallowDir = mkdtempSync(path.join(tmpdir(), 'soop-shallow-'))
+    try {
+      // file:// protocol allows cloning a local repo; --depth=1 makes it shallow
+      execFileSync(
+        resolveGitBinary(),
+        ['clone', '--depth=1', `file://${dir}`, shallowDir],
+        { encoding: 'utf-8' },
+      )
+      const head = readHead(shallowDir)
+      expect(head).not.toBeNull()
+      expect(head!.headCommit).toMatch(/^[0-9a-f]{40}$/)
+    }
+    finally {
+      rmSync(shallowDir, { recursive: true, force: true })
+    }
   })
 })

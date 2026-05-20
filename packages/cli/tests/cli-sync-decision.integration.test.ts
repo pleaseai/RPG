@@ -83,6 +83,29 @@ describe('sync decision — end-to-end scenarios', () => {
     expect(d.reason).toMatch(/^over_limit_\d+>\d+$/)
   })
 
+  it('chains noop → linear → diverged in a single repo lifecycle', () => {
+    const c1 = commit(dir, 'c1')
+    // 1) noop — last == HEAD & clean
+    let d = decideSyncFromCommitDiff(dir, { headCommit: c1 })
+    expect(d.mode).toBe('noop')
+    expect(d.reason).toBe('head_unchanged_clean')
+
+    // 2) linear — commit one file, last still c1
+    writeFileSync(path.join(dir, 'a.ts'), 'a')
+    g(dir, ['add', '.'])
+    const c2 = commit(dir, 'c2')
+    d = decideSyncFromCommitDiff(dir, { headCommit: c1 })
+    expect(d.mode).toBe('incremental')
+    expect(d.reason).toBe('linear')
+    expect(d.changed).toContain('a.ts')
+
+    // 3) diverged — reset --hard back to c1, now c2 SHA isn't on history
+    execFileSync(resolveGitBinary(), ['reset', '--hard', c1], { cwd: dir })
+    d = decideSyncFromCommitDiff(dir, { headCommit: c2 })
+    expect(d.mode).toBe('full')
+    expect(d.reason).toBe('diverged')
+  })
+
   it('linear advance picks up multiple intermediate commits', () => {
     const c1 = commit(dir, 'c1')
     writeFileSync(path.join(dir, 'a.ts'), 'a')
