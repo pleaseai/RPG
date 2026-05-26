@@ -1,13 +1,14 @@
 /**
- * Minimal type declarations for web-tree-sitter@0.24.x
+ * Backend-agnostic tree-sitter type declarations for soop-namu.
  *
- * web-tree-sitter@0.24.x uses `export = Parser` (CJS namespace style).
- * The monorepo root may have a different version visible to the TypeScript
- * language server, so we declare the required types locally.
+ * These describe the `NamuNode` / `NamuParser` / `NamuTree` surface consumed by
+ * `@pleaseai/soop-ast` and `@pleaseai/soop-encoder`. The active backend
+ * (@kreuzberg/tree-sitter-language-pack, native NAPI) is bridged to this surface
+ * by the adapter, so consumers stay decoupled from the underlying engine.
  */
 
 /**
- * Languages supported by the WASM tree-sitter grammars in soop-namu.
+ * Languages with tuned extraction support in soop-namu / soop-ast.
  */
 export type SupportedLanguage = 'typescript' | 'javascript' | 'python' | 'rust' | 'go' | 'java' | 'csharp' | 'c' | 'cpp' | 'ruby' | 'kotlin'
 export interface NamuPoint {
