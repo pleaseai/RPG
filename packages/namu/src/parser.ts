@@ -20,6 +20,7 @@ interface NativeLanguageHandle extends NamuLanguage {
 }
 
 let initialized = false
+let initPromise: Promise<void> | undefined
 
 /**
  * Environment override for the native pack's parser cache directory.
@@ -38,16 +39,23 @@ const CACHE_DIR_ENV = 'SOOP_TS_CACHE_DIR'
 export async function initNamu(): Promise<void> {
   if (initialized)
     return
-  const cacheDir = process.env[CACHE_DIR_ENV]
-  if (cacheDir) {
-    try {
-      configure({ cacheDir })
-    }
-    catch {
-      // Non-fatal: fall back to the pack's default cache location.
-    }
+  // Guard with a shared promise so concurrent callers (e.g. Promise.all over
+  // multiple languages) apply the cache-dir config exactly once.
+  if (!initPromise) {
+    initPromise = (async () => {
+      const cacheDir = process.env[CACHE_DIR_ENV]
+      if (cacheDir) {
+        try {
+          configure({ cacheDir })
+        }
+        catch {
+          // Non-fatal: fall back to the pack's default cache location.
+        }
+      }
+      initialized = true
+    })()
   }
-  initialized = true
+  await initPromise
 }
 
 /**

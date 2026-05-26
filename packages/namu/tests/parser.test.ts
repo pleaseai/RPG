@@ -164,6 +164,20 @@ describe('namu: native tree-sitter backend', () => {
       expect(second.nextSibling).toBeNull()
     })
 
+    it('computes correct siblings for nodes reached via namedChild (full-list index)', async () => {
+      // Array elements are named children interspersed with unnamed tokens
+      // ('[', ',', ']'), so a named child's named-list index differs from its
+      // full-children index — exercises the namedChildren index correctness.
+      const root = await parse('typescript', 'const a = [x, y]')
+      const arr = root.namedChild(0)!.namedChild(0)!.childForFieldName('value')!
+      expect(arr.type).toBe('array')
+      const second = arr.namedChild(1)! // `y`
+      expect(second.text).toBe('y')
+      // Immediate previous sibling in the FULL child list is the comma, not `x`.
+      expect(second.previousSibling!.type).toBe(',')
+      expect(second.nextSibling!.type).toBe(']')
+    })
+
     it('exposes a leading comment as a previousSibling', async () => {
       const root = await parse('typescript', '// doc\nfunction f() {}')
       const fn = root.namedChild(1)!

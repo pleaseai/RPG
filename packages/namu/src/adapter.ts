@@ -125,14 +125,12 @@ class NamuNodeAdapter implements NamuNode {
 
   get namedChildren(): NamuNode[] {
     if (!this._namedChildren) {
-      const out: NamuNodeAdapter[] = []
-      const count = this.namedChildCount
-      for (let i = 0; i < count; i++) {
-        const c = this.native.namedChild(i)
-        if (c)
-          out.push(new NamuNodeAdapter(c, this.bytes, this, i))
-      }
-      this._namedChildren = out
+      // Reuse the full-children adapters (filtered to named nodes) rather than
+      // building a separate list indexed by named position. Each adapter must
+      // carry its index within the *full* child list so previousSibling /
+      // nextSibling — which traverse all children — resolve correctly; a
+      // named-list index would corrupt them whenever unnamed tokens are interspersed.
+      this._namedChildren = (this.children as NamuNodeAdapter[]).filter(c => c.isNamed)
     }
     return this._namedChildren
   }
