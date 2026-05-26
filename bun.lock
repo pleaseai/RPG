@@ -111,6 +111,7 @@
       "name": "@pleaseai/soop-namu",
       "version": "0.1.6",
       "dependencies": {
+        "@kreuzberg/tree-sitter-language-pack": "1.9.0-rc.10",
         "web-tree-sitter": "^0.26.0",
       },
       "devDependencies": {
@@ -467,6 +468,8 @@
     "@js-sdsl/ordered-map": ["@js-sdsl/ordered-map@4.4.2", "", {}, "sha512-iUKgm52T8HOE/makSxjqoWhe95ZJA1/G1sYsGev2JDKUSS14KAgg1LHb+Ba+IPow0xflbnSkOsZcO08C7w1gYw=="],
 
     "@keyv/serialize": ["@keyv/serialize@1.1.1", "", {}, "sha512-dXn3FZhPv0US+7dtJsIi2R+c7qWYiReoEh5zUntWCf4oSpMNib8FDhSoed6m3QyZdx5hK7iLFkYk3rNxwt8vTA=="],
+
+    "@kreuzberg/tree-sitter-language-pack": ["@kreuzberg/tree-sitter-language-pack@1.9.0-rc.10", "", {}, "sha512-d+4hWOO075rQmtqmY2ka8CQ8bcgd8iDla+ybZ3ilkrTOeiKifxH51S2zkxSuOdjADaEf8Pz9Wwi+yd3xoDdBVg=="],
 
     "@kwsites/file-exists": ["@kwsites/file-exists@1.1.1", "", { "dependencies": { "debug": "^4.1.1" } }, "sha512-m9/5YGR18lIwxSFDwfE3oA7bWuq9kdau6ugN4H2rJeyhFQZcG9AgSHkQtSD15a8WvTgfz9aikZMrKPHvbpqFiw=="],
 

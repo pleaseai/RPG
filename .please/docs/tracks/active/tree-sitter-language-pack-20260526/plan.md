@@ -72,7 +72,7 @@ encoder/*-extractor.ts ─┤ consume NamuNode interface (UNCHANGED)
 
 ## Tasks
 
-- [ ] T001 Spike: add `@kreuzberg/tree-sitter-language-pack@1.9.0-rc.10` to `packages/namu`, validate the NAPI `.node` loads under Bun 1.3.14 on darwin-x64 (local) and confirm linux-x64-gnu resolution; smoke-parse a TS snippet via `getParser('typescript')` and read `rootNode` (file: packages/namu/package.json) — **SC-2**, gate before T002
+- [x] T001 Spike: add `@kreuzberg/tree-sitter-language-pack@1.9.0-rc.10` to `packages/namu`, validate the NAPI `.node` loads under Bun 1.3.14 on darwin-x64 (local) and confirm linux-x64-gnu resolution; smoke-parse a TS snippet via `getParser('typescript')` and read `rootNode` (file: packages/namu/package.json) — **SC-2**, gate before T002
 - [ ] T002 Implement `JsNode → NamuNode` adapter and rewrite the namu backend on native `getParser()`/`getLanguage()` (map `kind()→.type`, `slice(startByte,endByte)→.text`, `childByFieldName→childForFieldName`, `startPosition()/endPosition()`, `parent()`, `previous/nextSibling`, `isError/isNamed/isMissing`, `toSexp()→toString()`); add cache-dir `configure()` + lazy `init()`; map `SupportedLanguage` → pack language names; keep `isAvailable()`/`createParser()`/`getLanguage()` exports (file: packages/namu/src/parser.ts) (depends on T001) — **SC-1, SC-5**
 - [ ] T003 [P] Rewrite `packages/namu/tests/parser.test.ts` for the native backend: drop `resolveWasmPath`/WASM-file-existence assertions; add adapter unit tests (positions, `.text`, field lookups, siblings, error flags) and parse smoke tests for the 11 languages (file: packages/namu/tests/parser.test.ts) (depends on T002)
 - [ ] T004 Validate behavior preservation: run the full `packages/ast` + `packages/encoder` suites against the native backend and fix any adapter drift until `ParseResult`/`CodeEntity` output for the 11 languages is equivalent (file: packages/namu/src/parser.ts) (depends on T002) — **SC-1**
@@ -116,7 +116,9 @@ T001 ─▶ T002 ─┬─▶ T003 [P]
 
 ## Progress
 
-_(updated by /please:implement)_
+- **2026-05-26 — T001 (spike) complete.** Validated `@kreuzberg/tree-sitter-language-pack@1.9.0-rc.10`
+  loads under Bun 1.3.14 on darwin-x64 and parses TypeScript. SC-2 (darwin-x64) confirmed;
+  linux-x64-gnu binary bundled for CI.
 
 ## Decision Log
 
@@ -130,4 +132,12 @@ _(updated by /please:implement)_
 
 ## Surprises & Discoveries
 
-_(updated during implementation)_
+- **Native `Node` has no `previousSibling`/`nextSibling`** — the adapter must compute
+  siblings from `parent()`'s child list + index. `parser.ts` relies on `previousSibling`
+  for doc-comment extraction.
+- **No `.text` accessor** — adapter slices `source.slice(startByte(), endByte())`, so the
+  source string must be threaded into every adapted node.
+- **Binaries are bundled inside the main package** (`ts-pack-core-node.<triple>.node`),
+  not split into per-platform optional-dep packages — simplifies resolution.
+- **`languageCount()` is 0 until a language is used** (lazy registration); `hasLanguage()`
+  and parsing work regardless.
