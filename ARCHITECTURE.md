@@ -27,14 +27,14 @@ The core data structure is `G = (V, E)` where nodes carry `{ feature, metadata }
 
 ```
 packages/
-├── ast/         Layer 0  WASM tree-sitter parser (multi-language AST extraction)
+├── ast/         Layer 0  tree-sitter parser (multi-language AST extraction, native via namu)
 ├── utils/       Layer 0  Git helpers, LLM client, logger, memory utilities
 ├── store/       Layer 0  Storage interfaces & implementations
 ├── graph/       Layer 1  RPG data structures (Node, Edge, RPG class)
 ├── encoder/     Layer 2  Code → RPG extraction pipeline
 ├── tools/       Layer 2  Agentic graph navigation (SearchNode, FetchNode, ExploreRPG)
 ├── zerorepo/    Layer 2  Intent → Code generation pipeline
-├── namu/        Layer 2  WASM asset management for tree-sitter grammars
+├── namu/        Layer 2  native tree-sitter backend (@kreuzberg/tree-sitter-language-pack) + NamuNode adapter
 ├── mcp/         Layer 3  MCP server exposing tools as JSON-RPC
 ├── cli/         Layer 4  Commander-based CLI entry point
 ├── soop/        Publish  Umbrella package — bundles everything for npm
@@ -153,7 +153,7 @@ Source Code
 
 The project uses **tsdown** (Rolldown-based) for bundling:
 
-1. **Library bundle** → `packages/soop/dist/src/index.mjs` — all `@pleaseai/*` workspace packages bundled inline; native deps (`better-sqlite3`, `web-tree-sitter`, `@lancedb/lancedb`) remain external
+1. **Library bundle** → `packages/soop/dist/src/index.mjs` — all `@pleaseai/*` workspace packages bundled inline; native deps (`better-sqlite3`, `@kreuzberg/tree-sitter-language-pack`, `@lancedb/lancedb`) remain external
 2. **CLI binary** → `packages/soop/dist/packages/cli/src/cli.mjs` — standalone CLI with all pure-JS deps bundled
 3. **Native binary** → `packages/soop-native/` — Bun-compiled native binary distribution
 
