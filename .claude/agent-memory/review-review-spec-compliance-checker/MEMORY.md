@@ -1,0 +1,1 @@
+- [Track Spec Format](track-spec-format.md) — how .please track specs/plans encode SC-N requirements and task→SC traceability
