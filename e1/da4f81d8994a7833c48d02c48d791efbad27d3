@@ -1,0 +1,24 @@
+packages/namu/tests/parser.test.ts
+  s_d31a7b2d3a9dde::t_07e2fa42ff455a 167-180
+packages/namu/src/parser.ts
+  s_d31a7b2d3a9dde::t_e81f7d29583159 42-56,58
+  s_d31a7b2d3a9dde::t_1627272050380a 23
+packages/namu/src/adapter.ts
+  s_d31a7b2d3a9dde::t_23e8f428843d70 128-133
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.1",
+  "base_commit_sha": "e1da4f81d8994a7833c48d02c48d791efbad27d3",
+  "prompts": {},
+  "sessions": {
+    "s_d31a7b2d3a9dde": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "dbe16ef9-853e-40c5-87fc-05fdbbca1ff9",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Minsu Lee <amond@amond.net>"
+    }
+  }
+}
