@@ -1,0 +1,27 @@
+.claude/agent-memory/review-review-cubic-reviewer/cubic-false-positives.md
+  s_d31a7b2d3a9dde::t_09a22dc18683b0 14-21
+.claude/agent-memory/review-review-spec-compliance-checker/track-spec-format.md
+  s_d31a7b2d3a9dde::t_a5fafc2628d23d 1-15
+.claude/agent-memory/review-review-code-reviewer/MEMORY.md
+  s_d31a7b2d3a9dde::t_7a188eaa8e4473 18-20
+.claude/agent-memory/review-review-code-reviewer/project_namu-native-backend.md
+  s_d31a7b2d3a9dde::t_c6197aaf89964c 1-17
+.claude/agent-memory/review-review-spec-compliance-checker/MEMORY.md
+  s_d31a7b2d3a9dde::t_7fe6f5ac3d202e 1
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.1",
+  "base_commit_sha": "b44026eb52f29f1f83b50549d6d8542180923159",
+  "prompts": {},
+  "sessions": {
+    "s_d31a7b2d3a9dde": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "dbe16ef9-853e-40c5-87fc-05fdbbca1ff9",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Minsu Lee <amond@amond.net>"
+    }
+  }
+}
