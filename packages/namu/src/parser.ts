@@ -21,6 +21,7 @@ interface NativeLanguageHandle extends NamuLanguage {
 
 let initialized = false
 let initPromise: Promise<void> | undefined
+let availabilityProbe: boolean | undefined
 
 /**
  * Environment override for the native pack's parser cache directory.
@@ -121,8 +122,28 @@ export async function getLanguage(lang: SupportedLanguage): Promise<NamuLanguage
 
 /**
  * Check whether the native tree-sitter backend is usable.
- * Returns false if the platform binary failed to load.
+ *
+ * Performs a memoized probe by confirming the native binding exported
+ * `getParser` as a callable — the minimal signal that the NAPI module loaded
+ * successfully. A failed import throws synchronously at module-load time (e.g.
+ * on musl hosts with no matching `.node` prebuild), so that class of failure
+ * surfaces before this function is reachable; the try/catch here handles any
+ * unexpected runtime errors from the binding introspection itself.
+ *
+ * Note: `hasLanguage('typescript')` is intentionally NOT used here — it checks
+ * whether a grammar is available in the registry (which depends on download
+ * state), not whether the native binding itself is functional. Using it would
+ * permanently cache `false` if called before grammars are fetched, incorrectly
+ * disabling the backend for the lifetime of the process.
  */
 export function isAvailable(): boolean {
-  return typeof getParser === 'function'
+  if (availabilityProbe === undefined) {
+    try {
+      availabilityProbe = typeof getParser === 'function'
+    }
+    catch {
+      availabilityProbe = false
+    }
+  }
+  return availabilityProbe
 }

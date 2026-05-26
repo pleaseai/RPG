@@ -15,8 +15,8 @@ export class ASTParser {
   private parserPromises = new Map<string, Promise<NamuParser>>()
 
   /**
-   * Check if WASM tree-sitter is available.
-   * Always returns true — WASM has no native compilation requirements.
+   * Check if the native tree-sitter backend is available.
+   * Delegates to the namu backend, which probes the loaded NAPI binding.
    */
   isAvailable(): boolean {
     return namuIsAvailable()
