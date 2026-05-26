@@ -1,0 +1,36 @@
+.please/docs/knowledge/tech-stack.md
+  s_d31a7b2d3a9dde::t_28432b384de3cb 34
+.please/docs/tracks/active/tree-sitter-language-pack-20260526/plan.md
+  s_d31a7b2d3a9dde::t_845d642876c2c7 81
+  s_d31a7b2d3a9dde::t_107a41493fbea3 129-137
+  s_d31a7b2d3a9dde::t_0b05afc2a91f74 146-150
+  s_d31a7b2d3a9dde::t_d7059536216452 82
+  s_d31a7b2d3a9dde::t_8fa18b5972ea36 122-128
+  s_d31a7b2d3a9dde::t_2db124030c365d 78
+  s_d31a7b2d3a9dde::t_34ad260aa9ae2c 80
+  s_d31a7b2d3a9dde::t_a5f14cad06f0de 76
+  s_d31a7b2d3a9dde::t_e7c49f14d00749 163-171
+  s_d31a7b2d3a9dde::t_d7dc8672036ada 79
+  s_d31a7b2d3a9dde::t_170724b726c8d6 77
+CLAUDE.md
+  s_d31a7b2d3a9dde::t_a782a6fe897ebf 416-421
+  s_d31a7b2d3a9dde::t_8e8d29266003eb 134
+  s_d31a7b2d3a9dde::t_8df5b37dbebfbc 127
+  s_d31a7b2d3a9dde::t_bd8da2a02f69f7 221
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.1",
+  "base_commit_sha": "b67fee68a32c7dc7780cbfff39b164c03397a1c0",
+  "prompts": {},
+  "sessions": {
+    "s_d31a7b2d3a9dde": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "dbe16ef9-853e-40c5-87fc-05fdbbca1ff9",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Minsu Lee <amond@amond.net>"
+    }
+  }
+}
