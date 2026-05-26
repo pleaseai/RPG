@@ -1,0 +1,30 @@
+packages/ast/src/parser.ts
+  s_d31a7b2d3a9dde::t_b64f168dbe5484 8,11-12
+packages/soop/package.json
+  s_d31a7b2d3a9dde::t_16a36e232ab25e 50
+tsdown.config.ts
+  s_d31a7b2d3a9dde::t_9c63d66b2bdee8 11-12
+package.json
+  s_d31a7b2d3a9dde::t_21c25132fdd179 13
+  s_d31a7b2d3a9dde::t_dfbbcaf723f6db 64
+packages/namu/src/types.ts
+  s_d31a7b2d3a9dde::t_65c60c12f71907 2,4-7,11
+packages/namu/package.json
+  s_d31a7b2d3a9dde::t_b681ebb811844b 12
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.1",
+  "base_commit_sha": "8afde16af1e1b734f199141a8dfa42f95d1aacb9",
+  "prompts": {},
+  "sessions": {
+    "s_d31a7b2d3a9dde": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "dbe16ef9-853e-40c5-87fc-05fdbbca1ff9",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Minsu Lee <amond@amond.net>"
+    }
+  }
+}
