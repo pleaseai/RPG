@@ -1,0 +1,23 @@
+packages/namu/package.json
+  s_d31a7b2d3a9dde::t_94f007aa350506 15
+.please/docs/tracks/active/tree-sitter-language-pack-20260526/plan.md
+  s_d31a7b2d3a9dde::t_0a4b3ea338a23b 119-121
+  s_d31a7b2d3a9dde::t_877bd120cf03a7 75
+  s_d31a7b2d3a9dde::t_a06f9ea3ed5b79 135-143
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.1",
+  "base_commit_sha": "cbf53aeb8ff13c11ead23f43c2d6b518dd19cfaf",
+  "prompts": {},
+  "sessions": {
+    "s_d31a7b2d3a9dde": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "dbe16ef9-853e-40c5-87fc-05fdbbca1ff9",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Minsu Lee <amond@amond.net>"
+    }
+  }
+}
