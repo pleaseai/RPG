@@ -8,11 +8,16 @@ import type { NamuNode, NamuPoint, NamuTree } from './types'
  *
  * Two impedance mismatches the adapter absorbs:
  *  1. The native node exposes no `.text` — text is sliced from the source via
- *     byte offsets, so the source string is threaded through every node.
+ *     byte offsets. tree-sitter offsets are UTF-8 *byte* positions while JS
+ *     strings are UTF-16, so we slice an encoded byte buffer (threaded through
+ *     every node) and decode it — `String.prototype.slice` would corrupt any
+ *     non-ASCII source.
  *  2. The native node exposes no sibling accessors — `previousSibling` /
  *     `nextSibling` are derived from the parent's child list and this node's
  *     index within it.
  */
+
+const textDecoder = new TextDecoder()
 
 /** Minimal shape of the native `Node` we depend on. */
 interface NativeNode {
@@ -48,7 +53,8 @@ function value<T>(accessor: ((this: NativeNode) => T) | T, self: NativeNode): T 
 
 class NamuNodeAdapter implements NamuNode {
   private readonly native: NativeNode
-  private readonly source: string
+  /** UTF-8 encoded source — sliced by native byte offsets to resolve `.text`. */
+  private readonly bytes: Uint8Array
   private readonly _parent: NamuNodeAdapter | null
   private readonly indexInParent: number
 
@@ -57,12 +63,12 @@ class NamuNodeAdapter implements NamuNode {
 
   constructor(
     native: NativeNode,
-    source: string,
+    bytes: Uint8Array,
     parent: NamuNodeAdapter | null,
     indexInParent: number,
   ) {
     this.native = native
-    this.source = source
+    this.bytes = bytes
     this._parent = parent
     this.indexInParent = indexInParent
   }
@@ -72,7 +78,9 @@ class NamuNodeAdapter implements NamuNode {
   }
 
   get text(): string {
-    return this.source.slice(this.startIndex, this.endIndex)
+    // Native offsets are UTF-8 byte positions; decode the byte slice so
+    // multi-byte (non-ASCII) source is preserved exactly.
+    return textDecoder.decode(this.bytes.subarray(this.startIndex, this.endIndex))
   }
 
   get startIndex(): number {
@@ -108,7 +116,7 @@ class NamuNodeAdapter implements NamuNode {
       for (let i = 0; i < count; i++) {
         const c = this.native.child(i)
         if (c)
-          out.push(new NamuNodeAdapter(c, this.source, this, i))
+          out.push(new NamuNodeAdapter(c, this.bytes, this, i))
       }
       this._children = out
     }
@@ -122,7 +130,7 @@ class NamuNodeAdapter implements NamuNode {
       for (let i = 0; i < count; i++) {
         const c = this.native.namedChild(i)
         if (c)
-          out.push(new NamuNodeAdapter(c, this.source, this, i))
+          out.push(new NamuNodeAdapter(c, this.bytes, this, i))
       }
       this._namedChildren = out
     }
@@ -149,7 +157,7 @@ class NamuNodeAdapter implements NamuNode {
     const match = (this.children as NamuNodeAdapter[]).find(
       c => c.startIndex === start && c.endIndex === end,
     )
-    return match ?? new NamuNodeAdapter(field, this.source, this, -1)
+    return match ?? new NamuNodeAdapter(field, this.bytes, this, -1)
   }
 
   get parent(): NamuNode | null {
@@ -191,7 +199,9 @@ class NamuNodeAdapter implements NamuNode {
  */
 export function wrapTree(nativeTree: NativeTree, source: string): NamuTree {
   const root = value(nativeTree.rootNode, nativeTree as unknown as NativeNode)
-  const rootNode = new NamuNodeAdapter(root, source, null, -1)
+  // Encode once per tree; nodes slice this buffer by native UTF-8 byte offsets.
+  const bytes = new TextEncoder().encode(source)
+  const rootNode = new NamuNodeAdapter(root, bytes, null, -1)
   return {
     rootNode,
     copy: () => wrapTree(nativeTree, source),

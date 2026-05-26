@@ -79,6 +79,8 @@ class NativeParser implements NamuParser {
     if (!this.native)
       throw new Error('NamuParser.parse called before setLanguage')
     const tree = this.native.parse(input)
+    if (!tree)
+      throw new Error('tree-sitter parse returned no tree')
     return wrapTree(tree as Parameters<typeof wrapTree>[0], input)
   }
 

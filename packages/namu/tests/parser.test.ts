@@ -131,6 +131,20 @@ describe('namu: native tree-sitter backend', () => {
       expect(decl.text).toBe('const answer = 42')
     })
 
+    it('slices .text correctly when preceded by multi-byte (non-ASCII) source', async () => {
+      // Korean comment + string force byte offsets to diverge from UTF-16 indices.
+      // String.prototype.slice on byte offsets would corrupt these — the adapter
+      // must decode a UTF-8 byte slice instead.
+      const src = '// 한국어 주석\nfunction greet() { return "안녕하세요 세계" }'
+      const root = await parse('typescript', src)
+      const fn = root.namedChild(1)!
+      expect(fn.type).toBe('function_declaration')
+      expect(fn.childForFieldName('name')!.text).toBe('greet')
+      // The whole function node's text must be intact despite the preceding
+      // multi-byte comment shifting its byte start past its UTF-16 start.
+      expect(fn.text).toBe('function greet() { return "안녕하세요 세계" }')
+    })
+
     it('resolves field children via childForFieldName', async () => {
       const root = await parse('typescript', 'function add(a, b) { return a + b }')
       const fn = root.namedChild(0)!
