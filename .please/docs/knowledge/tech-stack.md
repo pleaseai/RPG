@@ -31,7 +31,7 @@
 | Schema | Zod 4 | Runtime validation for graph data |
 | CLI | Commander 14 | CLI framework |
 | Logging | consola | Structured logging with tags and levels |
-| AST | tree-sitter | Multi-language parsing (TS, JS, Python, Rust, Go, Java) |
+| AST | tree-sitter (native) | `@kreuzberg/tree-sitter-language-pack` (NAPI, pinned `1.9.0-rc.10`) — prebuilt grammars, no emcc/Docker. Tuned extraction for TS, JS, Python, Rust, Go, Java, C#, C, C++, Ruby, Kotlin (300+ parseable). On-demand grammar cache (`SOOP_TS_CACHE_DIR`); no musl prebuild. |
 
 ## AI & LLM
 

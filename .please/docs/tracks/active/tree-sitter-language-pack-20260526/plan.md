@@ -73,13 +73,13 @@ encoder/*-extractor.ts ─┤ consume NamuNode interface (UNCHANGED)
 ## Tasks
 
 - [x] T001 Spike: add `@kreuzberg/tree-sitter-language-pack@1.9.0-rc.10` to `packages/namu`, validate the NAPI `.node` loads under Bun 1.3.14 on darwin-x64 (local) and confirm linux-x64-gnu resolution; smoke-parse a TS snippet via `getParser('typescript')` and read `rootNode` (file: packages/namu/package.json) — **SC-2**, gate before T002
-- [ ] T002 Implement `JsNode → NamuNode` adapter and rewrite the namu backend on native `getParser()`/`getLanguage()` (map `kind()→.type`, `slice(startByte,endByte)→.text`, `childByFieldName→childForFieldName`, `startPosition()/endPosition()`, `parent()`, `previous/nextSibling`, `isError/isNamed/isMissing`, `toSexp()→toString()`); add cache-dir `configure()` + lazy `init()`; map `SupportedLanguage` → pack language names; keep `isAvailable()`/`createParser()`/`getLanguage()` exports (file: packages/namu/src/parser.ts) (depends on T001) — **SC-1, SC-5**
-- [ ] T003 [P] Rewrite `packages/namu/tests/parser.test.ts` for the native backend: drop `resolveWasmPath`/WASM-file-existence assertions; add adapter unit tests (positions, `.text`, field lookups, siblings, error flags) and parse smoke tests for the 11 languages (file: packages/namu/tests/parser.test.ts) (depends on T002)
-- [ ] T004 Validate behavior preservation: run the full `packages/ast` + `packages/encoder` suites against the native backend and fix any adapter drift until `ParseResult`/`CodeEntity` output for the 11 languages is equivalent (file: packages/namu/src/parser.ts) (depends on T002) — **SC-1**
-- [ ] T005 Remove the WASM pipeline: delete `build.ts`, the `build:wasm` script, `packages/namu/wasm/`, `resolveWasmPath`/`src/languages.ts` WASM bits; drop `web-tree-sitter` from `packages/namu` and `packages/soop`; drop the 11 `tree-sitter-*` devDeps + `tree-sitter-cli`; update `.gitignore` and the `web-tree-sitter` comment in `packages/ast/src/parser.ts` (file: packages/namu/package.json) (depends on T004) — **SC-3**
-- [ ] T006 Deterministic provisioning: configure a known parser cache dir and a pre-download step (`init()`/`download()` for the supported languages); add a parser-cache restore/save step to `.github/workflows/soop-encode.yml` mirroring the semantic-cache pattern (file: .github/workflows/soop-encode.yml) (depends on T002) — **SC-4**
-- [ ] T007 Resolve the distribution gap in `packages/soop-native`: verify the `.node` addon works under `bun build --compile` (follow the existing native-addon pattern, e.g. better-sqlite3); decide musl handling (drop `linux-*-musl` optional targets vs. document degraded AST parsing on musl) and apply it (file: packages/soop-native/package.json) (depends on T005, T006)
-- [ ] T008 Update docs: `CLAUDE.md` (Known Gotchas, tree-sitter rows, namu description) and `.please/docs/knowledge/tech-stack.md` — native backend, `1.9.0-rc.10` pin + prerelease caveat, parser-cache model, dropped emcc/Docker, platform matrix incl. musl caveat (file: CLAUDE.md) (depends on T005, T006, T007)
+- [x] T002 Implement `JsNode → NamuNode` adapter and rewrite the namu backend on native `getParser()`/`getLanguage()` (map `kind()→.type`, `slice(startByte,endByte)→.text`, `childByFieldName→childForFieldName`, `startPosition()/endPosition()`, `parent()`, `previous/nextSibling`, `isError/isNamed/isMissing`, `toSexp()→toString()`); add cache-dir `configure()` + lazy `init()`; map `SupportedLanguage` → pack language names; keep `isAvailable()`/`createParser()`/`getLanguage()` exports (file: packages/namu/src/parser.ts) (depends on T001) — **SC-1, SC-5**
+- [x] T003 [P] Rewrite `packages/namu/tests/parser.test.ts` for the native backend: drop `resolveWasmPath`/WASM-file-existence assertions; add adapter unit tests (positions, `.text`, field lookups, siblings, error flags) and parse smoke tests for the 11 languages (file: packages/namu/tests/parser.test.ts) (depends on T002)
+- [x] T004 Validate behavior preservation: run the full `packages/ast` + `packages/encoder` suites against the native backend and fix any adapter drift until `ParseResult`/`CodeEntity` output for the 11 languages is equivalent (file: packages/namu/src/parser.ts) (depends on T002) — **SC-1**
+- [x] T005 Remove the WASM pipeline: delete `build.ts`, the `build:wasm` script, `packages/namu/wasm/`, `resolveWasmPath`/`src/languages.ts` WASM bits; drop `web-tree-sitter` from `packages/namu` and `packages/soop`; drop the 11 `tree-sitter-*` devDeps + `tree-sitter-cli`; update `.gitignore` and the `web-tree-sitter` comment in `packages/ast/src/parser.ts` (file: packages/namu/package.json) (depends on T004) — **SC-3**
+- [x] T006 Deterministic provisioning: configure a known parser cache dir and a pre-download step (`init()`/`download()` for the supported languages); add a parser-cache restore/save step to `.github/workflows/soop-encode.yml` mirroring the semantic-cache pattern (file: .github/workflows/soop-encode.yml) (depends on T002) — **SC-4**
+- [x] T007 Resolve the distribution gap in `packages/soop-native`: verify the `.node` addon works under `bun build --compile` (follow the existing native-addon pattern, e.g. better-sqlite3); decide musl handling (drop `linux-*-musl` optional targets vs. document degraded AST parsing on musl) and apply it (file: packages/soop-native/package.json) (depends on T005, T006)
+- [x] T008 Update docs: `CLAUDE.md` (Known Gotchas, tree-sitter rows, namu description) and `.please/docs/knowledge/tech-stack.md` — native backend, `1.9.0-rc.10` pin + prerelease caveat, parser-cache model, dropped emcc/Docker, platform matrix incl. musl caveat (file: CLAUDE.md) (depends on T005, T006, T007)
 
 ## Dependencies
 
@@ -119,6 +119,22 @@ T001 ─▶ T002 ─┬─▶ T003 [P]
 - **2026-05-26 — T001 (spike) complete.** Validated `@kreuzberg/tree-sitter-language-pack@1.9.0-rc.10`
   loads under Bun 1.3.14 on darwin-x64 and parses TypeScript. SC-2 (darwin-x64) confirmed;
   linux-x64-gnu binary bundled for CI.
+- **2026-05-26 — T002/T003 complete.** Native backend + `JsNode→NamuNode` adapter in
+  `packages/namu`; 31 namu tests (incl. adapter edges) pass.
+- **2026-05-26 — T004 complete (SC-1).** Behavior preserved: 169 `ast` + 98 encoder
+  parser-consumer tests (call/inheritance/type extractors) pass on the native backend.
+  6 `semantic-retry.test.ts` failures are **pre-existing and unrelated** — they throw in
+  `SemanticExtractor` (`semantic.ts:168`) because `GOOGLE_GENERATIVE_AI_API_KEY` is unset
+  locally; that test imports no parser code.
+- **2026-05-26 — T005 complete (SC-3).** Removed `build.ts`, `wasm/`, `build:wasm`,
+  `web-tree-sitter`, 11 grammars + `tree-sitter-cli`; soop dep + tsdown external swapped to
+  the native pack; root `build:copy-assets` no longer builds/copies WASM. 200 tests pass.
+- **2026-05-26 — T006 complete (SC-4).** `SOOP_TS_CACHE_DIR` pins the grammar cache;
+  `prefetchLanguages()` helper added; `soop-encode.yml` caches `.soop/cache/tree-sitter`.
+- **2026-05-26 — T007 complete.** Native pack externalized from compiled binaries
+  (parity with prior web-tree-sitter); musl targets kept + limitation documented.
+- **2026-05-26 — T008 complete.** CLAUDE.md (namu/ast rows, tree-sitter lib, new gotcha)
+  and tech-stack.md updated for the native backend, pin, cache model, and platform matrix.
 
 ## Decision Log
 
@@ -127,8 +143,11 @@ T001 ─▶ T002 ─┬─▶ T003 [P]
   by the Intel-Mac dev environment (upstream #127); revisit to stable post-1.9.0.
 - **Adapter over `process()`** — preserve tuned `LANGUAGE_CONFIGS` extraction and keep
   consumers untouched.
-- **OPEN (T007): musl distribution** — `soop-native` ships musl targets the native pack
-  cannot support; decision deferred to implementation (drop musl vs. document degraded).
+- **RESOLVED (T007): musl distribution** — keep the musl targets. The compiled binaries
+  externalize the native pack (parity with the prior `web-tree-sitter` handling), so they
+  still build from a single runner; the parser is resolved at runtime from the host's npm
+  install. Since the pack ships no musl prebuild, AST parsing on a musl host needs glibc —
+  documented rather than dropping a published platform (reversible once musl prebuilds land).
 
 ## Surprises & Discoveries
 
@@ -141,3 +160,12 @@ T001 ─▶ T002 ─┬─▶ T003 [P]
   not split into per-platform optional-dep packages — simplifies resolution.
 - **`languageCount()` is 0 until a language is used** (lazy registration); `hasLanguage()`
   and parsing work regardless.
+- **Native dep reintroduces a tension with the cross-compile distribution model.** The
+  prior WASM migration's stated rationale was "eliminate native deps so one runner can
+  cross-compile all 7 targets". The native pack is platform-specific, so it is externalized
+  from the compiled binaries (same posture as `web-tree-sitter` before) and resolved via
+  the host npm install. The npm-install path (`bun install -g @pleaseai/soop`, used by the
+  encode CI) is the fully-supported channel and is validated; the compiled-binary channel
+  treats the parser as external exactly as before — no new regression.
+- **Grammars are downloaded on demand + cached** at `~/.cache|Library/Caches/
+  tree-sitter-language-pack/v<ver>/libs`; `SOOP_TS_CACHE_DIR` pins it for CI/offline.
