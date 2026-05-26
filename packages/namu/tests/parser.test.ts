@@ -1,58 +1,46 @@
-import type { SupportedLanguage } from '@pleaseai/soop-namu'
+import type { NamuNode, SupportedLanguage } from '@pleaseai/soop-namu'
 
 import { describe, expect, it } from 'vitest'
 
-import { createParser, getLanguage, initNamu, isAvailable, resolveWasmPath } from '../src/index'
+import { createParser, getLanguage, initNamu, isAvailable, SUPPORTED_LANGUAGES, toNativeLanguageName } from '../src/index'
 
-describe('namu: WASM tree-sitter', () => {
-  it('isAvailable() always returns true', () => {
+const ALL_LANGS: SupportedLanguage[] = [
+  'typescript',
+  'javascript',
+  'python',
+  'rust',
+  'go',
+  'java',
+  'csharp',
+  'c',
+  'cpp',
+  'ruby',
+  'kotlin',
+]
+
+async function parse(lang: SupportedLanguage, source: string): Promise<NamuNode> {
+  const parser = await createParser()
+  parser.setLanguage(await getLanguage(lang))
+  return parser.parse(source).rootNode
+}
+
+describe('namu: native tree-sitter backend', () => {
+  it('isAvailable() returns true when the native binding loaded', () => {
     expect(isAvailable()).toBe(true)
   })
 
-  it('resolveWasmPath returns a string path for each supported language', () => {
-    const langs: SupportedLanguage[] = [
-      'typescript',
-      'javascript',
-      'python',
-      'rust',
-      'go',
-      'java',
-      'csharp',
-      'c',
-      'cpp',
-      'ruby',
-      'kotlin',
-    ]
-    for (const lang of langs) {
-      const wasmPath = resolveWasmPath(lang)
-      expect(typeof wasmPath).toBe('string')
-      expect(wasmPath).toContain('.wasm')
-    }
+  it('exports the curated supported-language set', () => {
+    expect([...SUPPORTED_LANGUAGES].sort()).toEqual([...ALL_LANGS].sort())
   })
 
-  it('resolveWasmPath points to existing WASM files', async () => {
-    const fs = await import('node:fs/promises')
-    const langs: SupportedLanguage[] = [
-      'typescript',
-      'javascript',
-      'python',
-      'rust',
-      'go',
-      'java',
-      'csharp',
-      'c',
-      'cpp',
-      'ruby',
-      'kotlin',
-    ]
-    for (const lang of langs) {
-      const wasmPath = resolveWasmPath(lang)
-      await expect(fs.access(wasmPath)).resolves.toBeUndefined()
-    }
+  it('toNativeLanguageName maps supported languages to valid pack names', () => {
+    expect(toNativeLanguageName('typescript')).toBe('typescript')
+    expect(toNativeLanguageName('csharp')).toBe('csharp')
+    expect(toNativeLanguageName('cpp')).toBe('cpp')
   })
 
-  describe('Parser initialization', () => {
-    it('initNamu() initializes the WASM runtime', async () => {
+  describe('initialization', () => {
+    it('initNamu() resolves', async () => {
       await expect(initNamu()).resolves.toBeUndefined()
     })
 
@@ -61,90 +49,117 @@ describe('namu: WASM tree-sitter', () => {
       await expect(initNamu()).resolves.toBeUndefined()
     })
 
-    it('createParser() returns a Parser instance', async () => {
-      const parser = await createParser()
-      expect(parser).toBeDefined()
+    it('createParser() returns a parser instance', async () => {
+      expect(await createParser()).toBeDefined()
     })
   })
 
-  describe('Language loading', () => {
-    it.each<SupportedLanguage>([
-      'typescript',
-      'javascript',
-      'python',
-      'rust',
-      'go',
-      'java',
-      'csharp',
-      'c',
-      'cpp',
-      'ruby',
-      'kotlin',
-    ])('getLanguage(%s) loads the grammar', async (lang) => {
-      const language = await getLanguage(lang)
-      expect(language).toBeDefined()
+  describe('language loading', () => {
+    it.each(ALL_LANGS)('getLanguage(%s) resolves a handle', async (lang) => {
+      expect(await getLanguage(lang)).toBeDefined()
+    })
+
+    it('getLanguage throws for an unavailable language', async () => {
+      await expect(getLanguage('not-a-language' as SupportedLanguage)).rejects.toThrow(/not available/)
+    })
+
+    it('parse() throws when no language is set', async () => {
+      const parser = await createParser()
+      expect(() => parser.parse('x')).toThrow(/setLanguage/)
     })
   })
 
-  describe('Parsing code', () => {
-    it('parses TypeScript code and returns a syntax tree', async () => {
-      const parser = await createParser()
-      const lang = await getLanguage('typescript')
-      parser.setLanguage(lang)
-      const tree = parser.parse('function hello(name: string): string { return name }')
-      expect(tree).toBeDefined()
-      expect(tree.rootNode).toBeDefined()
-      expect(tree.rootNode.type).toBe('program')
-      expect(tree.rootNode.hasError).toBe(false)
+  describe('parsing', () => {
+    it('parses TypeScript into a program tree', async () => {
+      const root = await parse('typescript', 'function hello(name: string): string { return name }')
+      expect(root.type).toBe('program')
+      expect(root.hasError).toBe(false)
     })
 
-    it('parses JavaScript code', async () => {
-      const parser = await createParser()
-      const lang = await getLanguage('javascript')
-      parser.setLanguage(lang)
-      const tree = parser.parse('const x = 42')
-      expect(tree.rootNode.type).toBe('program')
-      expect(tree.rootNode.hasError).toBe(false)
+    it('parses JavaScript', async () => {
+      const root = await parse('javascript', 'const x = 42')
+      expect(root.type).toBe('program')
+      expect(root.hasError).toBe(false)
     })
 
-    it('parses Python code', async () => {
-      const parser = await createParser()
-      const lang = await getLanguage('python')
-      parser.setLanguage(lang)
-      const tree = parser.parse('def greet(name):\n  return f"Hello, {name}"')
-      expect(tree.rootNode.type).toBe('module')
-      expect(tree.rootNode.hasError).toBe(false)
+    it('parses Python into a module tree', async () => {
+      const root = await parse('python', 'def greet(name):\n  return name')
+      expect(root.type).toBe('module')
+      expect(root.hasError).toBe(false)
     })
 
-    it('parses Rust code', async () => {
-      const parser = await createParser()
-      const lang = await getLanguage('rust')
-      parser.setLanguage(lang)
-      const tree = parser.parse('fn main() { println!("Hello"); }')
-      expect(tree.rootNode.type).toBe('source_file')
-      expect(tree.rootNode.hasError).toBe(false)
+    it('parses Rust into a source_file tree', async () => {
+      const root = await parse('rust', 'fn main() { println!("hi"); }')
+      expect(root.type).toBe('source_file')
+      expect(root.hasError).toBe(false)
     })
 
-    it('parses Go code', async () => {
-      const parser = await createParser()
-      const lang = await getLanguage('go')
-      parser.setLanguage(lang)
-      const tree = parser.parse('package main\nfunc main() {}')
-      expect(tree.rootNode.type).toBe('source_file')
-      expect(tree.rootNode.hasError).toBe(false)
+    it('flags syntax errors via hasError', async () => {
+      const root = await parse('typescript', 'function (')
+      expect(root.hasError).toBe(true)
     })
+  })
 
-    it('exposes SyntaxNode API (type, text, children, startPosition, endPosition)', async () => {
-      const parser = await createParser()
-      const lang = await getLanguage('typescript')
-      parser.setLanguage(lang)
-      const tree = parser.parse('const x = 1')
-      const root = tree.rootNode
+  describe('NamuNode adapter surface', () => {
+    it('exposes type, text, children and positions', async () => {
+      const root = await parse('typescript', 'const x = 1')
       expect(typeof root.type).toBe('string')
       expect(typeof root.text).toBe('string')
       expect(Array.isArray(root.children)).toBe(true)
       expect(typeof root.startPosition.row).toBe('number')
       expect(typeof root.endPosition.column).toBe('number')
+    })
+
+    it('slices .text from source byte offsets', async () => {
+      const root = await parse('typescript', 'const answer = 42')
+      // root text is the whole source
+      expect(root.text).toBe('const answer = 42')
+      const decl = root.namedChild(0)!
+      expect(decl.type).toBe('lexical_declaration')
+      expect(decl.text).toBe('const answer = 42')
+    })
+
+    it('resolves field children via childForFieldName', async () => {
+      const root = await parse('typescript', 'function add(a, b) { return a + b }')
+      const fn = root.namedChild(0)!
+      expect(fn.type).toBe('function_declaration')
+      const name = fn.childForFieldName('name')
+      expect(name).not.toBeNull()
+      expect(name!.text).toBe('add')
+    })
+
+    it('computes previousSibling/nextSibling from the parent child list', async () => {
+      const root = await parse('typescript', 'const a = 1\nconst b = 2')
+      const first = root.child(0)!
+      const second = root.child(1)!
+      expect(first.nextSibling).toBe(second)
+      expect(second.previousSibling).toBe(first)
+      expect(first.previousSibling).toBeNull()
+      expect(second.nextSibling).toBeNull()
+    })
+
+    it('exposes a leading comment as a previousSibling', async () => {
+      const root = await parse('typescript', '// doc\nfunction f() {}')
+      const fn = root.namedChild(1)!
+      expect(fn.type).toBe('function_declaration')
+      const prev = fn.previousSibling
+      expect(prev).not.toBeNull()
+      expect(prev!.type).toBe('comment')
+      expect(prev!.text).toBe('// doc')
+    })
+
+    it('links child.parent back to the containing node', async () => {
+      const root = await parse('typescript', 'function f() {}')
+      const fn = root.namedChild(0)!
+      expect(fn.parent).toBe(root)
+      expect(root.parent).toBeNull()
+    })
+
+    it('reports startIndex/endIndex as byte offsets and isNamed', async () => {
+      const root = await parse('typescript', 'const x = 1')
+      expect(root.startIndex).toBe(0)
+      expect(root.endIndex).toBe('const x = 1'.length)
+      expect(root.isNamed).toBe(true)
     })
   })
 })
