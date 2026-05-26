@@ -1,0 +1,24 @@
+ARCHITECTURE.md
+  s_d31a7b2d3a9dde::t_f32d6d3cf2a531 156
+  s_d31a7b2d3a9dde::t_108b0aee847763 30
+  s_d31a7b2d3a9dde::t_a0d2d0fcdfef68 37
+README.md
+  s_d31a7b2d3a9dde::t_bb3b725677a481 216
+  s_d31a7b2d3a9dde::t_835d916524c155 209
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.1",
+  "base_commit_sha": "eb5677c6e66c3df751b41b0ba97dc87d8d94da7d",
+  "prompts": {},
+  "sessions": {
+    "s_d31a7b2d3a9dde": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "dbe16ef9-853e-40c5-87fc-05fdbbca1ff9",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Minsu Lee <amond@amond.net>"
+    }
+  }
+}
