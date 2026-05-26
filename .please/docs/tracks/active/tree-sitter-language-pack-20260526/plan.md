@@ -136,6 +136,12 @@ T001 ─▶ T002 ─┬─▶ T003 [P]
 - **2026-05-26 — T008 complete.** CLAUDE.md (namu/ast rows, tree-sitter lib, new gotcha)
   and tech-stack.md updated for the native backend, pin, cache model, and platform matrix.
 
+- **2026-05-26 — Review fixes applied (SHA: `5d08dcb`).** Spec compliance 100% (5/5 SC).
+  Code review found 1 Critical: `.text` was sliced from the source string by UTF-8 byte
+  offsets using UTF-16 `String.slice` — corrupting non-ASCII text. Fixed by decoding a
+  `TextEncoder` byte buffer; added a Korean-source regression test. Also guarded null parse
+  trees. 203 namu+ast tests pass.
+
 ## Decision Log
 
 - **Native NAPI over WASM variant** — chosen for 300+ language coverage (user decision).
