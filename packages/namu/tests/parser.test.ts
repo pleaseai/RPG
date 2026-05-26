@@ -30,7 +30,8 @@ describe('namu: native tree-sitter backend', () => {
   })
 
   it('exports the curated supported-language set', () => {
-    expect([...SUPPORTED_LANGUAGES].sort()).toEqual([...ALL_LANGS].sort())
+    const byName = (a: string, b: string): number => a.localeCompare(b)
+    expect(SUPPORTED_LANGUAGES.toSorted(byName)).toEqual(ALL_LANGS.toSorted(byName))
   })
 
   it('toNativeLanguageName maps supported languages to valid pack names', () => {
