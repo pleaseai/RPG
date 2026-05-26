@@ -1,0 +1,28 @@
+packages/namu/src/parser.ts
+  s_d31a7b2d3a9dde::t_f070c27b147289 3,5
+  s_d31a7b2d3a9dde::t_76bbd0d6001cab 25-36,41-49,53-67
+packages/namu/src/index.ts
+  s_d31a7b2d3a9dde::t_bf5ebe9e6d1b64 2
+.github/workflows/soop-encode.yml
+  s_d31a7b2d3a9dde::t_4dd303cb22cd56 65-74,79
+  s_d31a7b2d3a9dde::t_83a578f82375d6 111-117
+packages/namu/tests/parser.test.ts
+  s_d31a7b2d3a9dde::t_d44a9da4a0cc55 57-68
+  s_d31a7b2d3a9dde::t_9dd815990a52ac 5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.1",
+  "base_commit_sha": "e3c7a5a98dd9dee1053b2c4234ebba3c0a27b700",
+  "prompts": {},
+  "sessions": {
+    "s_d31a7b2d3a9dde": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "dbe16ef9-853e-40c5-87fc-05fdbbca1ff9",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Minsu Lee <amond@amond.net>"
+    }
+  }
+}
