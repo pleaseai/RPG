@@ -1,0 +1,21 @@
+.please/docs/tracks.jsonl
+  s_d31a7b2d3a9dde::t_5e40d01d0fa16f 2
+.please/docs/tracks/active/tree-sitter-language-pack-20260526/metadata.json
+  s_d31a7b2d3a9dde::t_fab00f36efdd7c 4,6,9
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.1",
+  "base_commit_sha": "1f56b720b70d6fc25c3be38d5964b4ac1ab279ab",
+  "prompts": {},
+  "sessions": {
+    "s_d31a7b2d3a9dde": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "dbe16ef9-853e-40c5-87fc-05fdbbca1ff9",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Minsu Lee <amond@amond.net>"
+    }
+  }
+}
