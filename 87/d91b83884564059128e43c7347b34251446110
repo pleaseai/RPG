@@ -1,0 +1,26 @@
+.please/docs/tracks/active/tree-sitter-language-pack-20260526/plan.md
+  s_d31a7b2d3a9dde::t_10296280601f64 1-133
+.please/docs/tracks/active/tree-sitter-language-pack-20260526/spec.md
+  s_d31a7b2d3a9dde::t_86a2e3e55c5fb6 1-110
+.please/docs/tracks/active/tree-sitter-language-pack-20260526/metadata.json
+  s_d31a7b2d3a9dde::t_bc2784befbe990 4,7
+  s_d31a7b2d3a9dde::t_5754cde74bd35b 1-3,5-6,8-10
+.please/docs/tracks.jsonl
+  s_d31a7b2d3a9dde::t_f0f972368ca99f 2
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.1",
+  "base_commit_sha": "87d91b83884564059128e43c7347b34251446110",
+  "prompts": {},
+  "sessions": {
+    "s_d31a7b2d3a9dde": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "dbe16ef9-853e-40c5-87fc-05fdbbca1ff9",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Minsu Lee <amond@amond.net>"
+    }
+  }
+}
