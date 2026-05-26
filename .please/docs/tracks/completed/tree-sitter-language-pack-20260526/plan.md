@@ -175,3 +175,29 @@ T001 ─▶ T002 ─┬─▶ T003 [P]
   treats the parser as external exactly as before — no new regression.
 - **Grammars are downloaded on demand + cached** at `~/.cache|Library/Caches/
   tree-sitter-language-pack/v<ver>/libs`; `SOOP_TS_CACHE_DIR` pins it for CI/offline.
+
+## Outcomes & Retrospective
+
+### What Was Shipped
+`packages/namu` migrated from the web-tree-sitter WASM build pipeline to the native
+`@kreuzberg/tree-sitter-language-pack` (NAPI, pinned `1.9.0-rc.10`) via a `JsNode→NamuNode`
+adapter. The WASM pipeline (build.ts, 11 grammars, tree-sitter-cli, emcc/Docker) is removed;
+`packages/ast`/`encoder` are unchanged. Deterministic CI provisioning (cache dir + actions/cache)
+and full docs updates included. PR #313.
+
+### What Went Well
+- Spike-first sequencing de-risked the #1 unknown (Bun NAPI load on darwin-x64) before the rewrite.
+- The adapter kept the blast radius to `packages/namu` — `ast`/`encoder` needed zero logic changes
+  (SC-5), and 267 existing tests validated behavior preservation.
+- Pre-flight investigation (issue #127, prebuild matrix, package internals) caught the darwin-x64
+  and musl constraints before writing code.
+
+### What Could Improve
+- The byte-offset `.text` bug (UTF-8 vs UTF-16) passed all ASCII tests and was only caught in review.
+  Lesson: parser/encoding adapters need non-ASCII fixtures from the start.
+
+### Tech Debt Created
+- **Prerelease pin** `1.9.0-rc.10` — migrate to stable `>=1.9.0` once published (only rc ships darwin-x64).
+- **No musl prebuild** — AST parsing unsupported on Alpine/musl hosts; revisit when upstream adds musl.
+- **Compiled-binary AST** — native parser externalized from `soop-native` binaries (parity with prior
+  web-tree-sitter); whether the compiled binary should bundle/support AST is an open pre-existing question.
