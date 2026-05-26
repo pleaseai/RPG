@@ -1,0 +1,21 @@
+.please/docs/tracks/completed/tree-sitter-language-pack-20260526/metadata.json
+  s_d31a7b2d3a9dde::t_31958f61a57970 4,6,8-9
+.please/docs/tracks/tech-debt-tracker.md
+  s_d31a7b2d3a9dde::t_990f8888192b3d 9-11
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.1",
+  "base_commit_sha": "ffee0c47cee931504a012664f77651ef6d2a9145",
+  "prompts": {},
+  "sessions": {
+    "s_d31a7b2d3a9dde": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "dbe16ef9-853e-40c5-87fc-05fdbbca1ff9",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Minsu Lee <amond@amond.net>"
+    }
+  }
+}
