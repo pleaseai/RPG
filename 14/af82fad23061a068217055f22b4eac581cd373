@@ -1,0 +1,21 @@
+scripts/generate-packages.ts
+  s_d31a7b2d3a9dde::t_82e9becd8dd56a 129-132
+.github/workflows/release-please.yml
+  s_d31a7b2d3a9dde::t_c8f4b4854b57b8 73-78
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.5.1",
+  "base_commit_sha": "14af82fad23061a068217055f22b4eac581cd373",
+  "prompts": {},
+  "sessions": {
+    "s_d31a7b2d3a9dde": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "dbe16ef9-853e-40c5-87fc-05fdbbca1ff9",
+        "model": "claude-opus-4-7"
+      },
+      "human_author": "Minsu Lee <amond@amond.net>"
+    }
+  }
+}
