@@ -70,8 +70,12 @@ jobs:
   # -------------------------------------------------------------------------
   # Job 2: Build all platform binaries and publish to npm
   #
-  # WASM migration (web-tree-sitter) eliminated native deps — single ubuntu-latest
-  # runner can cross-compile all 7 targets with `bun compile`.
+  # A single ubuntu-latest runner cross-compiles all 7 targets with `bun compile`.
+  # The native tree-sitter pack (@kreuzberg/tree-sitter-language-pack) is externalized
+  # from the compiled binaries — it is resolved at runtime from the host's npm install
+  # (`bun install -g @pleaseai/soop`), which fetches the matching prebuilt .node.
+  # Prebuilds exist for darwin-x64/arm64, linux-x64/arm64-gnu, win-x64/arm64; there is
+  # no musl prebuild, so AST parsing on a musl host requires a glibc environment.
   #
   # Runs when:
   #   - push: release was created by release-please
