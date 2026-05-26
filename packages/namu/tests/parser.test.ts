@@ -2,7 +2,7 @@ import type { NamuNode, SupportedLanguage } from '@pleaseai/soop-namu'
 
 import { describe, expect, it } from 'vitest'
 
-import { createParser, getLanguage, initNamu, isAvailable, SUPPORTED_LANGUAGES, toNativeLanguageName } from '../src/index'
+import { createParser, getLanguage, initNamu, isAvailable, prefetchLanguages, SUPPORTED_LANGUAGES, toNativeLanguageName } from '../src/index'
 
 const ALL_LANGS: SupportedLanguage[] = [
   'typescript',
@@ -51,6 +51,18 @@ describe('namu: native tree-sitter backend', () => {
 
     it('createParser() returns a parser instance', async () => {
       expect(await createParser()).toBeDefined()
+    })
+  })
+
+  describe('parser provisioning', () => {
+    it('prefetchLanguages() resolves to a count without throwing', async () => {
+      const count = await prefetchLanguages(['typescript'])
+      expect(typeof count).toBe('number')
+      expect(count).toBeGreaterThanOrEqual(0)
+    })
+
+    it('prefetchLanguages() defaults to the curated supported set', async () => {
+      await expect(prefetchLanguages()).resolves.toBeGreaterThanOrEqual(0)
     })
   })
 

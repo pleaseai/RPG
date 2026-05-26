@@ -62,10 +62,21 @@ jobs:
           key: semantic-cache-${{ github.sha }}
           restore-keys: semantic-cache-
 
+      # tree-sitter grammars (native NAPI) download on demand and persist in the
+      # cache dir pinned via SOOP_TS_CACHE_DIR. Caching it makes encode/evolve
+      # deterministic and avoids re-downloading grammars on every run.
+      - name: Restore tree-sitter parser cache
+        uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5
+        with:
+          path: .soop/cache/tree-sitter
+          key: tree-sitter-pack-${{ github.sha }}
+          restore-keys: tree-sitter-pack-
+
       - name: Encode or evolve RPG
         env:
           GOOGLE_GENERATIVE_AI_API_KEY: ${{ secrets.GOOGLE_GENERATIVE_AI_API_KEY }}
           FORCE_ENCODE: ${{ github.event.inputs.force_encode || 'false' }}
+          SOOP_TS_CACHE_DIR: ${{ github.workspace }}/.soop/cache/tree-sitter
         run: |
           if [ "$FORCE_ENCODE" = "true" ]; then
             echo "force_encode=true — removing existing graph and running full encode"
@@ -96,6 +107,13 @@ jobs:
         with:
           path: .soop/cache/semantic-cache.db*
           key: semantic-cache-${{ github.sha }}
+
+      - name: Save tree-sitter parser cache
+        uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5
+        if: always()
+        with:
+          path: .soop/cache/tree-sitter
+          key: tree-sitter-pack-${{ github.sha }}
 
       - name: Create PR with updated graph
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1

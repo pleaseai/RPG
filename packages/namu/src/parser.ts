@@ -1,8 +1,8 @@
 import type { NamuLanguage, NamuParser, NamuTree, SupportedLanguage } from './types'
 
-import { getParser, hasLanguage } from '@kreuzberg/tree-sitter-language-pack'
+import { configure, download, getParser, hasLanguage } from '@kreuzberg/tree-sitter-language-pack'
 import { wrapTree } from './adapter'
-import { toNativeLanguageName } from './languages'
+import { SUPPORTED_LANGUAGES, toNativeLanguageName } from './languages'
 
 /**
  * Native tree-sitter backend built on @kreuzberg/tree-sitter-language-pack.
@@ -22,14 +22,49 @@ interface NativeLanguageHandle extends NamuLanguage {
 let initialized = false
 
 /**
- * One-time backend init (idempotent). The native pack resolves and caches
- * parsers lazily on first `getParser()`; cache configuration is layered on in a
- * later task. Kept async to preserve the existing call signature.
+ * Environment override for the native pack's parser cache directory.
+ *
+ * The pack downloads grammars on demand and caches them under a user cache dir
+ * (e.g. `~/.cache/tree-sitter-language-pack/v<version>/libs`). Pinning this to a
+ * known, cacheable path makes CI and offline runs deterministic.
+ */
+const CACHE_DIR_ENV = 'SOOP_TS_CACHE_DIR'
+
+/**
+ * One-time backend init (idempotent). Applies the cache-dir override (if set)
+ * before any parser is resolved. The native pack resolves and caches grammars
+ * lazily on first `getParser()`. Kept async to preserve the existing signature.
  */
 export async function initNamu(): Promise<void> {
   if (initialized)
     return
+  const cacheDir = process.env[CACHE_DIR_ENV]
+  if (cacheDir) {
+    try {
+      configure({ cacheDir })
+    }
+    catch {
+      // Non-fatal: fall back to the pack's default cache location.
+    }
+  }
   initialized = true
+}
+
+/**
+ * Best-effort pre-download of grammars for the given languages (defaults to the
+ * curated supported set). Useful for CI / offline provisioning. Returns the
+ * number of grammars fetched; never throws.
+ */
+export async function prefetchLanguages(
+  langs: readonly SupportedLanguage[] = SUPPORTED_LANGUAGES,
+): Promise<number> {
+  await initNamu()
+  try {
+    return download(langs.map(toNativeLanguageName))
+  }
+  catch {
+    return 0
+  }
 }
 
 class NativeParser implements NamuParser {
