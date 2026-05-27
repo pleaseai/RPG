@@ -22,7 +22,7 @@
     "@ai-sdk/google": "^3.0.64",
     "@ai-sdk/openai": "^3.0.41",
     "ai": "^6.0.116",
-    "ai-sdk-provider-claude-code": "^3.4.0",
+    "ai-sdk-provider-claude-code": "^3.4.4",
     "ai-sdk-provider-codex-cli": "^1.1.0",
     "ai-sdk-provider-gemini-cli": "^2.0.1",
     "better-sqlite3": "^12.6.2",
