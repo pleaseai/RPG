@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.10](https://github.com/pleaseai/soop/compare/soop-utils-v0.1.9...soop-utils-v0.1.10) (2026-05-27)
+
+
+### Features
+
+* git-grounded sync — silent-fail helpers, decision tree, sentinel-block hooks ([#307](https://github.com/pleaseai/soop/issues/307)) ([cc4388e](https://github.com/pleaseai/soop/commit/cc4388e5c95f125ab020f3b2e6c1152a729cc5be))
+* **utils:** update default LLM models to latest supported IDs ([#305](https://github.com/pleaseai/soop/issues/305)) ([c029a4c](https://github.com/pleaseai/soop/commit/c029a4c2844e45d1e92908a6e97f54256d002b2a))
+
 ## [0.1.9](https://github.com/pleaseai/soop/compare/soop-utils-v0.1.8...soop-utils-v0.1.9) (2026-03-20)
 
 

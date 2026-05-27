@@ -1,5 +1,15 @@
 # Changelog
 
+## [0.1.13](https://github.com/pleaseai/soop/compare/soop-zerorepo-v0.1.12...soop-zerorepo-v0.1.13) (2026-05-27)
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @pleaseai/soop-graph bumped to 0.1.13
+    * @pleaseai/soop-utils bumped to 0.1.10
+
 ## [0.1.12](https://github.com/pleaseai/soop/compare/soop-zerorepo-v0.1.11...soop-zerorepo-v0.1.12) (2026-04-02)
 
 
