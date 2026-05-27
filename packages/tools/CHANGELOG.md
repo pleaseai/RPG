@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.1.17](https://github.com/pleaseai/soop/compare/soop-tools-v0.1.16...soop-tools-v0.1.17) (2026-05-27)
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @pleaseai/soop-encoder bumped to 0.5.0
+
 ## [0.1.16](https://github.com/pleaseai/soop/compare/soop-tools-v0.1.15...soop-tools-v0.1.16) (2026-05-27)
 
 
