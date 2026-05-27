@@ -12,7 +12,7 @@
     "soop-mcp": "bin/soop-mcp"
   },
   "optionalDependencies": {
-    "@pleaseai/soop-darwin-arm64": "0.1.22",
+    "@pleaseai/soop-darwin-arm64": "0.1.33",
     "@pleaseai/soop-darwin-x64": "0.1.22",
     "@pleaseai/soop-linux-x64-glibc": "0.1.22",
     "@pleaseai/soop-linux-arm64-glibc": "0.1.22",
