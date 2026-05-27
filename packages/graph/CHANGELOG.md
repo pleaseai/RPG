@@ -1,5 +1,26 @@
 # Changelog
 
+## [0.1.13](https://github.com/pleaseai/soop/compare/soop-graph-v0.1.12...soop-graph-v0.1.13) (2026-05-27)
+
+
+### Features
+
+* **encoder:** add dep_graph.json sidecar + HTML visualize stages ([#300](https://github.com/pleaseai/soop/issues/300)) ([f2eb901](https://github.com/pleaseai/soop/commit/f2eb901c1f55034df92b8116b6e736e12ed582ef))
+* git-grounded sync — silent-fail helpers, decision tree, sentinel-block hooks ([#307](https://github.com/pleaseai/soop/issues/307)) ([cc4388e](https://github.com/pleaseai/soop/commit/cc4388e5c95f125ab020f3b2e6c1152a729cc5be))
+* **mcp:** add soop_tree, fuzzy suggestions, and RPG-Kit parity fixes ([#299](https://github.com/pleaseai/soop/issues/299)) ([c5cb889](https://github.com/pleaseai/soop/commit/c5cb889d89f4d4089fafee8920f54febfcf788cb))
+
+
+### Bug Fixes
+
+* **graph:** store meta rootPath relative to graph file for portability ([#295](https://github.com/pleaseai/soop/issues/295)) ([6c52dfd](https://github.com/pleaseai/soop/commit/6c52dfd3f65f2b90c3b5e384a92a2a377adc4122))
+
+
+### Dependencies
+
+* The following workspace dependencies were updated
+  * dependencies
+    * @pleaseai/soop-utils bumped to 0.1.10
+
 ## [0.1.12](https://github.com/pleaseai/soop/compare/soop-graph-v0.1.11...soop-graph-v0.1.12) (2026-04-02)
 
 
