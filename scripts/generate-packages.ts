@@ -126,7 +126,10 @@ async function buildBinary(
       'onnxruntime-common',
       'sharp',
       'better-sqlite3',
-      'web-tree-sitter',
+      // Native tree-sitter language pack (NAPI .node) — resolved at runtime from
+      // the host platform's npm install; externalized from the compiled binary
+      // (cannot embed a platform-specific native addon into a cross-compiled binary).
+      '@kreuzberg/tree-sitter-language-pack',
       'detect-libc',
       // Externalize packages using dynamic wasm imports (`import('*.wasm?binary')`)
       // that Bun's bundler cannot resolve at compile time.

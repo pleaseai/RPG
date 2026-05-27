@@ -8,8 +8,8 @@ const external = [
   'bun:sqlite',
   '@lancedb/lancedb',
   '@surrealdb/node',
-  // WASM-based tree-sitter (loads .wasm files at runtime, cannot bundle)
-  'web-tree-sitter',
+  // Native tree-sitter language pack (NAPI .node binaries, loaded at runtime — cannot bundle)
+  '@kreuzberg/tree-sitter-language-pack',
   // HuggingFace transformers + ONNX (loads model files at runtime, cannot bundle)
   '@huggingface/transformers',
   'onnxruntime-node',

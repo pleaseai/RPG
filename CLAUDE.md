@@ -124,14 +124,14 @@ The project uses **Bun workspaces** with a private monorepo root (`version: 0.0.
 packages/
 ├── soop/        # Published: @pleaseai/soop (umbrella package, bin/soop)
 ├── soop-native/ # Published: native binary distribution (bun compiled)
-├── ast/         # Layer 0: WASM tree-sitter parser — @pleaseai/soop-ast
+├── ast/         # Layer 0: tree-sitter parser (native, via namu) — @pleaseai/soop-ast
 ├── utils/       # Layer 0: LLM interface, git helpers, logger (independent)
 ├── store/       # Layer 0: Storage interfaces & implementations (independent)
 ├── graph/       # Layer 1: RPG data structures (→ store)
 ├── encoder/     # Layer 2: Code → RPG extraction (→ graph, utils, ast)
 ├── tools/       # Layer 2: Agentic tools for graph navigation (→ graph, encoder)
 ├── zerorepo/    # Layer 2: Intent → Code generation (→ graph, utils)
-├── namu/        # Layer 2: WASM asset management for tree-sitter grammars
+├── namu/        # Layer 2: native tree-sitter backend (@kreuzberg/tree-sitter-language-pack) + NamuNode adapter
 ├── mcp/         # Layer 3: MCP server (→ graph, encoder, tools, utils)
 └── cli/         # Layer 4: CLI entry point (→ encoder, graph, tools, zerorepo)
 ```
@@ -218,7 +218,7 @@ import { DefaultContextStore } from '@pleaseai/soop-store/default-context-store'
 
 ### Key Libraries
 
-- **tree-sitter**: AST parsing for multiple languages (TypeScript, JavaScript, Python, Rust, Go, Java)
+- **tree-sitter** (native, via `@kreuzberg/tree-sitter-language-pack`): AST parsing for multiple languages (TypeScript, JavaScript, Python, Rust, Go, Java, C#, C, C++, Ruby, Kotlin — 300+ available). Prebuilt NAPI binaries, no emcc/Docker build. `packages/namu` wraps it behind the `NamuNode` interface via an adapter.
 - **lancedb**: Vector DB for semantic search (Bun-native, disk-based) — optional dependency; `LocalVectorStore` is used as the zero-dependency fallback
 - **surrealdb** + **@surrealdb/node**: Embedded graph database (mem:// or surrealkv://)
 - **@huggingface/transformers**: Local embedding with MongoDB LEAF models
@@ -412,6 +412,12 @@ The CLI `encode` command accepts `--verbose` which sets the global log level to 
 - **Output** (keep `console.log`): user-facing results, statistics, search results
 
 ## Known Gotchas
+
+### tree-sitter native language pack (`@pleaseai/soop-namu`)
+- **Version pinned to `1.9.0-rc.10`** (a prerelease, the `next` dist-tag). This is intentional: the `darwin-x64` (Intel Mac) prebuild ships **only** on the rc line (upstream [#127](https://github.com/kreuzberg-dev/tree-sitter-language-pack/issues/127)); stable `1.8.1` has no Intel Mac binary. Move to a stable `>=1.9.0` once published.
+- **Prebuild platforms**: `darwin-x64/arm64`, `linux-x64/arm64-gnu`, `win-x64/arm64`. **No musl prebuild** — AST parsing on Alpine/musl hosts is unsupported (`@pleaseai/soop-native` musl binaries still build, but the parser must be resolved on a glibc host via `bun install -g @pleaseai/soop`).
+- **On-demand grammar download + cache**: grammars are fetched on first use and cached under `~/.cache|Library/Caches/tree-sitter-language-pack/v<version>/libs`. Set `SOOP_TS_CACHE_DIR` to pin the cache to a known/cacheable path (used by `soop-encode.yml` CI).
+- **`NamuNode` adapter**: `packages/namu/src/adapter.ts` bridges the native method-based `Node` (`kind()`, `startByte()`, `childByFieldName()`) to the property-based `NamuNode` interface. The native node has no `.text` (sliced from source by byte offset) and no sibling accessors (computed from parent + index).
 
 ### better-sqlite3 native bindings
 If `better-sqlite3` native bindings are compiled for a different Node.js version, run `npm rebuild better-sqlite3` to recompile them.

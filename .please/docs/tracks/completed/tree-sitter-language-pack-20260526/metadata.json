@@ -1,0 +1,12 @@
+{
+  "track_id": "tree-sitter-language-pack-20260526",
+  "type": "refactor",
+  "status": "review",
+  "created_at": "2026-05-26T00:00:00Z",
+  "updated_at": "2026-05-26T13:00:00Z",
+  "issue": "#312",
+  "pr": "#313",
+  "code_pr": "#313",
+  "code_branch": "feat/tree-sitter-language-pack-20260526",
+  "project": ""
+}

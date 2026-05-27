@@ -5,17 +5,18 @@ import { createParser, getLanguage, isAvailable as namuIsAvailable } from '@plea
 import { isSupportedLanguage, LANGUAGE_CONFIGS } from './languages'
 
 /**
- * AST Parser using WASM-based web-tree-sitter via @pleaseai/soop-namu.
+ * AST Parser using native tree-sitter grammars via @pleaseai/soop-namu.
  *
  * Extracts code structure for dependency analysis and semantic lifting.
- * Uses WASM grammars — no native compilation required.
+ * Grammars ship as prebuilt NAPI binaries (@kreuzberg/tree-sitter-language-pack)
+ * — no emcc/Docker build required.
  */
 export class ASTParser {
   private parserPromises = new Map<string, Promise<NamuParser>>()
 
   /**
-   * Check if WASM tree-sitter is available.
-   * Always returns true — WASM has no native compilation requirements.
+   * Check if the native tree-sitter backend is available.
+   * Delegates to the namu backend, which probes the loaded NAPI binding.
    */
   isAvailable(): boolean {
     return namuIsAvailable()

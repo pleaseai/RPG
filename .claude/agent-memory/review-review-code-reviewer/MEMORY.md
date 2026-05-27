@@ -15,6 +15,9 @@
 - Provider-specific settings (claudeCodeSettings, codexSettings, googleSettings) must be threaded through: encoder.ts -> semantic.ts -> LLMClient
 - Default model: `gemini-3.1-flash-lite-preview` for google provider
 
+### Pointers
+- [namu native backend](project_namu-native-backend.md) — web-tree-sitter→native NAPI migration; byte-offset .text slicing gotcha (ASCII tests miss non-ASCII bugs)
+
 ### Known Pre-existing Test Failures (llm.test.ts)
 - claudeCodeSettings tests fail due to extra default settings in createProvider
 - structured output null test has error message mismatch
