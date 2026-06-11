@@ -15,8 +15,7 @@ Test AI coding agents to measure what actually works.
    ```
 
    Edit `.env.local` and add your API keys:
-   - `AI_GATEWAY_API_KEY` - Vercel AI Gateway API key ([get yours](https://vercel.com/dashboard))
-   - `VERCEL_TOKEN` - Vercel personal access token ([create one](https://vercel.com/account/tokens))
+   - `CLAUDE_CODE_OAUTH_TOKEN` - Claud Code OAuth Token AI Gateway API key (`claude setup-token`)
 
 ## Running Evals
 

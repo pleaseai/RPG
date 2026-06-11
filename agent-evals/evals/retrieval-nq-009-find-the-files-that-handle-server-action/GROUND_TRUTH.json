@@ -1,0 +1,11 @@
+{
+  "id": "nq-009",
+  "query": "Find the files that handle server actions and the action handler pipeline",
+  "expect": [
+    "src/server/app-render/action-handler.ts",
+    "src/server/app-render/action-async-storage.external.ts",
+    "src/server/app-render/action-async-storage-instance.ts"
+  ],
+  "difficulty": "hard",
+  "category": "server"
+}

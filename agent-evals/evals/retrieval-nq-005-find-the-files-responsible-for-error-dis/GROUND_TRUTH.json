@@ -1,0 +1,12 @@
+{
+  "id": "nq-005",
+  "query": "Find the files responsible for error display and the development error overlay",
+  "expect": [
+    "src/next-devtools/dev-overlay/components/errors/error-overlay/error-overlay.tsx",
+    "src/next-devtools/dev-overlay/container/errors.tsx",
+    "src/client/components/error-boundary.tsx",
+    "src/next-devtools/dev-overlay.browser.tsx"
+  ],
+  "difficulty": "hard",
+  "category": "devtools"
+}

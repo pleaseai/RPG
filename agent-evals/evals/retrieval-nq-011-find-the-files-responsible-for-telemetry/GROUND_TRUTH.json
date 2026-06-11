@@ -1,0 +1,11 @@
+{
+  "id": "nq-011",
+  "query": "Find the files responsible for telemetry data collection and event tracking",
+  "expect": [
+    "src/telemetry/storage.ts",
+    "src/telemetry/events/build.ts",
+    "src/telemetry/flush-telemetry.ts"
+  ],
+  "difficulty": "easy",
+  "category": "telemetry"
+}

@@ -1,0 +1,11 @@
+{
+  "id": "nq-017",
+  "query": "Find the files that implement the use-cache directive and cache lifecycle management",
+  "expect": [
+    "src/server/use-cache/use-cache-wrapper.ts",
+    "src/server/use-cache/cache-life.ts",
+    "src/server/use-cache/cache-tag.ts"
+  ],
+  "difficulty": "hard",
+  "category": "server"
+}

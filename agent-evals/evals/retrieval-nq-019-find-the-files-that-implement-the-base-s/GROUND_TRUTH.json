@@ -1,0 +1,11 @@
+{
+  "id": "nq-019",
+  "query": "Find the files that implement the base server and the Node.js-specific server",
+  "expect": [
+    "src/server/base-server.ts",
+    "src/server/next-server.ts",
+    "src/server/next.ts"
+  ],
+  "difficulty": "easy",
+  "category": "server"
+}

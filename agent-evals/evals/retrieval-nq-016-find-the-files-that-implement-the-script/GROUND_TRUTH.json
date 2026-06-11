@@ -1,0 +1,10 @@
+{
+  "id": "nq-016",
+  "query": "Find the files that implement the Script component for third-party script loading",
+  "expect": [
+    "src/client/script.tsx",
+    "src/api/script.ts"
+  ],
+  "difficulty": "easy",
+  "category": "client"
+}
