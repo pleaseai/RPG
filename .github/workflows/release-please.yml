@@ -44,7 +44,7 @@ jobs:
 
       # Update bun.lock — release-please bumps package.json versions
       # but does not regenerate the lockfile
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         if: steps.release.outputs.pr && !steps.release.outputs.release_created
         with:
           token: ${{ steps.app-token.outputs.token }}
@@ -99,7 +99,7 @@ jobs:
       contents: read
       id-token: write # Required for npm OIDC trusted publishing
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: oven-sh/setup-bun@v2
       - uses: actions/setup-node@v6
         with:
