@@ -23,7 +23,7 @@ jobs:
             echo "skip=true" >> $GITHUB_OUTPUT
             echo "Release-please branch — skipping typecheck"
           fi
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v6
         if: steps.branch-check.outputs.skip != 'true'
       - uses: oven-sh/setup-bun@ecf28ddc73e819eb6fa29df6b34ef8921c743461 # v2
         if: steps.branch-check.outputs.skip != 'true'
@@ -48,7 +48,7 @@ jobs:
             echo "skip=true" >> $GITHUB_OUTPUT
             echo "Release-please branch — skipping lint"
           fi
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v6
         if: steps.branch-check.outputs.skip != 'true'
       - uses: oven-sh/setup-bun@ecf28ddc73e819eb6fa29df6b34ef8921c743461 # v2
         if: steps.branch-check.outputs.skip != 'true'
@@ -73,7 +73,7 @@ jobs:
             echo "skip=true" >> $GITHUB_OUTPUT
             echo "Release-please branch — skipping tests"
           fi
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v6
         if: steps.branch-check.outputs.skip != 'true'
         with:
           fetch-depth: 2
@@ -113,7 +113,7 @@ jobs:
         with:
           path: .git
           key: git-folder
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v6
         if: steps.branch-check.outputs.skip != 'true'
         with:
           fetch-depth: 0
