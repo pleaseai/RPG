@@ -56,7 +56,7 @@ jobs:
         run: bun install -g @pleaseai/soop@latest
 
       - name: Restore semantic cache
-        uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5
+        uses: actions/cache/restore@2c8a9bd7457de244a408f35966fab2fb45fda9c8 # v6.0.0
         with:
           path: .soop/cache/semantic-cache.db*
           key: semantic-cache-${{ github.sha }}
@@ -66,7 +66,7 @@ jobs:
       # cache dir pinned via SOOP_TS_CACHE_DIR. Caching it makes encode/evolve
       # deterministic and avoids re-downloading grammars on every run.
       - name: Restore tree-sitter parser cache
-        uses: actions/cache/restore@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5
+        uses: actions/cache/restore@2c8a9bd7457de244a408f35966fab2fb45fda9c8 # v6.0.0
         with:
           path: .soop/cache/tree-sitter
           key: tree-sitter-pack-${{ github.sha }}
@@ -102,14 +102,14 @@ jobs:
           fi
 
       - name: Save semantic cache
-        uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5
+        uses: actions/cache/save@2c8a9bd7457de244a408f35966fab2fb45fda9c8 # v6.0.0
         if: always()
         with:
           path: .soop/cache/semantic-cache.db*
           key: semantic-cache-${{ github.sha }}
 
       - name: Save tree-sitter parser cache
-        uses: actions/cache/save@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5
+        uses: actions/cache/save@2c8a9bd7457de244a408f35966fab2fb45fda9c8 # v6.0.0
         if: always()
         with:
           path: .soop/cache/tree-sitter
